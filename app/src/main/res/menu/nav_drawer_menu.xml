@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <group android:checkableBehavior="single">
+        
+        <!-- Network Section -->
+        <item
+            android:id="@+id/nav_network_status"
+            android:icon="@drawable/ic_nearby"
+            android:title="Network Status"/>
+        
+        <item
+            android:id="@+id/nav_bluetooth_devices"
+            android:icon="@drawable/ic_bluetooth"
+            android:title="Bluetooth Devices"/>
+        
+        <item
+            android:id="@+id/nav_nearby_devices"
+            android:icon="@drawable/ic_nearby"
+            android:title="Nearby Devices"/>
+    
+    </group>
+    
+    <!-- Divider -->
+    <item android:title="">
+        <menu>
+            
+            <!-- Settings Section -->
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@drawable/ic_settings"
+                android:title="Settings"/>
+            
+            <item
+                android:id="@+id/nav_about"
+                android:icon="@drawable/ic_info"
+                android:title="About"/>
+        
+        </menu>
+    </item>
+
+</menu>

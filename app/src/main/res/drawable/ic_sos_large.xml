@@ -1,0 +1,32 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    
+    <!-- Circle background -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,4C12.95,4 4,12.95 4,24s8.95,20 20,20 20,-8.95 20,-20S35.05,4 24,4z"/>
+    
+    <!-- SOS Text -->
+    <!-- S -->
+    <path
+        android:fillColor="#DC2626"
+        android:pathData="M12,18 L12,14 L16,14 L16,16 L14,16 L14,18 L16,18 L16,20 L12,20 L12,22 L16,22 L16,24 L12,24z"/>
+    
+    <!-- O -->
+    <path
+        android:fillColor="#DC2626"
+        android:pathData="M18,18 L18,24 L22,24 L22,18z M20,20 L20,22z"/>
+    
+    <!-- S -->
+    <path
+        android:fillColor="#DC2626"
+        android:pathData="M24,18 L24,14 L28,14 L28,16 L26,16 L26,18 L28,18 L28,20 L24,20 L24,22 L28,22 L28,24 L24,24z"/>
+    
+    <!-- Exclamation mark for emergency -->
+    <path
+        android:fillColor="#DC2626"
+        android:pathData="M23,28 L25,28 L25,34 L23,34z M23,36 L25,36 L25,38 L23,38z"/>
+</vector>

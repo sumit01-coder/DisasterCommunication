@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_light">
+
+    <!-- Header Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/card_background">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_wifi"
+                app:tint="@color/primary"
+                android:layout_marginEnd="12dp"
+                android:contentDescription="Network"/>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mesh Network"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/tvMeshInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="5 connected"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvActiveStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Active"
+                android:textColor="@color/connected_green"
+                android:textSize="14sp"
+                android:background="@drawable/rounded_badge"
+                android:backgroundTint="#E8F5E9"
+                android:padding="8dp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Manual Connection Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnManualConnect"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="🔍 Scan for Nearby Devices"
+        android:textColor="@android:color/white"
+        app:backgroundTint="@color/primary"
+        app:cornerRadius="8dp"
+        app:icon="@drawable/ic_wifi"
+        app:iconGravity="textStart"
+        app:iconTint="@android:color/white"
+        android:paddingVertical="12dp"
+        android:textAllCaps="false"
+        android:textSize="15sp"
+        android:textStyle="bold"/>
+
+    <!-- Members List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvMembers"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="8dp"
+        android:clipToPadding="false"/>
+
+    <!-- Range Info -->
+    <TextView
+        android:id="@+id/tvRangeInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="● Mesh network range: ~500m"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:padding="16dp"
+        android:gravity="center"/>
+
+</LinearLayout>

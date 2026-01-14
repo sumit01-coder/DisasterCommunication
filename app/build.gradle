@@ -1,0 +1,62 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.example.disastercomm'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.disastercomm"
+        minSdk 24 // Nearby Connections requires 21+, but 24 is a safe modern baseline
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    
+    // Nearby Connections API
+    implementation 'com.google.android.gms:play-services-nearby:19.0.0'
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+    
+    // ViewPager2 for tab navigation
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
+    
+    // Circular ImageView for avatars
+    implementation 'de.hdodenhof:circleimageview:3.1.0'
+    
+    // OpenStreetMap (osmdroid) for Offline Maps
+    implementation 'org.osmdroid:osmdroid-android:6.1.18'
+    
+    // GSON for JSON serialization
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+
+    // Room Database
+    implementation 'androidx.room:room-runtime:2.6.1'
+    annotationProcessor 'androidx.room:room-compiler:2.6.1'
+
+    // Biometric Authentication
+    implementation 'androidx.biometric:biometric:1.1.0'
+}

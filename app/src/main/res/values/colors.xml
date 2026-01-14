@@ -1,0 +1,91 @@
+<resources>
+    <!-- Brand Colors (Blue Prism) -->
+    <color name="primary">#2563EB</color>
+    <color name="primary_variant">#1D4ED8</color>
+    <color name="secondary">#0EA5E9</color>
+    <color name="secondary_variant">#0284C7</color>
+    <color name="accent">#F59E0B</color>
+
+    <!-- Semantic Colors -->
+    <color name="success">#10B981</color>
+    <color name="error">#EF4444</color>
+    <color name="warning">#F59E0B</color>
+    <color name="info">#3B82F6</color>
+
+    <!-- Backgrounds & Surfaces -->
+    <color name="background">#F3F4F6</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F9FAFB</color>
+    
+    <!-- Material 3 Surface Tints -->
+    <color name="surface_tint">#E8F0FE</color>
+    <color name="surface_dim">#E1E3E6</color>
+    <color name="surface_bright">#FFFFFF</color>
+    <color name="surface_container">#F5F6FA</color>
+    <color name="surface_container_high">#ECEDF2</color>
+
+    <!-- Text -->
+    <color name="text_primary">#111827</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="text_tertiary">#9CA3AF</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="text_disabled">#D1D5DB</color>
+
+    <!-- Chat Specific -->
+    <color name="chat_bubble_sent">#2563EB</color>
+    <color name="chat_bubble_received">#FFFFFF</color>
+    <color name="chat_text_sent">#FFFFFF</color>
+    <color name="chat_text_received">#111827</color>
+    <color name="chat_meta_sent">#E0E7FF</color>
+    <color name="chat_meta_received">#9CA3AF</color>
+
+    <!-- Connectivity Status -->
+    <color name="status_connected">#10B981</color>
+    <color name="status_disconnected">#EF4444</color>
+    <color name="status_connecting">#F59E0B</color>
+
+    <!-- Gradient Colors -->
+    <color name="gradient_start">#2563EB</color>
+    <color name="gradient_middle">#4F46E5</color>
+    <color name="gradient_end">#7C3AED</color>
+    <color name="gradient_light_start">#E0E7FF</color>
+    <color name="gradient_light_end">#F5F3FF</color>
+
+    <!-- State Colors (for interactions) -->
+    <color name="state_hover">#1D4ED820</color>
+    <color name="state_pressed">#1D4ED840</color>
+    <color name="state_disabled">#9CA3AF</color>
+    <color name="state_focused">#2563EB40</color>
+
+    <!-- Overlay Colors -->
+    <color name="overlay_dark">#00000080</color>
+    <color name="overlay_light">#FFFFFF80</color>
+    <color name="scrim">#00000060</color>
+
+    <!-- Legacy Mappings (for compatibility) -->
+    <color name="primary_blue">@color/primary</color>
+    <color name="primary_blue_dark">@color/primary_variant</color>
+    <color name="connected_green">@color/success</color>
+    <color name="sos_red">@color/error</color>
+    <color name="background_light">@color/background</color>
+    <color name="card_background">@color/surface</color>
+    <color name="purple_500">@color/primary</color>
+    <color name="purple_700">@color/primary_variant</color>
+    <color name="teal_200">@color/secondary</color>
+    <color name="teal_700">@color/secondary_variant</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="signal_strong">@color/success</color>
+    <color name="signal_medium">@color/warning</color>
+    <color name="signal_weak">@color/error</color>
+
+    <color name="avatar_purple">@color/secondary</color>
+    <color name="online_green">@color/success</color>
+    <color name="divider">#E5E7EB</color>
+
+    <!-- GPS Accuracy Status Colors -->
+    <color name="accuracy_excellent">#10B981</color>
+    <color name="accuracy_good">#34D399</color>
+    <color name="accuracy_fair">#FBBF24</color>
+    <color name="accuracy_poor">#EF4444</color>
+</resources>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="3dp"
+    app:strokeWidth="0dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Avatar Circle -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cvAvatar"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/primary"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <TextView
+                android:id="@+id/tvAvatarInitial"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="J"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"/>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Member Name -->
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:text="John Doe"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            app:layout_constraintTop_toTopOf="@id/cvAvatar"
+            app:layout_constraintStart_toEndOf="@id/cvAvatar"
+            app:layout_constraintEnd_toStartOf="@id/viewOnlineStatus"/>
+
+        <!-- Connection Info -->
+        <TextView
+            android:id="@+id/tvConnectionInfo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="2dp"
+            android:text="WiFi Direct • 45m away"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            app:layout_constraintTop_toBottomOf="@id/tvName"
+            app:layout_constraintStart_toEndOf="@id/cvAvatar"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <!-- Online Status Indicator -->
+        <View
+            android:id="@+id/viewOnlineStatus"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:background="@drawable/circle_background"
+            android:backgroundTint="@color/online_green"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <!-- Signal Strength Icon -->
+        <ImageView
+            android:id="@+id/ivSignalStrength"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginTop="4dp"
+            android:src="@drawable/ic_signal"
+            app:tint="@color/signal_strong"
+            app:layout_constraintTop_toBottomOf="@id/tvConnectionInfo"
+            app:layout_constraintStart_toEndOf="@id/cvAvatar"
+            android:layout_marginStart="12dp"/>
+
+        <!-- Last Active -->
+        <TextView
+            android:id="@+id/tvLastActive"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:text="Active now"
+            android:textSize="11sp"
+            android:textColor="@color/text_tertiary"
+            app:layout_constraintTop_toTopOf="@id/ivSignalStrength"
+            app:layout_constraintBottom_toBottomOf="@id/ivSignalStrength"
+            app:layout_constraintStart_toEndOf="@id/ivSignalStrength"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

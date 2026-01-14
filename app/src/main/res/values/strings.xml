@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Disaster Comm</string>
+    <string name="status_searching">Mode: Searching for Peers...</string>
+    <string name="status_connected">Mode: Connected</string>
+    <string name="btn_sos">SOS</string>
+    <string name="btn_chat">Chat</string>
+    <string name="title_connected_peers">Connected Peers</string>
+    <string name="drawer_open">Open navigation drawer</string>
+    <string name="drawer_close">Close navigation drawer</string>
+</resources>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1009476115215",
+    "project_id": "disastercommunication-f8457",
+    "storage_bucket": "disastercommunication-f8457.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1009476115215:android:645008db6c23fbe73dfc7a",
+        "android_client_info": {
+          "package_name": "com.example.disastercomm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPIrofYDNKPQiK1VxE8Mi5ojGfzDLsmsw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
