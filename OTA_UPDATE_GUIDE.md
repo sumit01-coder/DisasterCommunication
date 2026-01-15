@@ -34,30 +34,45 @@ Before this works, you **MUST** configure your repository details in the code.
 
 ---
 
-## 🚀 How to Release an Update
+## 🚀 How to Release an Update (Step-by-Step)
 
-To make an update available to your users:
+Since we set up **GitHub Automation**, you do **NOT** need to build the APK manually. You just need to push a specific "Tag" from Android Studio.
 
-1.  **Update Version**:
-    - In `app/build.gradle`, increment the `versionCode` and `versionName`:
-      ```gradle
-      defaultConfig {
-          versionCode 2
-          versionName "1.1.0"
-      }
-      ```
-2.  **Build Signed APK**:
-    - Go to **Build > Generate Signed Bundle / APK > APK**.
-    - Create a release build.
+### Step 1: Update Version
+1.  Open Android Studio.
+2.  Open the file: `app/build.gradle` (Module: app).
+3.  Increment `versionCode` (integer) and `versionName` (text).
+    ```gradle
+    defaultConfig {
+        versionCode 3      // Change 2 -> 3
+        versionName "1.2"  // Change "1.1" -> "1.2"
+    }
+    ```
+4.  Sync Gradle if asked.
 
-3.  **Create GitHub Release**:
-    - Go to your GitHub Repository > **Releases** > **Draft a new release**.
-    - **Tag version**: Must match your `versionName` (e.g., `v1.1.0`).
-    - **Title**: "Release v1.1.0".
-    - **Attach Binaries**: Upload the signed `.apk` file you built.
-    - Click **Publish release**.
+### Step 2: Commit Changes
+1.  Click the **Commit** tab (or checkmark icon) in Android Studio.
+2.  Select `build.gradle` (and any other changed files).
+3.  Enter a commit message: `Prepare release v1.2`.
+4.  Click **Commit**.
+
+### Step 3: Create & Push Tag (The Trigger)
+This is the magic step that tells GitHub to build and release your app.
+
+1.  Open the **Terminal** tab in Android Studio (bottom bar).
+2.  Type these two commands:
+    ```bash
+    git tag v1.2
+    git push origin master --tags
+    ```
+    *(Make sure the tag name "v1.2" matches your versionName)*
 
 ---
+
+### 🎉 That's it!
+Go to your **GitHub Repository > Actions** tab. You will see the release building automatically.
+- It takes ~2-3 minutes.
+- Once green ✅, your app users can go to **Settings > Software Update** to get the new version.
 
 ## 🔒 Permissions
 
@@ -74,4 +89,12 @@ The system uses the following permissions (already added to `AndroidManifest.xml
 1.  Create a "dummy" release on GitHub with a higher version tag (e.g., `v9.9.9`).
 2.  Run the app (with a lower version).
 3.  Go to **Settings > Check for Update**.
-4.  Verify the dialog appears and the download works.
+
+## Troubleshooting
+
+### "Release not found (404)" Error
+If the app says "Release not found", checks these common causes:
+1.  **Repository Visibility**: ensure your GitHub repository is **Public**. This simple update mechanism relies on the public GitHub API.
+    - Go to Repo Settings > Danger Zone > Change visibility > Make Public.
+2.  **No Release Yet**: The GitHub Action might still be building. Check the "Actions" tab.
+3.  **Release Draft**: Ensure the release is "Published", not a "Draft". The API ignores drafts.

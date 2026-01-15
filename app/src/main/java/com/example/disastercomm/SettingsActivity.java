@@ -86,6 +86,15 @@ public class SettingsActivity extends AppCompatActivity {
 
         // App Lock
         switchAppLock.setChecked(preferenceManager.isAppLockEnabled());
+
+        // Set Version Name
+        try {
+            String versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            android.widget.TextView tvVersion = findViewById(R.id.tvVersion);
+            tvVersion.setText("Version " + versionName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }

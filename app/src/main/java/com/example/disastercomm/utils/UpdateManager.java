@@ -66,6 +66,9 @@ public class UpdateManager {
                         sb.append(line);
                     }
                     result = sb.toString();
+                } else if (conn.getResponseCode() == 404) {
+                    Log.e(TAG, "GitHub API: 404 Not Found (Release not published yet or Private Repo)");
+                    return "ERROR: Release not found (404). Check GitHub Actions.";
                 } else {
                     Log.e(TAG, "GitHub API Response: " + conn.getResponseCode());
                 }
@@ -81,7 +84,10 @@ public class UpdateManager {
 
         @Override
         protected void onPostExecute(String result) {
-            if (result != null && !result.startsWith("ERROR:")) {
+            if ("OFFLINE".equals(result)) {
+                // Don't annoy user with toasts if just offline
+                Log.d(TAG, "Skipping update check - offline");
+            } else if (result != null && !result.startsWith("ERROR:")) {
                 try {
                     JSONObject release = new JSONObject(result);
                     String tagName = release.getString("tag_name"); // e.g., "v1.2.0"
@@ -104,9 +110,6 @@ public class UpdateManager {
                     Log.e(TAG, "Parsing update failed", e);
                     Toast.makeText(context, "Failed to parse update info", Toast.LENGTH_SHORT).show();
                 }
-            } else if ("OFFLINE".equals(result)) {
-                // Don't annoy user with toasts if just offline
-                Log.d(TAG, "Skipping update check - offline");
             } else {
                 String error = (result != null && result.startsWith("ERROR:")) ? result.substring(7) : "Check failed";
                 // Only show toast for explicit errors, maybe optional even then
