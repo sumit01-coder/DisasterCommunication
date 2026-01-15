@@ -74,6 +74,10 @@ public class SettingsActivity extends AppCompatActivity {
             });
         });
 
+        // Software Update
+        findViewById(R.id.layoutCheckUpdate).setOnClickListener(v -> {
+            new com.example.disastercomm.utils.UpdateManager(this).checkForUpdates();
+        });
     }
 
     private void loadSettings() {

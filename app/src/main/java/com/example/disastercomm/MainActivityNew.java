@@ -60,6 +60,88 @@ public class MainActivityNew extends AppCompatActivity implements
     private NotificationSoundManager notificationSoundManager;
     private LocationHelper locationHelper;
 
+    // ✅ Service Binding
+    private com.example.disastercomm.services.NetworkService mService;
+    private boolean mBound = false;
+    private final android.content.ServiceConnection connection = new android.content.ServiceConnection() {
+        @Override
+        public void onServiceConnected(android.content.ComponentName className, android.os.IBinder service) {
+            com.example.disastercomm.services.NetworkService.LocalBinder binder = (com.example.disastercomm.services.NetworkService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+            Log.d("DisasterApp", "✅ Connected to NetworkService");
+
+            // Retrieve persistent managers
+            meshNetworkManager = mService.getMeshManager();
+            bluetoothConnectionManager = mService.getBluetoothManager();
+            packetHandler = mService.getPacketHandler();
+
+            // Set listeners
+            if (packetHandler != null) {
+                packetHandler.setMessageListener(MainActivityNew.this);
+                // Also broadcast public key now that we are connected
+                packetHandler.broadcastPublicKey(username);
+            }
+
+            // ✅ RESTORE STATE: Sync connected devices from Service to UI
+            if (meshNetworkManager != null) {
+                for (String endpointId : meshNetworkManager.getConnectedEndpoints()) {
+                    String name = meshNetworkManager.getConnectedDeviceName(endpointId);
+                    addMember(endpointId, name != null ? name : "Unknown", "Mesh");
+                }
+            }
+            if (bluetoothConnectionManager != null) {
+                java.util.Map<String, String> btDevices = bluetoothConnectionManager.getConnectedDevices();
+                for (java.util.Map.Entry<String, String> entry : btDevices.entrySet()) {
+                    addMember(entry.getKey(), entry.getValue(), "Bluetooth");
+                }
+            }
+
+            // Initialize UI components that depend on managers
+            setupViewPagerAdapter();
+
+            // Retry offline messages
+            if (packetHandler != null)
+                packetHandler.retryOfflineMessages();
+        }
+
+        @Override
+        public void onServiceDisconnected(android.content.ComponentName arg0) {
+            mBound = false;
+            mService = null;
+            Log.d("DisasterApp", "❌ Disconnected from NetworkService");
+        }
+    };
+
+    // ✅ Broadcast Receiver for Service Updates
+    private final android.content.BroadcastReceiver networkReceiver = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, Intent intent) {
+            if (intent == null || intent.getAction() == null)
+                return;
+            if ("com.example.disastercomm.NETWORK_UPDATE".equals(intent.getAction())) {
+                String action = intent.getStringExtra("action");
+                String id = intent.getStringExtra("id");
+                String extra = intent.getStringExtra("extra"); // Name
+
+                if ("MESH_CONNECTED".equals(action)) {
+                    onDeviceConnected(id, extra);
+                } else if ("MESH_DISCONNECTED".equals(action)) {
+                    onDeviceDisconnected(id);
+                } else if ("BT_CONNECTED".equals(action)) {
+                    if (bluetoothDeviceMap != null)
+                        bluetoothDeviceMap.put(id, extra);
+                    addMember(id, extra, "Bluetooth");
+                    Toast.makeText(context, "BT Connected: " + extra, Toast.LENGTH_SHORT).show();
+                } else if ("BT_DISCONNECTED".equals(action)) {
+                    if (bluetoothDeviceMap != null)
+                        bluetoothDeviceMap.remove(id);
+                    removeMember(id);
+                }
+            }
+        }
+    };
+
     private String username;
     private final Map<String, String> bluetoothDeviceMap = new HashMap<>();
     private final Map<String, MemberItem> connectedMembers = new HashMap<>();
@@ -116,8 +198,9 @@ public class MainActivityNew extends AppCompatActivity implements
         Log.d("DisasterApp", "📱 Device ID: " + DeviceUtil.getDeviceId(this));
 
         initViews();
-        // Initialize managers but don't start services yet
-        initManagers();
+        initViews();
+        // Managers are now initialized via Service Binding
+        // initManagers(); -> Moved to onServiceConnected
 
         setupBottomNavigation();
         setupSosButton();
@@ -222,27 +305,56 @@ public class MainActivityNew extends AppCompatActivity implements
 
     private void startNetworkServices() {
         Log.d("DisasterApp", "Starting Network Services...");
-        if (meshNetworkManager != null) {
-            meshNetworkManager.start();
+
+        // Start and Bind Service
+        Intent intent = new Intent(this, com.example.disastercomm.services.NetworkService.class);
+        intent.putExtra("username", username);
+        startService(intent); // Start foreground service
+        bindService(intent, connection, android.content.Context.BIND_AUTO_CREATE);
+
+        // Register Broadcast Receiver
+        android.content.IntentFilter filter = new android.content.IntentFilter(
+                "com.example.disastercomm.NETWORK_UPDATE");
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(networkReceiver, filter, android.content.Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(networkReceiver, filter);
         }
-        if (bluetoothConnectionManager != null) {
-            bluetoothConnectionManager.start();
-        }
+
+        // Initialize other local helpers
+        notificationSoundManager = new NotificationSoundManager(this);
+        notificationHelper = new com.example.disastercomm.utils.NotificationHelper(this);
+        messageCounter = com.example.disastercomm.utils.MessageCounter.getInstance(this);
+
+        // Network Monitor
+        networkStateMonitor = new NetworkStateMonitor(this, new NetworkStateMonitor.NetworkStateListener() {
+            @Override
+            public void onNetworkAvailable(int networkType, String networkName) {
+                runOnUiThread(() -> updateConnectionStatus(true));
+            }
+
+            @Override
+            public void onNetworkLost(int networkType) {
+                runOnUiThread(() -> updateConnectionStatus(connectedMembers.size() > 0));
+            }
+
+            @Override
+            public void onInternetAvailable() {
+            }
+
+            @Override
+            public void onInternetLost() {
+            }
+        });
+        networkStateMonitor.startMonitoring();
+
+        // Location Helper
+        locationHelper = new LocationHelper(this);
 
         // Show system notification
         if (notificationHelper != null) {
             notificationHelper.showSystemNotification("DisasterComm Started", "Network services are active");
         }
-
-        // Broadcast Public Key after a short delay to allow connections to establish
-        new android.os.Handler().postDelayed(() -> {
-            if (packetHandler != null) {
-                packetHandler.broadcastPublicKey(username);
-            }
-        }, 3000);
-
-        // Assuming updateConnectionStatus is a method in MainActivityNew
-        // updateConnectionStatus("Searching for peers...");
     }
 
     private void initViews() {
@@ -660,138 +772,25 @@ public class MainActivityNew extends AppCompatActivity implements
                 .setPositiveButton("Close", null).show();
     }
 
+    private void setupViewPagerAdapter() {
+        if (pagerAdapter == null && packetHandler != null) {
+            Log.d("DisasterApp", "📑 Creating ViewPagerAdapter");
+            pagerAdapter = new ViewPagerAdapter(this, packetHandler, username);
+            viewPager.setAdapter(pagerAdapter);
+            viewPager.setOffscreenPageLimit(2);
+            Log.d("DisasterApp", "✅ ViewPager setup complete");
+
+            // Setup MembersFragment manual scan callback
+            if (pagerAdapter.getMembersFragment() != null) {
+                pagerAdapter.getMembersFragment().setConnectionListener(() -> triggerManualDeviceScan());
+            }
+        }
+    }
+
+    // Deprecated: Logic moved to NetworkService
     private void initManagers() {
-        // Mesh Network
-        com.example.disastercomm.data.AppDatabase db = com.example.disastercomm.data.AppDatabase.getDatabase(this);
-        meshNetworkManager = new MeshNetworkManager(this, username, this);
-        // packetHandler = new PacketHandler(meshNetworkManager,
-        // AppDatabase.getDatabase(this));
-        // Update to new constructor with Context
-        packetHandler = new PacketHandler(this, meshNetworkManager, AppDatabase.getDatabase(this));
-        packetHandler.setMessageListener(this);
-
-        // ViewPager Adapter
-        Log.d("DisasterApp", "📑 Creating ViewPagerAdapter");
-        pagerAdapter = new ViewPagerAdapter(this, packetHandler, username);
-        viewPager.setAdapter(pagerAdapter);
-        viewPager.setOffscreenPageLimit(2); // ✅ Keep all 3 fragments alive
-        Log.d("DisasterApp", "✅ ViewPager setup complete - offscreenPageLimit: 2");
-
-        // Bluetooth
-        bluetoothConnectionManager = new com.example.disastercomm.network.BluetoothConnectionManager(this,
-                new com.example.disastercomm.network.BluetoothConnectionManager.BluetoothCallback() {
-                    @Override
-                    public void onBluetoothConnected(String address, String deviceName) {
-                        runOnUiThread(() -> {
-                            bluetoothDeviceMap.put(address, deviceName);
-                            addMember(address, deviceName, "Bluetooth");
-                            Toast.makeText(MainActivityNew.this, "BT Connected: " + deviceName, Toast.LENGTH_SHORT)
-                                    .show();
-
-                            // Show notification
-                            if (notificationHelper != null) {
-                                notificationHelper.showDeviceConnectedNotification(deviceName, "Bluetooth");
-                            }
-
-                            // ✅ Retry offline messages
-                            if (packetHandler != null)
-                                packetHandler.retryOfflineMessages();
-
-                            // ✅ Sync broadcast history to new device
-                            syncBroadcastHistoryToNewDevice(address);
-                        });
-                    }
-
-                    @Override
-                    public void onBluetoothDisconnected(String address) {
-                        runOnUiThread(() -> {
-                            String deviceName = bluetoothDeviceMap.get(address);
-                            bluetoothDeviceMap.remove(address);
-                            removeMember(address);
-
-                            // Show notification
-                            if (notificationHelper != null && deviceName != null) {
-                                notificationHelper.showDeviceDisconnectedNotification(deviceName, "Bluetooth");
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onBluetoothDataReceived(String address, byte[] data) {
-                        packetHandler.handlePayload(address, data);
-                    }
-                });
-
-        // Bluetooth started in startNetworkServices()
-        packetHandler.setBluetoothManager(bluetoothConnectionManager);
-
-        // Network Monitor
-        networkStateMonitor = new NetworkStateMonitor(this, new NetworkStateMonitor.NetworkStateListener() {
-            @Override
-            public void onNetworkAvailable(int networkType, String networkName) {
-                runOnUiThread(() -> {
-                    updateConnectionStatus(true);
-
-                    // Show notification
-                    if (notificationHelper != null) {
-                        String typeStr = networkType == 1 ? "WiFi" : "Mobile";
-                        notificationHelper.showNetworkStatusNotification(typeStr + " network available: " + networkName,
-                                true);
-                    }
-                });
-            }
-
-            @Override
-            public void onNetworkLost(int networkType) {
-                runOnUiThread(() -> {
-                    updateConnectionStatus(connectedMembers.size() > 0);
-
-                    // Show notification
-                    if (notificationHelper != null) {
-                        String typeStr = networkType == 1 ? "WiFi" : "Mobile";
-                        notificationHelper.showNetworkStatusNotification(typeStr + " network lost", false);
-                    }
-                });
-            }
-
-            @Override
-            public void onInternetAvailable() {
-                // Optional: Update UI for internet status
-            }
-
-            @Override
-            public void onInternetLost() {
-                // Optional: Update UI
-            }
-        });
-        networkStateMonitor.startMonitoring();
-
-        // Notification Sound Manager
-        notificationSoundManager = new NotificationSoundManager(this);
-
-        // Notification Helper
-        notificationHelper = new com.example.disastercomm.utils.NotificationHelper(this);
-
-        // ✅ Message Counter for unread tracking
-        messageCounter = com.example.disastercomm.utils.MessageCounter.getInstance(this);
-        messageCounter.setCountChangeListener((memberId, newCount) -> {
-            // Update member item when unread count changes
-            MemberItem member = connectedMembers.get(memberId);
-            if (member != null) {
-                member.unreadCount = newCount;
-                updateMembersFragment();
-            }
-        });
-
-        // Location Helper
-        locationHelper = new LocationHelper(this);
-
-        // Setup MembersFragment manual scan callback
-        pagerAdapter.getMembersFragment().setConnectionListener(() -> {
-            triggerManualDeviceScan();
-        });
-
-        // Network services started in startNetworkServices() after permission check
+        // Kept empty or removed to avoid confusion.
+        // Real initialization happens in NetworkService.
     }
 
     private void setupBottomNavigation() {
@@ -1462,13 +1461,27 @@ public class MainActivityNew extends AppCompatActivity implements
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Prevent memory leak
+        if (packetHandler != null) {
+            packetHandler.setMessageListener(null);
+        }
+
+        if (mBound) {
+            unbindService(connection);
+            mBound = false;
+        }
+        try {
+            unregisterReceiver(networkReceiver);
+        } catch (IllegalArgumentException e) {
+            // Not registered
+        }
+
+        // Note: We do NOT stop the managers here, because the Service keeps them alive!
+        // This is the key benefit of the refactor.
+
         if (notificationSoundManager != null)
             notificationSoundManager.release();
         if (networkStateMonitor != null)
             networkStateMonitor.stopMonitoring();
-        if (bluetoothConnectionManager != null)
-            bluetoothConnectionManager.stop();
-        if (meshNetworkManager != null)
-            meshNetworkManager.stop();
     }
 }

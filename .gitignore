@@ -3,3 +3,9 @@
 /app/build/
 /app/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/
 /build/
+*.hprof
+*.iml
+.idea/
+local.properties
+.DS_Store
+/captures/

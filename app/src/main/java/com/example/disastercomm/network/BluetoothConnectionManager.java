@@ -61,6 +61,20 @@ public class BluetoothConnectionManager {
         return !activeConnections.isEmpty();
     }
 
+    public java.util.Map<String, String> getConnectedDevices() {
+        java.util.Map<String, String> devices = new java.util.HashMap<>();
+        if (ActivityCompat.checkSelfPermission(context,
+                android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            return devices;
+        }
+        for (ConnectedThread thread : activeConnections.values()) {
+            BluetoothDevice device = thread.socket.getRemoteDevice();
+            String name = device.getName();
+            devices.put(device.getAddress(), name != null ? name : device.getAddress());
+        }
+        return devices;
+    }
+
     public void start() {
         if (bluetoothAdapter == null || isRunning)
             return;
