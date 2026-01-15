@@ -110,5 +110,18 @@
             app:tint="@color/status_connected"
             android:visibility="gone"
             android:layout_marginStart="8dp"/>
+
+        <!-- Close Private Chat Button -->
+        <ImageButton
+            android:id="@+id/btnClosePrivateChat"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="@color/text_secondary"
+            android:contentDescription="Close Private Chat"
+            android:visibility="gone"/>
+
     </LinearLayout>
 </LinearLayout>

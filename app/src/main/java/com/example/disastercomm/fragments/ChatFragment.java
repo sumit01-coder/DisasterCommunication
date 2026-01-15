@@ -94,13 +94,22 @@ public class ChatFragment extends Fragment {
         // ✅ Then load full history from database
         loadChatHistory();
 
+        // ✅ Always show chat header (Global or Private)
+        if (chatHeader != null) {
+            chatHeader.setVisibility(View.VISIBLE);
+            updateChatHeader();
+
+            // Bind Close Button
+            View btnClose = chatHeader.findViewById(R.id.btnClosePrivateChat);
+            if (btnClose != null) {
+                btnClose.setOnClickListener(v -> switchToGlobalChat());
+            }
+        }
+
         if (recipientName != null) {
             etMessage.setHint("Message " + recipientName + "...");
-            // ✅ Show and configure chat header for private chats
-            if (chatHeader != null) {
-                chatHeader.setVisibility(View.VISIBLE);
-                updateChatHeader();
-            }
+        } else {
+            etMessage.setHint("Broadcast to everyone...");
         }
 
         // Send button click
@@ -368,7 +377,27 @@ public class ChatFragment extends Fragment {
     }
 
     /**
-     * ✅ Update chat header with member info
+     * ✅ Switch back to Global Chat
+     */
+    private void switchToGlobalChat() {
+        if (recipientId == null)
+            return; // Already global
+
+        android.util.Log.d("ChatFragment", "🔄 Switching to GLOBAL CHAT");
+        recipientId = null;
+        recipientName = null;
+
+        etMessage.setHint("Broadcast to everyone...");
+        updateChatHeader();
+        loadChatHistory(); // Reload global history
+
+        android.widget.Toast
+                .makeText(requireContext(), "📢 Switched to Global Broadcast", android.widget.Toast.LENGTH_SHORT)
+                .show();
+    }
+
+    /**
+     * ✅ Update chat header with member info or Global Broadcast info
      */
     private void updateChatHeader() {
         if (chatHeader == null || !isAdded())
@@ -377,18 +406,35 @@ public class ChatFragment extends Fragment {
         TextView tvChatMemberName = chatHeader.findViewById(R.id.tvChatMemberName);
         TextView tvChatOnlineStatus = chatHeader.findViewById(R.id.tvChatOnlineStatus);
         View viewChatOnlineStatus = chatHeader.findViewById(R.id.viewChatOnlineStatus);
+        View btnClose = chatHeader.findViewById(R.id.btnClosePrivateChat);
+        android.widget.ImageView ivAvatar = chatHeader.findViewById(R.id.ivChatAvatar);
 
-        if (tvChatMemberName != null && recipientName != null) {
-            tvChatMemberName.setText(recipientName);
-        }
+        if (recipientId == null) {
+            // 🌍 GLOBAL BROADCAST MODE
+            if (tvChatMemberName != null)
+                tvChatMemberName.setText("Global Broadcast Channel");
+            if (tvChatOnlineStatus != null)
+                tvChatOnlineStatus.setText("All Members");
+            if (viewChatOnlineStatus != null)
+                viewChatOnlineStatus.setVisibility(View.GONE); // No single status
+            if (btnClose != null)
+                btnClose.setVisibility(View.GONE); // Cant close global
+            if (ivAvatar != null)
+                ivAvatar.setImageResource(R.drawable.ic_app_logo); // Use app icon or generic
+        } else {
+            // 👤 PRIVATE CHAT MODE
+            if (tvChatMemberName != null)
+                tvChatMemberName.setText(recipientName);
 
-        // Show default online status (could be enhanced to get actual member status)
-        if (tvChatOnlineStatus != null) {
-            tvChatOnlineStatus.setText("Active now");
-        }
-
-        if (viewChatOnlineStatus != null) {
-            viewChatOnlineStatus.setVisibility(View.VISIBLE);
+            // Show default online status (could be enhanced to get actual member status)
+            if (tvChatOnlineStatus != null)
+                tvChatOnlineStatus.setText("Active now");
+            if (viewChatOnlineStatus != null)
+                viewChatOnlineStatus.setVisibility(View.VISIBLE);
+            if (btnClose != null)
+                btnClose.setVisibility(View.VISIBLE);
+            if (ivAvatar != null)
+                ivAvatar.setImageResource(R.drawable.ic_members); // Use member icon
         }
     }
 }
