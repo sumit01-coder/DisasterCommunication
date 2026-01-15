@@ -767,12 +767,44 @@ public class MainActivityNew extends AppCompatActivity implements
     }
 
     private void showAboutDialog() {
-        String about = "DisasterComm v2.0\n" + "Emergency Network\n\n"
-                + "A mesh networking app for disaster scenarios.\n\n" + "Features:\n" + "• Wi-Fi Direct Mesh\n"
-                + "• Bluetooth Connectivity\n" + "• Emergency SOS\n" + "• Real-time Messaging\n" + "• Location Sharing";
+        String version = "Unknown";
+        try {
+            version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
 
-        new AlertDialog.Builder(this).setTitle("ℹ️ About DisasterComm").setMessage(about)
-                .setPositiveButton("Close", null).show();
+        String aboutText = "DisasterComm v" + version + "\n" + "Emergency Network\n\n"
+                + "A mesh networking app for disaster scenarios.\n\n" + "Features:\n" + "• Wi-Fi Direct Mesh\n"
+                + "• Bluetooth Connectivity\n" + "• Emergency SOS\n" + "• Real-time Messaging\n"
+                + "• Location Sharing\n\n";
+
+        // Create dialog with mutable message
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("ℹ️ About DisasterComm")
+                .setMessage(aboutText + "Latest Version: Checking...")
+                .setPositiveButton("Close", null)
+                .show();
+
+        String finalVersion = version;
+        // Fetch latest version
+        new com.example.disastercomm.utils.UpdateManager(this)
+                .fetchLatestVersion(new com.example.disastercomm.utils.UpdateManager.VersionCallback() {
+                    @Override
+                    public void onVersionFetched(String latestVersion, boolean isNewer) {
+                        if (dialog.isShowing()) {
+                            String status = isNewer ? " (Update Available!)" : " (Up to date)";
+                            dialog.setMessage(aboutText + "Latest Version: " + latestVersion + status);
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        if (dialog.isShowing()) {
+                            dialog.setMessage(aboutText + "Latest Version: Unknown (Offline)");
+                        }
+                    }
+                });
     }
 
     private void setupViewPagerAdapter() {

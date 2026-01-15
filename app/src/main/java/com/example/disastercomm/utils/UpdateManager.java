@@ -267,6 +267,57 @@ public class UpdateManager {
         }
     }
 
+    public interface VersionCallback {
+        void onVersionFetched(String version, boolean isNewer);
+
+        void onError(String error);
+    }
+
+    public void fetchLatestVersion(VersionCallback callback) {
+        new Thread(() -> {
+            try {
+                String apiUrl = "https://api.github.com/repos/" + GITHUB_OWNER + "/" + GITHUB_REPO + "/releases/latest";
+                URL url = new URL(apiUrl);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("User-Agent", "DisasterComm-App");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+
+                if (conn.getResponseCode() == 200) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line);
+                    }
+
+                    JSONObject release = new JSONObject(sb.toString());
+                    String tagName = release.getString("tag_name");
+                    String currentVersion = getAppVersion();
+
+                    // Logic to check if newer
+                    boolean isNewer = !tagName.equalsIgnoreCase(currentVersion)
+                            && !tagName.equals("v" + currentVersion);
+
+                    if (context instanceof android.app.Activity) {
+                        ((android.app.Activity) context)
+                                .runOnUiThread(() -> callback.onVersionFetched(tagName, isNewer));
+                    }
+                } else {
+                    if (context instanceof android.app.Activity) {
+                        ((android.app.Activity) context)
+                                .runOnUiThread(() -> callback.onError("GitHub API: " + conn.getResponseCode()));
+                    }
+                }
+            } catch (Exception e) {
+                if (context instanceof android.app.Activity) {
+                    ((android.app.Activity) context).runOnUiThread(() -> callback.onError(e.getMessage()));
+                }
+            }
+        }).start();
+    }
+
     private void installApk(String path) {
         File file = new File(path);
         if (!file.exists())
