@@ -305,9 +305,10 @@ public class UpdateManager {
                                 .runOnUiThread(() -> callback.onVersionFetched(tagName, isNewer));
                     }
                 } else {
+                    int responseCode = conn.getResponseCode();
                     if (context instanceof android.app.Activity) {
                         ((android.app.Activity) context)
-                                .runOnUiThread(() -> callback.onError("GitHub API: " + conn.getResponseCode()));
+                                .runOnUiThread(() -> callback.onError("GitHub API: " + responseCode));
                     }
                 }
             } catch (Exception e) {
