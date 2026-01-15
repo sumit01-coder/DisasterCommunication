@@ -61,6 +61,7 @@ public class Message {
     public Message() {
     }
 
+    @androidx.room.Ignore
     public Message(String senderId, String senderName, Type type, String content) {
         this.id = UUID.randomUUID().toString();
         this.senderId = senderId;
