@@ -23,93 +23,78 @@
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
+                android:layout_height="wrap_content"
+                android:minHeight="?attr/actionBarSize"
+                android:paddingTop="32dp"
                 android:background="@drawable/gradient_toolbar"
                 android:elevation="4dp"
                 app:titleTextAppearance="@style/TextAppearance.AppCompat.Widget.ActionBar.Title"
                 app:titleTextColor="@color/white">
 
-
-                <LinearLayout
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="8dp">
+
+                    <!-- Guideline for center (Camera Cutout safe zone) -->
+                    <androidx.constraintlayout.widget.Guideline
+                        android:id="@+id/guidelineCenter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        app:layout_constraintGuide_percent="0.5" />
 
                     <!-- Title and subtitle -->
                     <LinearLayout
+                        android:id="@+id/layoutTitle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp" 
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toStartOf="@+id/guidelineCenter"
+                        android:layout_marginEnd="16dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="DisasterComm"
                             android:textColor="@color/white"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:includeFontPadding="false"
+                            android:letterSpacing="0.02"
+                            android:ellipsize="end"
+                            android:maxLines="1"/>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:alpha="0.9"
+                            android:alpha="0.8"
                             android:text="Emergency Network"
                             android:textColor="@color/white"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <!-- Connectivity Status Chips -->
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginEnd="4dp">
-                        
-                        <!-- Bluetooth Status -->
-                        <ImageView
-                            android:id="@+id/ivBluetoothStatus"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/ic_bluetooth_status"
-                            android:layout_marginEnd="4dp"
-                            app:tint="@android:color/holo_green_light"
-                            android:contentDescription="Bluetooth Status"/>
-                        
-                        <!-- WiFi Status -->
-                        <ImageView
-                            android:id="@+id/ivWifiStatus"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/ic_wifi_status"
-                            android:layout_marginEnd="4dp"
-                            app:tint="@android:color/holo_green_light"
-                            android:contentDescription="WiFi Status"/>
-                        
-                        <!-- Location/Nearby Status -->
-                        <ImageView
-                            android:id="@+id/ivNearbyStatus"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/ic_nearby_status"
-                            android:layout_marginEnd="8dp"
-                            app:tint="@android:color/holo_green_light"
-                            android:contentDescription="Location Status"/>
+                            android:textSize="11sp" 
+                            android:layout_marginTop="-2dp"
+                            android:ellipsize="end"
+                            android:maxLines="1"/>
                     </LinearLayout>
 
                     <!-- Update Notification Bell -->
                     <FrameLayout
                         android:id="@+id/frameUpdateIcon"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="8dp"
-                        android:layout_marginEnd="4dp">
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent">
                         
                         <ImageView
                             android:id="@+id/ivUpdateBell"
                             android:layout_width="24dp"
                             android:layout_height="24dp"
+                            android:layout_gravity="center"
                             android:src="@drawable/ic_notification_bell"
                             app:tint="@color/white"
                             android:contentDescription="Updates"/>
@@ -117,14 +102,61 @@
                         <!-- Badge indicator -->
                         <View
                             android:id="@+id/viewUpdateBadge"
-                            android:layout_width="8dp"
-                            android:layout_height="8dp"
+                            android:layout_width="10dp"
+                            android:layout_height="10dp"
                             android:layout_gravity="top|end"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="8dp"
                             android:background="@drawable/circle_background"
                             android:backgroundTint="@android:color/holo_red_light"
                             android:visibility="gone"/>
                     </FrameLayout>
-                </LinearLayout>
+
+                    <!-- Connectivity Status Chips -->
+                    <LinearLayout
+                        android:id="@+id/layoutStatusIcons"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="end|center_vertical"
+                        android:layout_marginEnd="4dp"
+                        android:layout_marginStart="16dp"
+                        app:layout_constraintStart_toEndOf="@+id/guidelineCenter"
+                        app:layout_constraintEnd_toStartOf="@+id/frameUpdateIcon"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent">
+                        
+                        <!-- Bluetooth Status -->
+                        <ImageView
+                            android:id="@+id/ivBluetoothStatus"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@drawable/ic_bluetooth_status"
+                            android:layout_marginEnd="8dp"
+                            app:tint="@android:color/holo_green_light"
+                            android:contentDescription="Bluetooth Status"/>
+                        
+                        <!-- WiFi Status -->
+                        <ImageView
+                            android:id="@+id/ivWifiStatus"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@drawable/ic_wifi_status"
+                            android:layout_marginEnd="8dp"
+                            app:tint="@android:color/holo_green_light"
+                            android:contentDescription="WiFi Status"/>
+                        
+                        <!-- Location/Nearby Status -->
+                        <ImageView
+                            android:id="@+id/ivNearbyStatus"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@drawable/ic_nearby_status"
+                            app:tint="@android:color/holo_green_light"
+                            android:contentDescription="Location Status"/>
+                    </LinearLayout>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.appbar.MaterialToolbar>
 
 
@@ -164,7 +196,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="130dp"
+        android:layout_marginBottom="150dp"
         android:text="SOS"
         android:textColor="@color/white"
         android:textStyle="bold"

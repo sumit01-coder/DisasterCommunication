@@ -19,6 +19,7 @@ public class MemberItem {
     public int hopCount; // Number of hops in mesh network
     public long lastSeenTimestamp; // Timestamp when last seen online
     public boolean isTyping; // Whether user is currently typing
+    public int coverageRange; // Max range in meters for this node's connection type
 
     // Live Location Sharing Fields
     public boolean isLiveSharing = false; // Whether actively sharing live location
@@ -38,6 +39,11 @@ public class MemberItem {
         this.hopCount = 1;
         this.lastSeenTimestamp = System.currentTimeMillis();
         this.isTyping = false;
+
+        // Initialize coverage range based on defaults
+        // Mesh/WiFi Direct: ~500m
+        // Bluetooth: ~30m
+        this.coverageRange = 500;
     }
 
     public String getDistanceText() {

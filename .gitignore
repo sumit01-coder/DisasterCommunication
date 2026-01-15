@@ -8,4 +8,4 @@
 .idea/
 local.properties
 .DS_Store
-/captures/
+/captures/release.keystore

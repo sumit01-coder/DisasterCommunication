@@ -1291,16 +1291,32 @@ public class MainActivityNew extends AppCompatActivity implements
 
     private void addMember(String id, String name, String type) {
         MemberItem member = new MemberItem(id, name);
-        member.signalStrength = type.equals("Bluetooth") ? "medium" : "strong";
         member.connectionSource = type; // ✅ Set connection source
 
-        // ✅ Set connection quality based on signal strength
-        if ("strong".equals(member.signalStrength)) {
-            member.connectionQuality = 90 + (int) (Math.random() * 10); // 90-100%
-        } else if ("medium".equals(member.signalStrength)) {
-            member.connectionQuality = 60 + (int) (Math.random() * 20); // 60-80%
+        // Initialize coverage range and default signal
+        if ("Bluetooth".equalsIgnoreCase(type)) {
+            member.coverageRange = 30; // 30m for Bluetooth
         } else {
-            member.connectionQuality = 30 + (int) (Math.random() * 30); // 30-60%
+            member.coverageRange = 500; // 500m for Mesh/WiFi Direct
+        }
+
+        // Initial signal calculation (mock distance if 0)
+        if (member.distance == 0) {
+            member.distance = (int) (Math.random() * (member.coverageRange * 0.8)); // Random distance within 80% of
+                                                                                    // range
+        }
+
+        // Calculate signal quality based on coverage range
+        int signalPercentage = (int) ((1.0 - (double) member.distance / member.coverageRange) * 100);
+        signalPercentage = Math.max(0, Math.min(100, signalPercentage)); // Clamp 0-100
+        member.connectionQuality = signalPercentage;
+
+        if (signalPercentage >= 75) {
+            member.signalStrength = "Strong";
+        } else if (signalPercentage >= 35) {
+            member.signalStrength = "Medium";
+        } else {
+            member.signalStrength = "Weak";
         }
 
         // ✅ Load unread count from MessageCounter
@@ -1360,7 +1376,26 @@ public class MainActivityNew extends AppCompatActivity implements
         MapFragment mapFragment = pagerAdapter.getMapFragment();
         if (mapFragment != null) {
             mapFragment.updateBluetoothStatus(bluetoothDeviceMap.size(), true);
-            mapFragment.updateSignalQuality(connectedMembers.size() > 0 ? "Strong" : "Weak", "~500m range");
+
+            if (connectedMembers.isEmpty()) {
+                mapFragment.updateSignalQuality("Weak", "~0m range");
+            } else {
+                // Find the member with the best connection quality
+                MemberItem bestMember = null;
+                for (MemberItem member : connectedMembers.values()) {
+                    if (bestMember == null || member.connectionQuality > bestMember.connectionQuality) {
+                        bestMember = member;
+                    }
+                }
+
+                if (bestMember != null) {
+                    String rangeText = "~" + bestMember.coverageRange + "m range";
+                    Log.d("DisasterApp",
+                            "📊 Update Signal Card: " + bestMember.signalStrength + " (" + rangeText + ")"); // DEBUG
+                                                                                                             // LOG
+                    mapFragment.updateSignalQuality(bestMember.signalStrength, rangeText);
+                }
+            }
         }
     }
 
@@ -1372,7 +1407,29 @@ public class MainActivityNew extends AppCompatActivity implements
                     float[] results = new float[1];
                     Location.distanceBetween(myLat, myLng, member.latitude, member.longitude, results);
                     member.distance = (int) results[0];
+
+                    // ✅ Recalculate signal quality based on new distance
+                    if (member.coverageRange > 0) {
+                        int signalPercentage = (int) ((1.0 - (double) member.distance / member.coverageRange) * 100);
+                        signalPercentage = Math.max(0, Math.min(100, signalPercentage)); // Clamp 0-100
+
+                        Log.d("DisasterApp", "📡 Signal Calc - Member: " + member.name +
+                                ", Dist: " + member.distance + "m, Range: " + member.coverageRange +
+                                "m, Quality: " + signalPercentage + "%"); // DEBUG LOG
+
+                        member.connectionQuality = signalPercentage;
+
+                        if (signalPercentage >= 75) {
+                            member.signalStrength = "Strong";
+                        } else if (signalPercentage >= 35) {
+                            member.signalStrength = "Medium";
+                        } else {
+                            member.signalStrength = "Weak";
+                        }
+                    }
+
                     updateMembersFragment();
+                    updateMapStatusCards(); // Refresh signal card
                 }
             });
         }
