@@ -172,6 +172,35 @@ Fill this out after testing:
 
 ---
 
+## ✅ Test 6: Private Chat UI & Message Assurance (New Features)
+
+**Tests rich status display and message delivery receipts**
+
+### Steps:
+1. Connect two devices (Device A and Device B).
+2. On Device A, open the **Members** tab and click on Device B.
+3. Verify the **Chat Header** on Device A:
+   - Name matches Device B.
+   - Status shows "Active now" or "Last seen...".
+   - **Connection Icon** is correct (📡 for Mesh/WiFi, 🔵 for Bluetooth).
+   - **Signal Strength** is displayed (e.g., "Signal: strong").
+4. Send a message from Device A to Device B.
+5. Watch the message bubble on Device A.
+
+### Expected Results:
+1. **Header UI**: accurately reflects the connection type and signal.
+2. **Message Ticks**:
+   - Initially **Single Tick (✓)**: Message sent from Device A.
+   - Quickly changes to **Double Tick (✓✓)**: Delivery confirmation received from Device B.
+   - (Optional) If read receipts are enabled, checks for Blue Ticks.
+
+### Logcat Check (Device A):
+```
+ChatFragment: ✅ Updated status for msg [id] to DELIVERED
+```
+
+---
+
 ## 🎯 Expected Outcome
 
 **If messaging works:**

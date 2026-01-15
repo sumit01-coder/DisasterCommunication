@@ -604,7 +604,8 @@ public class MainActivityNew extends AppCompatActivity implements
         if (pagerAdapter != null) {
             ChatFragment chatFrag = pagerAdapter.getChatFragment();
             if (chatFrag != null) {
-                chatFrag.setRecipient(member.id, member.name);
+                // ✅ Use new method to pass full member details
+                chatFrag.setRecipient(member);
                 Log.d("DisasterApp", "   → Set chat recipient: " + member.name);
 
                 // 3. Clear unread count for this member
@@ -1126,19 +1127,13 @@ public class MainActivityNew extends AppCompatActivity implements
                 addMember(message.senderId, message.senderName, source);
             }
 
-            // Handle delivery receipts
-            if (message.type == Message.Type.DELIVERY_RECEIPT) {
-                if (chatFragment != null && chatFragment.getChatAdapter() != null && message.receiptFor != null) {
-                    chatFragment.getChatAdapter().updateMessageStatus(message.receiptFor, Message.Status.DELIVERED);
-                    notificationSoundManager.playDeliverySound();
-                }
-                return;
-            }
-
-            // Handle read receipts
-            if (message.type == Message.Type.READ_RECEIPT) {
-                if (chatFragment != null && chatFragment.getChatAdapter() != null && message.receiptFor != null) {
-                    chatFragment.getChatAdapter().updateMessageStatus(message.receiptFor, Message.Status.READ);
+            // ✅ Handle delivery/read receipts via ChatFragment
+            if (message.type == Message.Type.DELIVERY_RECEIPT || message.type == Message.Type.READ_RECEIPT) {
+                if (chatFragment != null) {
+                    chatFragment.processReceivedMessage(message);
+                    if (message.type == Message.Type.DELIVERY_RECEIPT) {
+                        notificationSoundManager.playDeliverySound();
+                    }
                 }
                 return;
             }
@@ -1188,7 +1183,8 @@ public class MainActivityNew extends AppCompatActivity implements
 
                 // SOS always goes to global chat
                 if (chatFragment != null && chatFragment.getRecipientId() == null) {
-                    chatFragment.addMessage(message);
+                    // Use centralized method
+                    chatFragment.processReceivedMessage(message);
                 }
             } else if (message.type == Message.Type.TEXT) {
                 // ✅ FIX: Handle private messages correctly
@@ -1206,7 +1202,7 @@ public class MainActivityNew extends AppCompatActivity implements
                     if (isGlobalMessage) {
                         // Global message - show in global chat only
                         if (currentRecipientId == null) {
-                            chatFragment.addMessage(message);
+                            chatFragment.processReceivedMessage(message);
                             Log.d("DisasterApp", "✅ Added GLOBAL message to chat");
                         }
                     } else {
@@ -1221,7 +1217,7 @@ public class MainActivityNew extends AppCompatActivity implements
 
                         // Display if viewing the correct private chat
                         if (chatPartnerId != null && chatPartnerId.equals(currentRecipientId)) {
-                            chatFragment.addMessage(message);
+                            chatFragment.processReceivedMessage(message);
                             MessageDebugHelper.logMessageRouting(message.id, currentRecipientId, chatPartnerId, true);
                             Log.d("DisasterApp", "✅ Added PRIVATE message to member chat with " + chatPartnerId);
 

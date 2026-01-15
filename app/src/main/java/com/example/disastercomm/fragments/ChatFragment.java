@@ -37,11 +37,26 @@ public class ChatFragment extends Fragment {
     private MessageCache messageCache; // ✅ Message cache
     private String myId; // ✅ My device ID
     private View chatHeader; // ✅ Chat header for private messages
+    private com.example.disastercomm.models.MemberItem currentRecipient; // ✅ Full member object for status
 
     public void setRecipient(String id, String name) {
         this.recipientId = id;
         this.recipientName = name;
-        android.util.Log.d("ChatFragment", "📝 Recipient set: " + name + " (" + id + ")");
+        // If we don't have the full object yet, we'll try to get it later or just use
+        // what we have
+        android.util.Log.d("ChatFragment", "📝 Recipient set (Legacy): " + name + " (" + id + ")");
+    }
+
+    public void setRecipient(com.example.disastercomm.models.MemberItem member) {
+        this.currentRecipient = member;
+        this.recipientId = member.id;
+        this.recipientName = member.name;
+        android.util.Log.d("ChatFragment", "📝 Recipient set (Rich): " + member.name);
+
+        // Update header immediately if visible
+        if (isAdded() && isVisible()) {
+            updateChatHeader();
+        }
     }
 
     public String getRecipientId() {
@@ -252,6 +267,32 @@ public class ChatFragment extends Fragment {
         }
     }
 
+    /**
+     * ✅ Handle incoming messages (including receipts)
+     */
+    public void processReceivedMessage(Message message) {
+        if (!isAdded())
+            return;
+
+        requireActivity().runOnUiThread(() -> {
+            // 1. Handle Receipts (Visual Confirmation)
+            if (message.type == Message.Type.DELIVERY_RECEIPT || message.type == Message.Type.READ_RECEIPT) {
+                if (chatAdapter != null && message.receiptFor != null) {
+                    Message.Status status = (message.type == Message.Type.READ_RECEIPT) ? Message.Status.READ
+                            : Message.Status.DELIVERED;
+
+                    chatAdapter.updateMessageStatus(message.receiptFor, status);
+                    android.util.Log.d("ChatFragment",
+                            "✅ Updated status for msg " + message.receiptFor + " to " + status);
+                }
+                return; // Don't show receipts as text bubbles
+            }
+
+            // 2. Handle Normal Messages
+            addMessage(message);
+        });
+    }
+
     public ChatAdapter getChatAdapter() {
         return chatAdapter;
     }
@@ -384,8 +425,10 @@ public class ChatFragment extends Fragment {
             return; // Already global
 
         android.util.Log.d("ChatFragment", "🔄 Switching to GLOBAL CHAT");
+        android.util.Log.d("ChatFragment", "🔄 Switching to GLOBAL CHAT");
         recipientId = null;
         recipientName = null;
+        currentRecipient = null; // Clear rich object
 
         etMessage.setHint("Broadcast to everyone...");
         updateChatHeader();
@@ -426,11 +469,48 @@ public class ChatFragment extends Fragment {
             if (tvChatMemberName != null)
                 tvChatMemberName.setText(recipientName);
 
-            // Show default online status (could be enhanced to get actual member status)
-            if (tvChatOnlineStatus != null)
-                tvChatOnlineStatus.setText("Active now");
-            if (viewChatOnlineStatus != null)
-                viewChatOnlineStatus.setVisibility(View.VISIBLE);
+            // ✅ RICH STATUS DISPLAY
+            if (currentRecipient != null) {
+                // Online/Offline status
+                if (tvChatOnlineStatus != null) {
+                    if (currentRecipient.isOnline) {
+                        tvChatOnlineStatus.setText("Active now");
+                        tvChatOnlineStatus.setTextColor(getResources().getColor(R.color.status_connected, null));
+                        if (viewChatOnlineStatus != null)
+                            viewChatOnlineStatus.setVisibility(View.VISIBLE);
+                    } else {
+                        tvChatOnlineStatus.setText(currentRecipient.getLastSeenText());
+                        tvChatOnlineStatus.setTextColor(getResources().getColor(R.color.text_secondary, null));
+                        if (viewChatOnlineStatus != null)
+                            viewChatOnlineStatus.setVisibility(View.GONE);
+                    }
+                }
+
+                // Connection Info (Source & Signal)
+                TextView tvConnectionIcon = chatHeader.findViewById(R.id.tvChatConnectionIcon);
+                TextView tvConnectionType = chatHeader.findViewById(R.id.tvChatConnectionType);
+                TextView tvConnectionQuality = chatHeader.findViewById(R.id.tvChatConnectionQuality);
+
+                if (tvConnectionIcon != null)
+                    tvConnectionIcon.setText(currentRecipient.getConnectionIcon());
+                if (tvConnectionType != null)
+                    tvConnectionType.setText(currentRecipient.connectionSource);
+
+                if (tvConnectionQuality != null) {
+                    tvConnectionQuality.setText("Signal: " + currentRecipient.signalStrength);
+                    try {
+                        tvConnectionQuality.setTextColor(
+                                android.graphics.Color.parseColor(currentRecipient.getSignalBadgeColor()));
+                    } catch (Exception e) {
+                    }
+                }
+
+            } else {
+                // Fallback if we only have name/ID
+                if (tvChatOnlineStatus != null)
+                    tvChatOnlineStatus.setText("Offline");
+            }
+
             if (btnClose != null)
                 btnClose.setVisibility(View.VISIBLE);
             if (ivAvatar != null)
