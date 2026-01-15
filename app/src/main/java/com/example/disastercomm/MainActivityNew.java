@@ -150,6 +150,12 @@ public class MainActivityNew extends AppCompatActivity implements
                                               // messages
     private com.example.disastercomm.utils.NotificationHelper notificationHelper;
     private com.example.disastercomm.utils.MessageCounter messageCounter; // ✅ Track unread messages
+    private com.example.disastercomm.utils.ConnectivityStatusManager connectivityStatusManager;
+
+    // Status UI Elements
+    private ImageView ivBluetoothStatus, ivWifiStatus, ivNearbyStatus;
+    private ImageView ivUpdateBell;
+    private View viewUpdateBadge;
 
     private static final int PERMISSION_REQUEST_CODE = 123;
 
@@ -210,8 +216,8 @@ public class MainActivityNew extends AppCompatActivity implements
         // Handle notification clicks
         handleIntent(getIntent());
 
-        // Auto-check for updates (Silent)
-        new com.example.disastercomm.utils.UpdateManager(this).checkForUpdates(true);
+        // Auto-check for updates and show badge if available
+        checkForUpdatesWithBadge();
 
         Log.d("DisasterApp", "✅ MAIN ACTIVITY ONCREATE COMPLETED");
     }
@@ -367,14 +373,25 @@ public class MainActivityNew extends AppCompatActivity implements
         viewPager = findViewById(R.id.viewPager);
         bottomNav = findViewById(R.id.bottomNav);
         fabSos = findViewById(R.id.fabSos);
-        tvConnectionStatus = findViewById(R.id.tvConnectionStatus);
-        viewStatusDot = findViewById(R.id.viewStatusDot);
+
+        // Status indicators
+        ivBluetoothStatus = findViewById(R.id.ivBluetoothStatus);
+        ivWifiStatus = findViewById(R.id.ivWifiStatus);
+        ivNearbyStatus = findViewById(R.id.ivNearbyStatus);
+        ivUpdateBell = findViewById(R.id.ivUpdateBell);
+        viewUpdateBadge = findViewById(R.id.viewUpdateBadge);
 
         // Setup ViewPager
         viewPager.setUserInputEnabled(true); // Allow swipe
 
         // Setup Drawer
         setupNavigationDrawer();
+
+        // Setup connectivity status monitoring
+        setupConnectivityStatus();
+
+        // Setup update notification
+        setupUpdateNotification();
     }
 
     private void setupNavigationDrawer() {
@@ -517,6 +534,12 @@ public class MainActivityNew extends AppCompatActivity implements
                 if (tvUserInitial != null && username != null && !username.isEmpty())
                     tvUserInitial.setText(username.substring(0, 1).toUpperCase());
             }
+        }
+
+        // Update connectivity status
+        if (connectivityStatusManager != null) {
+            connectivityStatusManager.startMonitoring();
+            updateConnectivityIcons();
         }
     }
 
@@ -1489,6 +1512,103 @@ public class MainActivityNew extends AppCompatActivity implements
                 }
             } catch (Exception e) {
                 Log.e("DisasterApp", "❌ SYNC: Failed to sync history", e);
+            }
+        });
+    }
+
+    private void setupConnectivityStatus() {
+        connectivityStatusManager = new com.example.disastercomm.utils.ConnectivityStatusManager(this);
+
+        // Set up click listeners for status icons
+        ivBluetoothStatus.setOnClickListener(v -> {
+            if (!connectivityStatusManager.isBluetoothEnabled()) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Bluetooth Disabled")
+                        .setMessage("Bluetooth is required for mesh networking. Enable it now?")
+                        .setPositiveButton("Enable",
+                                (dialog, which) -> connectivityStatusManager.requestEnableBluetooth(this))
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+        });
+
+        ivWifiStatus.setOnClickListener(v -> {
+            if (!connectivityStatusManager.isWifiEnabled()) {
+                new AlertDialog.Builder(this)
+                        .setTitle("WiFi Disabled")
+                        .setMessage("WiFi enhances connectivity. Enable it now?")
+                        .setPositiveButton("Enable", (dialog, which) -> connectivityStatusManager.requestEnableWifi())
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+        });
+
+        ivNearbyStatus.setOnClickListener(v -> {
+            if (!connectivityStatusManager.isLocationEnabled()) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Location Disabled")
+                        .setMessage("Location services are required for Nearby Connections. Enable it now?")
+                        .setPositiveButton("Enable",
+                                (dialog, which) -> connectivityStatusManager.requestEnableLocation(this))
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+        });
+
+        // Set listener for status changes
+        connectivityStatusManager.setListener(this::updateConnectivityIcons);
+
+        // Initial update
+        updateConnectivityIcons();
+    }
+
+    private void updateConnectivityIcons() {
+        runOnUiThread(() -> {
+            // Bluetooth
+            boolean btEnabled = connectivityStatusManager.isBluetoothEnabled();
+            ivBluetoothStatus.setImageTintList(android.content.res.ColorStateList.valueOf(
+                    btEnabled ? android.graphics.Color.parseColor("#4CAF50")
+                            : android.graphics.Color.parseColor("#F44336")));
+
+            // WiFi
+            boolean wifiEnabled = connectivityStatusManager.isWifiEnabled();
+            ivWifiStatus.setImageTintList(android.content.res.ColorStateList.valueOf(
+                    wifiEnabled ? android.graphics.Color.parseColor("#4CAF50")
+                            : android.graphics.Color.parseColor("#F44336")));
+
+            // Location/Nearby
+            boolean locationEnabled = connectivityStatusManager.isLocationEnabled();
+            ivNearbyStatus.setImageTintList(android.content.res.ColorStateList.valueOf(
+                    locationEnabled ? android.graphics.Color.parseColor("#4CAF50")
+                            : android.graphics.Color.parseColor("#F44336")));
+        });
+    }
+
+    private void setupUpdateNotification() {
+        ivUpdateBell.setOnClickListener(v -> showAboutDialog());
+        viewUpdateBadge.setVisibility(View.GONE);
+    }
+
+    private void checkForUpdatesWithBadge() {
+        com.example.disastercomm.utils.UpdateManager updateManager = new com.example.disastercomm.utils.UpdateManager(
+                this);
+
+        updateManager.fetchLatestVersion(new com.example.disastercomm.utils.UpdateManager.VersionCallback() {
+            @Override
+            public void onVersionFetched(String version, boolean isNewer) {
+                if (isNewer && viewUpdateBadge != null) {
+                    viewUpdateBadge.setVisibility(View.VISIBLE);
+                } else if (!isNewer && viewUpdateBadge != null) {
+                    viewUpdateBadge.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                // Silently fail - just hide badge
+                if (viewUpdateBadge != null) {
+                    viewUpdateBadge.setVisibility(View.GONE);
+                }
             }
         });
     }

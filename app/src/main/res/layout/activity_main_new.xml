@@ -29,6 +29,7 @@
                 app:titleTextAppearance="@style/TextAppearance.AppCompat.Widget.ActionBar.Title"
                 app:titleTextColor="@color/white">
 
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -59,34 +60,73 @@
                             android:textSize="12sp" />
                     </LinearLayout>
 
-                    <!-- Connected status badge -->
+                    <!-- Connectivity Status Chips -->
                     <LinearLayout
-                        android:id="@+id/layoutConnectionStatus"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="8dp">
+                        android:layout_marginEnd="4dp">
+                        
+                        <!-- Bluetooth Status -->
+                        <ImageView
+                            android:id="@+id/ivBluetoothStatus"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_bluetooth_status"
+                            android:layout_marginEnd="4dp"
+                            app:tint="@android:color/holo_green_light"
+                            android:contentDescription="Bluetooth Status"/>
+                        
+                        <!-- WiFi Status -->
+                        <ImageView
+                            android:id="@+id/ivWifiStatus"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_wifi_status"
+                            android:layout_marginEnd="4dp"
+                            app:tint="@android:color/holo_green_light"
+                            android:contentDescription="WiFi Status"/>
+                        
+                        <!-- Location/Nearby Status -->
+                        <ImageView
+                            android:id="@+id/ivNearbyStatus"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_nearby_status"
+                            android:layout_marginEnd="8dp"
+                            app:tint="@android:color/holo_green_light"
+                            android:contentDescription="Location Status"/>
+                    </LinearLayout>
 
+                    <!-- Update Notification Bell -->
+                    <FrameLayout
+                        android:id="@+id/frameUpdateIcon"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:layout_marginEnd="4dp">
+                        
+                        <ImageView
+                            android:id="@+id/ivUpdateBell"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_notification_bell"
+                            app:tint="@color/white"
+                            android:contentDescription="Updates"/>
+                        
+                        <!-- Badge indicator -->
                         <View
-                            android:id="@+id/viewStatusDot"
+                            android:id="@+id/viewUpdateBadge"
                             android:layout_width="8dp"
                             android:layout_height="8dp"
-                            android:layout_marginEnd="6dp"
+                            android:layout_gravity="top|end"
                             android:background="@drawable/circle_background"
-                            android:backgroundTint="@color/connected_green" />
-
-                        <TextView
-                            android:id="@+id/tvConnectionStatus"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Connected"
-                            android:textColor="@color/white"
-                            android:textSize="14sp" />
-                    </LinearLayout>
+                            android:backgroundTint="@android:color/holo_red_light"
+                            android:visibility="gone"/>
+                    </FrameLayout>
                 </LinearLayout>
             </com.google.android.material.appbar.MaterialToolbar>
+
 
             <!-- ViewPager2 for fragments -->
             <androidx.viewpager2.widget.ViewPager2
