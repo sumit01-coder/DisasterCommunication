@@ -38,8 +38,18 @@ public class UpdateManager {
         this.context = context;
     }
 
+    private boolean isSilentCheck = false;
+    private static final String NOTIFICATION_CHANNEL_ID = "update_channel";
+
     public void checkForUpdates() {
-        Toast.makeText(context, "Checking for updates...", Toast.LENGTH_SHORT).show();
+        checkForUpdates(false);
+    }
+
+    public void checkForUpdates(boolean isSilent) {
+        this.isSilentCheck = isSilent;
+        if (!isSilent) {
+            Toast.makeText(context, "Checking for updates...", Toast.LENGTH_SHORT).show();
+        }
         new CheckUpdateTask().execute();
     }
 
@@ -101,19 +111,30 @@ public class UpdateManager {
 
                     // Simple string comparison (Assume tag_name starts with 'v')
                     if (!tagName.equalsIgnoreCase(currentVersion) && !tagName.equals("v" + currentVersion)) {
-                        showUpdateDialog(tagName, body, downloadUrl);
+                        if (isSilentCheck) {
+                            sendUpdateNotification(tagName, body, downloadUrl);
+                        } else {
+                            showUpdateDialog(tagName, body, downloadUrl);
+                        }
                     } else {
-                        Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show();
+                        if (!isSilentCheck) {
+                            Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show();
+                        }
                     }
 
                 } catch (Exception e) {
                     Log.e(TAG, "Parsing update failed", e);
-                    Toast.makeText(context, "Failed to parse update info", Toast.LENGTH_SHORT).show();
+                    if (!isSilentCheck) {
+                        Toast.makeText(context, "Failed to parse update info", Toast.LENGTH_SHORT).show();
+                    }
                 }
             } else {
                 String error = (result != null && result.startsWith("ERROR:")) ? result.substring(7) : "Check failed";
                 // Only show toast for explicit errors, maybe optional even then
                 Log.w(TAG, "Update error: " + error);
+                if (!isSilentCheck) {
+                    Toast.makeText(context, "Update check failed: " + error, Toast.LENGTH_SHORT).show();
+                }
             }
         }
     }
@@ -134,6 +155,50 @@ public class UpdateManager {
                 .setPositiveButton("Update Now", (dialog, which) -> new DownloadTask().execute(downloadUrl))
                 .setNegativeButton("Later", null)
                 .show();
+    }
+
+    private void sendUpdateNotification(String version, String notes, String downloadUrl) {
+        android.app.NotificationManager notificationManager = (android.app.NotificationManager) context
+                .getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.app.NotificationChannel channel = new android.app.NotificationChannel(
+                    NOTIFICATION_CHANNEL_ID,
+                    "Software Updates",
+                    android.app.NotificationManager.IMPORTANCE_DEFAULT);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        // PendingIntent to launch SettingsActivity (or directly trigger update, but
+        // settings is safer/simpler for now)
+        // Ideally, we could show the dialog directly, but starting activities from
+        // background is restricted.
+        // So let's open SettingsActivity where they can click "Check for Updates"
+        // manually, OR we launch a translucent activity.
+        // For simplicity, let's open SettingsActivity for now, or even better, send a
+        // broadcast or open the dialog if app is in foreground.
+        // Let's just open the app to the main screen or settings.
+
+        Intent intent = new Intent(context, com.example.disastercomm.SettingsActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
+                context, 0, intent, android.app.PendingIntent.FLAG_ONE_SHOT | android.app.PendingIntent.FLAG_IMMUTABLE);
+
+        android.app.Notification.Builder builder;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            builder = new android.app.Notification.Builder(context, NOTIFICATION_CHANNEL_ID);
+        } else {
+            builder = new android.app.Notification.Builder(context);
+        }
+
+        builder.setContentTitle("New Update Available: " + version)
+                .setContentText("Tap to update to the latest version.")
+                .setSmallIcon(android.R.drawable.stat_sys_download) // Use app icon or generic download
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent);
+
+        notificationManager.notify(1001, builder.build());
     }
 
     private class DownloadTask extends AsyncTask<String, Integer, String> {

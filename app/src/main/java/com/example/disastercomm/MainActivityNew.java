@@ -210,6 +210,9 @@ public class MainActivityNew extends AppCompatActivity implements
         // Handle notification clicks
         handleIntent(getIntent());
 
+        // Auto-check for updates (Silent)
+        new com.example.disastercomm.utils.UpdateManager(this).checkForUpdates(true);
+
         Log.d("DisasterApp", "✅ MAIN ACTIVITY ONCREATE COMPLETED");
     }
 
