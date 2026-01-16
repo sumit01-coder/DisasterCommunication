@@ -199,6 +199,10 @@ public class BLEAdvertiser {
         }
 
         gattServer = bluetoothManager.openGattServer(context, gattServerCallback);
+        if (gattServer == null) {
+            Log.e(TAG, "❌ Failed to open GATT Server! BLE features may be limited.");
+            return;
+        }
 
         // Create service
         BluetoothGattService service = new BluetoothGattService(
