@@ -99,7 +99,9 @@ public class BLEHubClient {
             return;
         }
 
-        rxChar.setValue(message.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        // ESP32 code expects '\n' as a delimiter
+        String payload = message + "\n";
+        rxChar.setValue(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         rxChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE); // Faster for ESP32
         bluetoothGatt.writeCharacteristic(rxChar);
     }
