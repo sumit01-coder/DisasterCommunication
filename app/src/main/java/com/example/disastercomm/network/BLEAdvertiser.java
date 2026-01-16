@@ -177,6 +177,13 @@ public class BLEAdvertiser {
                 .setServiceUuid(new ParcelUuid(SERVICE_UUID))
                 .build());
 
+        // ✅ ALSO SCAN FOR ESP32 HUB (Nordic UART Service)
+        // UUID must match ESP32_Hub.ino and BLEHubClient.java
+        // 6E400001-B5A3-F393-E0A9-E50E24DCCA9E
+        filters.add(new ScanFilter.Builder()
+                .setServiceUuid(new ParcelUuid(java.util.UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")))
+                .build());
+
         scanner.startScan(filters, scanSettings, scanCallback);
         isScanning = true;
         Log.d(TAG, "BLE scanning started");
