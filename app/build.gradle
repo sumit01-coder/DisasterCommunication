@@ -10,8 +10,8 @@ android {
         applicationId "com.example.disastercomm"
         minSdk 24 // Nearby Connections requires 21+, but 24 is a safe modern baseline
         targetSdk 35
-        versionCode 14
-        versionName "2.7.3"
+        versionCode 16
+        versionName "2.7.5"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

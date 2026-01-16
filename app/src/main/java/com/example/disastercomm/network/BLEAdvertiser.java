@@ -99,16 +99,33 @@ public class BLEAdvertiser {
                 .setTimeout(0) // Advertise indefinitely
                 .build();
 
-        // OPTIMIZED: Embed device info in advertisement data
-        byte[] deviceInfoPayload = buildDeviceInfoPayload();
+        // OPTIMIZED: Fix for DATA_TOO_LARGE (Error 1)
+        // 1. Packet 1: Service UUID (Critical for discovery)
         AdvertiseData data = new AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
-                .addServiceUuid(new ParcelUuid(SERVICE_UUID))
-                .addServiceData(new ParcelUuid(SERVICE_UUID), deviceInfoPayload) // ✅ Device ID embedded
+                .setIncludeDeviceName(false) // Disable System Name (e.g. "Samsung Galaxy S23 Ultra...")
+                .addServiceUuid(new ParcelUuid(SERVICE_UUID)) // 128-bit UUID (18 bytes)
                 .build();
 
-        advertiser.startAdvertising(settings, data, advertiseCallback);
-        Log.d(TAG, "BLE advertising started");
+        // 2. Packet 2: App Username (Custom Name)
+        // We use Manufacturer Data to store the custom name "Amit" because
+        // setIncludeDeviceName uses the system adapter name.
+        byte[] nameBytes = deviceName.getBytes(StandardCharsets.UTF_8);
+
+        // Truncate to safe limit (e.g. 20 bytes) to fit in 31 byte payload
+        // 31 - 2 (Header) - 2 (Mfg ID) = 27 bytes max. Safe = 20.
+        if (nameBytes.length > 20) {
+            byte[] truncated = new byte[20];
+            System.arraycopy(nameBytes, 0, truncated, 0, 20);
+            nameBytes = truncated;
+        }
+
+        AdvertiseData scanResponse = new AdvertiseData.Builder()
+                .setIncludeDeviceName(false) // Disable System Name
+                .addManufacturerData(0xFFFF, nameBytes) // 0xFFFF = Test/Reserved ID
+                .build();
+
+        advertiser.startAdvertising(settings, data, scanResponse, advertiseCallback);
+        Log.d(TAG, "BLE advertising started with Custom Name: " + deviceName);
     }
 
     public void stopAdvertising() {
@@ -253,12 +270,22 @@ public class BLEAdvertiser {
             }
 
             BluetoothDevice device = result.getDevice();
-            String name = device.getName();
+            String name = device.getName(); // System Name
             String address = device.getAddress();
             int rssi = result.getRssi();
 
+            // Check for Custom Name in Manufacturer Data (0xFFFF)
+            // This is how we send names now to avoid DATA_TOO_LARGE errors
+            if (result.getScanRecord() != null) {
+                byte[] customNameBytes = result.getScanRecord().getManufacturerSpecificData(0xFFFF);
+                if (customNameBytes != null) {
+                    name = new String(customNameBytes, StandardCharsets.UTF_8).trim(); // Override with custom name
+                }
+            }
+
             if (name != null && callback != null) {
-                Log.d(TAG, "BLE device found: " + name + " (" + address + "), RSSI: " + rssi);
+                // Log.d(TAG, "BLE device found: " + name + " (" + address + "), RSSI: " +
+                // rssi);
                 callback.onBLEDeviceFound(address, name, rssi);
             }
         }
