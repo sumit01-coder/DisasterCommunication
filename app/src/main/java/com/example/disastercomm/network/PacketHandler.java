@@ -25,6 +25,7 @@ public class PacketHandler {
 
     private final MeshNetworkManager meshNetworkManager;
     private BluetoothConnectionManager bluetoothManager; // Optional, can be null
+    private BLEHubClient bleHubClient; // Optional, for ESP32-S3 Hub
     private final Gson gson;
     private final Set<String> seenMessageIds;
     private MessageListener messageListener;
@@ -72,6 +73,10 @@ public class PacketHandler {
 
     public void setBluetoothManager(BluetoothConnectionManager btManager) {
         this.bluetoothManager = btManager;
+    }
+
+    public void setBleHubClient(BLEHubClient hubClient) {
+        this.bleHubClient = hubClient;
     }
 
     public void setMessageListener(MessageListener listener) {
@@ -318,8 +323,9 @@ public class PacketHandler {
             // ✅ CHECK CONNECTIVITY before sending
             boolean isMeshConnected = meshNetworkManager != null && meshNetworkManager.isConnected(); // Check mesh
             boolean isBtConnected = bluetoothManager != null && bluetoothManager.isConnected(); // Check BT
+            boolean isHubConnected = bleHubClient != null && bleHubClient.isConnected(); // Check Hub
 
-            if (!isMeshConnected && !isBtConnected) {
+            if (!isMeshConnected && !isBtConnected && !isHubConnected) {
                 Log.d(TAG, "⚠️ No connection! Adding to OFFLINE QUEUE: " + toSend.id);
                 // Queue message
                 offlineQueue.enqueue(toSend);
@@ -349,6 +355,11 @@ public class PacketHandler {
         // Send via Bluetooth if available
         if (bluetoothManager != null) {
             bluetoothManager.broadcastData(bytes);
+        }
+
+        // Send via BLE Hub (ESP32)
+        if (bleHubClient != null && bleHubClient.isConnected()) {
+            bleHubClient.sendData(json); // Hub expects String
         }
     }
 

@@ -20,6 +20,7 @@ import com.example.disastercomm.network.MeshNetworkManager;
 import com.example.disastercomm.network.NetworkStateMonitor;
 import com.example.disastercomm.network.PacketHandler;
 import com.example.disastercomm.network.BLEAdvertiser;
+import com.example.disastercomm.network.BLEHubClient; // New Hub Client
 import com.example.disastercomm.utils.DeviceUtil;
 import com.example.disastercomm.utils.NotificationHelper;
 import com.example.disastercomm.utils.NotificationSoundManager;
@@ -36,6 +37,7 @@ public class NetworkService extends Service {
     private MeshNetworkManager meshNetworkManager;
     private BluetoothConnectionManager bluetoothConnectionManager;
     private BLEAdvertiser bleAdvertiser;
+    private BLEHubClient bleHubClient; // Hub Client
     private PacketHandler packetHandler;
     private NetworkStateMonitor networkStateMonitor;
     private NotificationSoundManager notificationSoundManager;
@@ -129,6 +131,34 @@ public class NetworkService extends Service {
                 });
         packetHandler.setBluetoothManager(bluetoothConnectionManager);
 
+        // 3.5 BLE Hub Client (For ESP32-S3)
+        bleHubClient = new BLEHubClient(this, new BLEHubClient.HubCallback() {
+
+            @Override
+            public void onHubConnected(String address, String deviceName) {
+                broadcastUpdate("BT_CONNECTED", address, deviceName); // Treat as BT connection
+            }
+
+            @Override
+            public void onHubDisconnected() {
+                // Determine ID? We just broadcast unknown or generic
+                broadcastUpdate("BT_DISCONNECTED", "Hub", null);
+            }
+
+            @Override
+            public void onHubMessageReceived(String message) {
+                if (packetHandler != null) {
+                    // Hub sends raw processing logic, maybe JSON lines?
+                    // The ESP32 code sends "WiFi" or "BLE" prefixed strings or raw JSON?
+                    // Looking at ESP32: pTxCharacteristic->setValue((uint8_t*)toSend.c_str()...
+                    // It sends whatever it receives.
+                    // If it's a JSON string, handlePayload expects byte[]
+                    packetHandler.handlePayload("Hub", message.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+            }
+        });
+        packetHandler.setBleHubClient(bleHubClient);
+
         // 4. BLE Advertiser (Fast Discovery)
         bleAdvertiser = new BLEAdvertiser(this, username, DeviceUtil.getDeviceId(this),
                 new BLEAdvertiser.BLECallback() {
@@ -136,6 +166,15 @@ public class NetworkService extends Service {
                     public void onBLEDeviceFound(String address, String name, int rssi) {
                         Log.d(TAG, "BLE Device Found: " + name + " (" + address + ")");
                         // Trigger fast pairing via Classic Bluetooth
+                        if (name != null && name.contains("DisasterComm_S3")) {
+                            Log.d(TAG, "⚡ Found ESP32 Hub! Connecting via GATT...");
+                            android.bluetooth.BluetoothDevice device = android.bluetooth.BluetoothAdapter
+                                    .getDefaultAdapter().getRemoteDevice(address);
+                            bleHubClient.connect(device);
+                            return;
+                        }
+
+                        // Trigger fast pairing via Classic Bluetooth (Standard Android Phones)
                         if (bluetoothConnectionManager != null) {
                             android.bluetooth.BluetoothDevice device = android.bluetooth.BluetoothAdapter
                                     .getDefaultAdapter().getRemoteDevice(address);
@@ -205,6 +244,8 @@ public class NetworkService extends Service {
             bluetoothConnectionManager.stop();
         if (bleAdvertiser != null)
             bleAdvertiser.stop();
+        if (bleHubClient != null)
+            bleHubClient.disconnect();
         Log.d(TAG, "NetworkService Destroyed");
     }
 
