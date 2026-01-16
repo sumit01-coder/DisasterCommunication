@@ -49,6 +49,9 @@ public class BLEAdvertiser {
     private final String deviceName;
     private final String deviceId;
     private final BLECallback callback;
+    private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private static final long RETRY_DELAY = 2000;
+    private static final long SCAN_RESTART_INTERVAL = 30000; // Restart scan every 30s to stay fresh
 
     private boolean isAdvertising = false;
     private boolean isScanning = false;
@@ -160,7 +163,22 @@ public class BLEAdvertiser {
         scanner.startScan(filters, scanSettings, scanCallback);
         isScanning = true;
         Log.d(TAG, "BLE scanning started");
+
+        // Schedule periodic restart
+        handler.removeCallbacks(scanRestartRunnable);
+        handler.postDelayed(scanRestartRunnable, SCAN_RESTART_INTERVAL);
     }
+
+    private final Runnable scanRestartRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isScanning) {
+                Log.d(TAG, "♻️ Restarting BLE scan to maintain freshness");
+                stopScanning();
+                startScanning();
+            }
+        }
+    };
 
     public void stopScanning() {
         if (scanner != null && isScanning) {
@@ -168,6 +186,7 @@ public class BLEAdvertiser {
                     android.Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
                 scanner.stopScan(scanCallback);
                 isScanning = false;
+                handler.removeCallbacks(scanRestartRunnable); // Stop the loop
                 Log.d(TAG, "BLE scanning stopped");
             }
         }
@@ -216,7 +235,8 @@ public class BLEAdvertiser {
         @Override
         public void onStartFailure(int errorCode) {
             isAdvertising = false;
-            Log.e(TAG, "BLE advertising failed: " + errorCode);
+            Log.e(TAG, "BLE advertising failed: " + errorCode + ". Retrying...");
+            handler.postDelayed(() -> startAdvertising(), RETRY_DELAY);
         }
     };
 
@@ -260,8 +280,9 @@ public class BLEAdvertiser {
 
         @Override
         public void onScanFailed(int errorCode) {
-            Log.e(TAG, "BLE scan failed: " + errorCode);
+            Log.e(TAG, "BLE scan failed: " + errorCode + ". Retrying...");
             isScanning = false;
+            handler.postDelayed(() -> startScanning(), RETRY_DELAY);
         }
     };
 
@@ -284,16 +305,16 @@ public class BLEAdvertiser {
         }
 
         @Override
-        public void onCharacteristicReadRequest(BluetoothDevice device, int requestId,
-                int offset, BluetoothGattCharacteristic characteristic) {
+        public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset,
+                BluetoothGattCharacteristic characteristic) {
             if (ActivityCompat.checkSelfPermission(context,
                     android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
 
             if (gattServer != null) {
-                gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS,
-                        offset, characteristic.getValue());
+                gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset,
+                        characteristic.getValue());
             }
         }
     };

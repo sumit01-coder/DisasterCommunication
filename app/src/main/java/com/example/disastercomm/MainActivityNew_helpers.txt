@@ -1,0 +1,98 @@
+
+    private void setupConnectivityStatus() {
+        connectivityStatusManager = new com.example.disastercomm.utils.ConnectivityStatusManager(this);
+        
+        // Set up click listeners for status icons
+        ivBluetoothStatus.setOnClickListener(v -> {
+            if (!connectivityStatusManager.isBluetoothEnabled()) {
+                new AlertDialog.Builder(this)
+                    .setTitle("Bluetooth Disabled")
+                    .setMessage("Bluetooth is required for mesh networking. Enable it now?")
+                    .setPositiveButton("Enable", (dialog, which) -> 
+                        connectivityStatusManager.requestEnableBluetooth(this))
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            }
+        });
+        
+        ivWifiStatus.setOnClickListener(v -> {
+            if (!connectivityStatusManager.isWifiEnabled()) {
+                new AlertDialog.Builder(this)
+                    .setTitle("WiFi Disabled")
+                    .setMessage("WiFi enhances connectivity. Enable it now?")
+                    .setPositiveButton("Enable", (dialog, which) -> 
+                        connectivityStatusManager.requestEnableWifi())
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            }
+        });
+        
+        ivNearbyStatus.setOnClickListener(v -> {
+            if (!connectivityStatusManager.isLocationEnabled()) {
+                new AlertDialog.Builder(this)
+                    .setTitle("Location Disabled")
+                    .setMessage("Location services are required for Nearby Connections. Enable it now?")
+                    .setPositiveButton("Enable", (dialog, which) -> 
+                        connectivityStatusManager.requestEnableLocation(this))
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            }
+        });
+        
+        // Set listener for status changes
+        connectivityStatusManager.setListener(this::updateConnectivityIcons);
+        
+        // Initial update
+        updateConnectivityIcons();
+    }
+    
+    private void updateConnectivityIcons() {
+        runOnUiThread(() -> {
+            // Bluetooth
+            boolean btEnabled = connectivityStatusManager.isBluetoothEnabled();
+            ivBluetoothStatus.setImageTintList(android.content.res.ColorStateList.valueOf(
+                btEnabled ? android.graphics.Color.parseColor("#4CAF50") : 
+                           android.graphics.Color.parseColor("#F44336")));
+            
+            // WiFi
+            boolean wifiEnabled = connectivityStatusManager.isWifiEnabled();
+            ivWifiStatus.setImageTintList(android.content.res.ColorStateList.valueOf(
+                wifiEnabled ? android.graphics.Color.parseColor("#4CAF50") : 
+                             android.graphics.Color.parseColor("#F44336")));
+            
+            // Location/Nearby
+            boolean locationEnabled = connectivityStatusManager.isLocationEnabled();
+            ivNearbyStatus.setImageTintList(android.content.res.ColorStateList.valueOf(
+                locationEnabled ? android.graphics.Color.parseColor("#4CAF50") : 
+                                 android.graphics.Color.parseColor("#F44336")));
+        });
+    }
+    
+    private void setupUpdateNotification() {
+        ivUpdateBell.setOnClickListener(v -> showAboutDialog());
+        viewUpdateBadge.setVisibility(View.GONE);
+    }
+    
+    private void checkForUpdatesWithBadge() {
+        com.example.disastercomm.utils.UpdateManager updateManager = 
+            new com.example.disastercomm.utils.UpdateManager(this);
+        
+        updateManager.fetchLatestVersion(new com.example.disastercomm.utils.UpdateManager.VersionCallback() {
+            @Override
+            public void onVersionFetched(String version, boolean isNewer) {
+                if (isNewer && viewUpdateBadge != null) {
+                    viewUpdateBadge.setVisibility(View.VISIBLE);
+                } else if (!isNewer && viewUpdateBadge != null) {
+                    viewUpdateBadge.setVisibility(View.GONE);
+                }
+            }
+            
+            @Override
+            public void onError(String error) {
+                // Silently fail - just hide badge
+                if (viewUpdateBadge != null) {
+                    viewUpdateBadge.setVisibility(View.GONE);
+                }
+            }
+        });
+    }

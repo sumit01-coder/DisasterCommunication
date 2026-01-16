@@ -18,7 +18,8 @@ public class Message {
         LOCATION_UPDATE,
         DELIVERY_RECEIPT,
         READ_RECEIPT,
-        KEY_EXCHANGE
+        KEY_EXCHANGE,
+        HEARTBEAT
     }
 
     public enum Status {

@@ -18,6 +18,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class BluetoothConnectionManager {
     private static final String TAG = "BTConnMgr";
@@ -176,6 +178,12 @@ public class BluetoothConnectionManager {
             return;
         }
 
+        // ✅ Prevent duplicate connection attempts
+        if (attemptedDevices.contains(address)) {
+            return;
+        }
+        attemptedDevices.add(address);
+
         new ConnectThread(device).start();
     }
 
@@ -329,6 +337,7 @@ public class BluetoothConnectionManager {
         private final InputStream inStream;
         private final OutputStream outStream;
         private final String address;
+        private final ScheduledExecutorService heartbeatExecutor;
 
         public ConnectedThread(BluetoothSocket socket) {
             this.socket = socket;
@@ -345,6 +354,20 @@ public class BluetoothConnectionManager {
 
             inStream = tmpIn;
             outStream = tmpOut;
+            heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
+            startHeartbeat();
+        }
+
+        private void startHeartbeat() {
+            heartbeatExecutor.scheduleAtFixedRate(() -> {
+                try {
+                    String heartbeatJson = "{\"type\":\"HEARTBEAT\",\"id\":\"hb_" + System.currentTimeMillis() + "\"}";
+                    write(heartbeatJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                } catch (Exception e) {
+                    Log.e(TAG, "Heartbeat failed: " + e.getMessage());
+                    cancel(); // Close connection if heartbeat fails
+                }
+            }, 30, 30, TimeUnit.SECONDS);
         }
 
         public void run() {
@@ -379,6 +402,7 @@ public class BluetoothConnectionManager {
             }
 
             callback.onBluetoothDisconnected(address);
+            heartbeatExecutor.shutdownNow();
         }
 
         public void write(byte[] bytes) {
@@ -402,6 +426,9 @@ public class BluetoothConnectionManager {
 
         public void cancel() {
             try {
+                if (heartbeatExecutor != null) {
+                    heartbeatExecutor.shutdownNow();
+                }
                 socket.close();
             } catch (IOException e) {
                 Log.e(TAG, "Close socket failed", e);

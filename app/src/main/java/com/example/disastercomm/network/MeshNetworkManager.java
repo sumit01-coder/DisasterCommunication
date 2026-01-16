@@ -159,11 +159,16 @@ public class MeshNetworkManager {
                         })
                 .addOnFailureListener(
                         (Exception e) -> {
-                            Log.e(TAG, "Discovery failed. Retrying in " + DISCOVERY_RESTART_DELAY + "ms", e);
+                            Log.e(TAG, "Discovery failed. Retrying in " + discoveryRetryDelay + "ms", e);
                             isDiscoveryActive = false;
-                            handler.postDelayed(this::startDiscovery, DISCOVERY_RESTART_DELAY);
+
+                            // Exponential Backoff
+                            handler.postDelayed(this::startDiscovery, discoveryRetryDelay);
+                            discoveryRetryDelay = Math.min(discoveryRetryDelay * 2, 60000); // Max 60s
                         });
     }
+
+    private long discoveryRetryDelay = DISCOVERY_RESTART_DELAY;
 
     private final EndpointDiscoveryCallback endpointDiscoveryCallback = new EndpointDiscoveryCallback() {
         @Override
@@ -245,7 +250,6 @@ public class MeshNetworkManager {
         public void onDisconnected(@NonNull String endpointId) {
             Log.d(TAG, "Disconnected from: " + endpointId);
             connectedEndpoints.remove(endpointId);
-            pendingEndpointNames.remove(endpointId);
 
             // Remove from pool
             if (poolManager != null) {
@@ -255,6 +259,13 @@ public class MeshNetworkManager {
             if (callback != null) {
                 handler.post(() -> callback.onDeviceDisconnected(endpointId));
             }
+
+            // ✅ Auto-Reconnect: Only if we knew this endpoint
+            if (pendingEndpointNames.containsKey(endpointId) || connectedEndpoints.containsKey(endpointId)) {
+                Log.d(TAG, "Attempting auto-reconnect to " + endpointId);
+                handler.postDelayed(() -> requestConnection(endpointId), CONNECTION_RETRY_DELAY);
+            }
+            pendingEndpointNames.remove(endpointId);
         }
     };
 

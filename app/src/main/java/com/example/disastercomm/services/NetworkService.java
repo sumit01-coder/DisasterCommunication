@@ -19,6 +19,8 @@ import com.example.disastercomm.network.BluetoothConnectionManager;
 import com.example.disastercomm.network.MeshNetworkManager;
 import com.example.disastercomm.network.NetworkStateMonitor;
 import com.example.disastercomm.network.PacketHandler;
+import com.example.disastercomm.network.BLEAdvertiser;
+import com.example.disastercomm.utils.DeviceUtil;
 import com.example.disastercomm.utils.NotificationHelper;
 import com.example.disastercomm.utils.NotificationSoundManager;
 
@@ -33,6 +35,7 @@ public class NetworkService extends Service {
     // Network Managers
     private MeshNetworkManager meshNetworkManager;
     private BluetoothConnectionManager bluetoothConnectionManager;
+    private BLEAdvertiser bleAdvertiser;
     private PacketHandler packetHandler;
     private NetworkStateMonitor networkStateMonitor;
     private NotificationSoundManager notificationSoundManager;
@@ -126,9 +129,31 @@ public class NetworkService extends Service {
                 });
         packetHandler.setBluetoothManager(bluetoothConnectionManager);
 
-        // 4. Start Managers
+        // 4. BLE Advertiser (Fast Discovery)
+        bleAdvertiser = new BLEAdvertiser(this, username, DeviceUtil.getDeviceId(this),
+                new BLEAdvertiser.BLECallback() {
+                    @Override
+                    public void onBLEDeviceFound(String address, String name, int rssi) {
+                        Log.d(TAG, "BLE Device Found: " + name + " (" + address + ")");
+                        // Trigger fast pairing via Classic Bluetooth
+                        if (bluetoothConnectionManager != null) {
+                            android.bluetooth.BluetoothDevice device = android.bluetooth.BluetoothAdapter
+                                    .getDefaultAdapter().getRemoteDevice(address);
+                            bluetoothConnectionManager.connectToDevice(device);
+                        }
+                    }
+
+                    @Override
+                    public void onBLEConnectionStateChanged(String address, boolean connected) {
+                        // Log state change
+                    }
+                });
+
+        // 5. Start Managers
         meshNetworkManager.start();
         bluetoothConnectionManager.start();
+        bleAdvertiser.startAdvertising();
+        bleAdvertiser.startScanning();
 
         Log.d(TAG, "Network Managers Started");
     }
@@ -178,6 +203,8 @@ public class NetworkService extends Service {
             meshNetworkManager.stop();
         if (bluetoothConnectionManager != null)
             bluetoothConnectionManager.stop();
+        if (bleAdvertiser != null)
+            bleAdvertiser.stop();
         Log.d(TAG, "NetworkService Destroyed");
     }
 
