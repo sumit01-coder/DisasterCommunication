@@ -71,12 +71,18 @@ public class PacketHandler {
         return peerPublicKeys.containsKey(userId);
     }
 
+    private WifiAwareNetworkManager wifiAwareNetworkManager; // ✅ Wi-Fi Aware Manager
+
     public void setBluetoothManager(BluetoothConnectionManager btManager) {
         this.bluetoothManager = btManager;
     }
 
     public void setBleHubClient(BLEHubClient hubClient) {
         this.bleHubClient = hubClient;
+    }
+
+    public void setWifiAwareNetworkManager(WifiAwareNetworkManager wafManager) { // ✅ Setter
+        this.wifiAwareNetworkManager = wafManager;
     }
 
     public void setMessageListener(MessageListener listener) {
@@ -261,7 +267,7 @@ public class PacketHandler {
                 // Forward if TTL > 0
                 if (message.ttl > 0) {
                     message.ttl--;
-                    forwardMessage(message);
+                    forwardMessage(message, fromEndpointId); // ✅ Managed Flood: Exclude sender
                 }
 
             } catch (Exception e) {
@@ -364,22 +370,39 @@ public class PacketHandler {
     }
 
     private void forwardMessage(Message message) {
+        forwardMessage(message, null);
+    }
+
+    private void forwardMessage(Message message, String excludeEndpointId) {
         String json = gson.toJson(message);
         byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
 
-        // Send via Wi-Fi Direct (Nearby)
+        // 1. Send via Wi-Fi Direct (Nearby) - Exclude sender
         if (meshNetworkManager != null) {
-            meshNetworkManager.broadcastPayload(bytes);
+            meshNetworkManager.broadcastPayload(bytes, excludeEndpointId);
         }
 
-        // Send via Bluetooth if available
+        // 2. Send via Bluetooth if available - Exclude sender
         if (bluetoothManager != null) {
-            bluetoothManager.broadcastData(bytes);
+            bluetoothManager.broadcastData(bytes, excludeEndpointId);
         }
 
-        // Send via BLE Hub (ESP32)
+        // 3. Send via BLE Hub (ESP32)
+        // Hub logic: If message came from Hub, excludeEndpointId might be "Hub" or
+        // similar generic ID
         if (bleHubClient != null && bleHubClient.isConnected()) {
-            bleHubClient.sendData(json); // Hub expects String
+            if (excludeEndpointId == null || !excludeEndpointId.startsWith("Hub")) {
+                bleHubClient.sendData(json); // Hub expects String
+            }
+        }
+
+        // 4. Send via Wi-Fi Aware (NAN)
+        if (wifiAwareNetworkManager != null) {
+            // NAN doesn't use the same EndpointID system exactly, but we can pass it down
+            // Ideally we'd map EndpointID to PeerHandle, but for now we just broadcast to
+            // all NAN peers
+            // TODO: Map excludeEndpointId to PeerHandle if possible
+            wifiAwareNetworkManager.broadcastMessage(bytes);
         }
     }
 

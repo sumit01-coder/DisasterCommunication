@@ -323,8 +323,18 @@ public class MeshNetworkManager {
     }
 
     public void broadcastPayload(byte[] bytes) {
+        broadcastPayload(bytes, null);
+    }
+
+    public void broadcastPayload(byte[] bytes, String excludeEndpointId) {
         if (!connectedEndpoints.isEmpty()) {
-            connectionsClient.sendPayload(new ArrayList<>(connectedEndpoints.keySet()), Payload.fromBytes(bytes));
+            List<String> targets = new ArrayList<>(connectedEndpoints.keySet());
+            if (excludeEndpointId != null) {
+                targets.remove(excludeEndpointId);
+            }
+            if (!targets.isEmpty()) {
+                connectionsClient.sendPayload(targets, Payload.fromBytes(bytes));
+            }
         }
     }
 

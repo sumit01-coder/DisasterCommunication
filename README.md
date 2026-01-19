@@ -49,6 +49,26 @@
 
 ---
 
+## 🛠️ Technology Stack
+
+The application is built using a modern **Native Android** stack optimized for offline performance.
+
+| Category | Technology | Purpose |
+|----------|------------|---------|
+| **Language** | **Java 17** | Core application logic (Version 17 for modern features) |
+| **Architecture** | **MVVM / Event-Driven** | Decoupled UI and Business Logic |
+| **P2P Networking** | **Google Nearby Connections** | High-bandwidth WiFi Direct Mesh (P2P_CLUSTER) |
+| **Legacy P2P** | **Android Bluetooth API** | Classic RFCOMM sockets for universal compatibility |
+| **Discovery** | **Bluetooth Low Energy (BLE)** | Ultra-low power device discovery (<1s latency) |
+| **NAN Mesh** | **Wi-Fi Aware (NAN)** | Low-latency Neighbor Awareness Networking (API 26+) |
+| **Database** | **Room (SQLite)** | Offline message persistence and user data |
+| **Maps** | **OSMDroid** | Completely offline OpenStreetMap rendering |
+| **Serialization** | **Gson** | efficient JSON parsing for mesh payloads |
+| **Security** | **Biometric API** | Fingerprint/Face unlock for private chats |
+| **UI Components** | **Material Design 3** | Modern, responsive interface |
+
+---
+
 ## ✨ Key Features
 
 ### 🔗 Dual Transport Mesh Network
@@ -210,88 +230,72 @@ Total Range: 260 meters through mesh relay!
 
 ---
 
-## 📱 Device Connectivity
+## 🌐 Quad-Layer Connection Logic
 
-### How Devices Connect
+The app uses a robust **Priority Connection Algorithm** to ensure devices connect instantly and maintain the highest possible speed.
 
-#### WiFi Direct Connection
+### 1. The Discovery Layer (BLE)
+*   **Technology**: Bluetooth Low Energy
+*   **Role**: "The Scout"
+*   **Logic**:
+    *   Devices continuously broadcast a lightweight **BLE Advertisement** containing a custom 128-bit Service UUID.
+    *   Scanning is aggressive (<100ms latency) but battery-optimized.
+    *   **Result**: Devices "see" each other within milliseconds of coming into range.
 
-1. **Advertising Phase**
-   ```
-   Device A starts advertising: "DisasterComm_UserName__UUID"
-   ```
+### 2. The Low-Latency Mesh (Wi-Fi Aware / NAN)
+*   **Technology**: Wi-Fi Aware (Neighbor Awareness Networking)
+*   **Role**: "The Grid"
+*   **Logic**:
+    *   Using **NAN-DAP (Discovery & Pairing)**, devices create small data clusters without establishing full P2P groups.
+    *   Does not require group owner negotiation (unlike WiFi Direct).
+    *   **Result**: Extremely fast small-packet updates (Perfect for Location Sharing).
 
-2. **Discovery Phase**
-   ```
-   Device B discovers Device A
-   → Initiates connection request
-   ```
+    **Why Wi-Fi Aware?**
+    * ## 📡 Quad-Layer Managed Flood Routing (Smart Mesh)
+The application utilizes a robust **Quad-Layer** connectivity approach to ensure message delivery in any environment:
 
-3. **Connection Establishment**
-   ```
-   Device A accepts connection
-   ↔ Encrypted channel established
-   ```
+1.  **Wi-Fi Direct (Nearby Connections)**: High-bandwidth, primary mesh layer.
+2.  **Bluetooth Classic**: Reliable fallback for older devices or when Wi-Fi is busy.
+3.  **Wi-Fi Aware (NAN)**: Low-power, decentralized discovery and messaging (Android 8+).
+4.  **BLE Hub (ESP32)**: LoRa-based long-range relay integration (optional hardware).
 
-4. **Key Exchange**
-   ```
-   Both devices exchange public keys
-   → Secure communication ready
-   ```
+### Managed Flood Algorithm
+To prevent network congestion (broadcast storms), the app implements **Managed Flooding**:
+*   **Echo Suppression**: When relays forward a message, they explicitly **exclude the sender** from the broadcast target list. This prevents packets from bouncing back immediately.
+*   **Deduplication**: Every node tracks `seenMessageIds`. Duplicate packets are dropped instantly.
+*   **TTL (Time-To-Live)**: Packets have a hop limit (default 10) to prevent infinite loops.
+*   **Multi-Path**: Messages are sent simultaneously over all available transports (Wi-Fi, BT, NAN, LoRa) to maximize delivery probability.
 
-#### Bluetooth Connection
+### Communication Flow (DAP Protocol)
+**NAN-DAP (Neighbor Awareness Networking - Discovery And Pairing)** allows devices to find each other without joining a common Wi-Fi AP.
+1.  **Publish**: Device A publishes service `DisasterComm_NAN`.
+2.  **Subscribe**: Device B subscribes to `DisasterComm_NAN`.
+3.  **Discovery**: Match found! Handles exchanged.
+4.  **Pairing**: Automatic `DAP_INIT` handshake establishes a session.
+5.  **Messaging**: `PacketHandler` routes encrypted JSON messages over this link.app a `PeerHandle` (Temporary ID).
+    5.  **Message**: Device B sends "DAP_INIT" to Device A's `PeerHandle`. No IP address needed!
 
-1. **Server Socket**
-   ```
-   Device creates RFCOMM server
-   UUID: Custom service UUID
-   Listens on channel
-   ```
+### 3. The Handshake Layer (Bluetooth Classic)
+*   **Technology**: RFCOMM Socket (SPP)
+*   **Role**: "The Handshake"
+*   **Logic**:
+    *   Once a BLE/NAN signal is detected, the app extracts the MAC address.
+    *   It immediately opens a standard Bluetooth Socket (insecure, to skip PIN pairing).
+    *   **Result**: Basic text communication is established in <2 seconds.
 
-2. **Device Pairing** (Optional)
-   ```
-   Bluetooth pairing not required
-   Direct connection via service UUID
-   ```
+### 4. The Performance Layer (WiFi Direct)
+*   **Technology**: Google Nearby Connections (Strategy: P2P_CLUSTER)
+*   **Role**: "The Highway"
+*   **Logic**:
+    *   Simultaneously with Bluetooth, the app attempts a **Nearby Connections** upgrade.
+    *   Uses high-bandwidth WiFi 5GHz where available.
+    *   **Result**: Connection upgraded to >50Mbps. Enables image sharing and Voice-over-Mesh.
 
-3. **Data Channel**
-   ```
-   Bidirectional stream established
-   Messages sent as byte arrays
-   ```
-
-### Connection Priority
-
-The app uses **both transports simultaneously**:
-
-1. **WiFi Direct** (Primary)
-   - Faster speed
-   - Longer range (~100m)
-   - Higher bandwidth
-
-2. **Bluetooth** (Secondary)
-   - Better device compatibility
-   - Lower power consumption
-   - Fallback when WiFi unavailable
-
-### Multi-Device Connections
-
-```
-         [Device A]
-            ↓ ↓
-    ┌───────┴─┴────────┐
-    │                   │
-[Device B]          [Device C]
-    ↓                   ↓
-[Device D]          [Device E]
-
-Device A: Connected to B and C
-Device B: Connected to A and D
-Device C: Connected to A and E
-
-Total Network: 5 devices
-Max 2 hops to reach anyone
-```
+### 🔄 Auto-Switching Algorithm
+The `MeshNetworkManager` constantly evaluates the link quality:
+*   **If WiFi fails**: Seamlessly downgrade to Bluetooth without data loss.
+*   **If WiFi returns**: Automatically upgrade back to WiFi Direct.
+*   **If both fail**: Store messages in `Room` database and retry delivery every 30 seconds.
 
 ---
 

@@ -514,6 +514,14 @@ public class MainActivityNew extends AppCompatActivity implements
         if (bluetoothConnectionManager != null) {
             bluetoothConnectionManager.startDiscovery();
         }
+
+        // 3. Wi-Fi Aware (NAN) Scan
+        if (mService != null && mService.getWifiAwareNetworkManager() != null) {
+            // Re-trigger publish/subscribe or specific scan logic if needed
+            // For now, restarting acts as a "fresh" scan
+            mService.getWifiAwareNetworkManager().stop();
+            mService.getWifiAwareNetworkManager().start();
+        }
     }
 
     @Override
@@ -1575,36 +1583,25 @@ public class MainActivityNew extends AppCompatActivity implements
         // Set up click listeners for status icons
         ivBluetoothStatus.setOnClickListener(v -> {
             if (!connectivityStatusManager.isBluetoothEnabled()) {
-                new AlertDialog.Builder(this)
-                        .setTitle("Bluetooth Disabled")
-                        .setMessage("Bluetooth is required for mesh networking. Enable it now?")
-                        .setPositiveButton("Enable",
-                                (dialog, which) -> connectivityStatusManager.requestEnableBluetooth(this))
-                        .setNegativeButton("Cancel", null)
-                        .show();
+                requestEnable("Bluetooth", () -> connectivityStatusManager.requestEnableBluetooth(this));
+            } else {
+                showNetworkDiagnosisDialog();
             }
         });
 
         ivWifiStatus.setOnClickListener(v -> {
             if (!connectivityStatusManager.isWifiEnabled()) {
-                new AlertDialog.Builder(this)
-                        .setTitle("WiFi Disabled")
-                        .setMessage("WiFi enhances connectivity. Enable it now?")
-                        .setPositiveButton("Enable", (dialog, which) -> connectivityStatusManager.requestEnableWifi())
-                        .setNegativeButton("Cancel", null)
-                        .show();
+                requestEnable("WiFi", () -> connectivityStatusManager.requestEnableWifi());
+            } else {
+                showNetworkDiagnosisDialog();
             }
         });
 
         ivNearbyStatus.setOnClickListener(v -> {
             if (!connectivityStatusManager.isLocationEnabled()) {
-                new AlertDialog.Builder(this)
-                        .setTitle("Location Disabled")
-                        .setMessage("Location services are required for Nearby Connections. Enable it now?")
-                        .setPositiveButton("Enable",
-                                (dialog, which) -> connectivityStatusManager.requestEnableLocation(this))
-                        .setNegativeButton("Cancel", null)
-                        .show();
+                requestEnable("Location", () -> connectivityStatusManager.requestEnableLocation(this));
+            } else {
+                showNetworkDiagnosisDialog();
             }
         });
 
@@ -1613,6 +1610,34 @@ public class MainActivityNew extends AppCompatActivity implements
 
         // Initial update
         updateConnectivityIcons();
+    }
+
+    private void requestEnable(String type, Runnable action) {
+        new AlertDialog.Builder(this)
+                .setTitle(type + " Disabled")
+                .setMessage(type + " is required/enhanced for mesh networking. Enable it now?")
+                .setPositiveButton("Enable", (dialog, which) -> action.run())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showNetworkDiagnosisDialog() {
+        if (mService == null) {
+            Toast.makeText(this, "Network Service not bound", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String report = mService.getNetworkStrengthReport();
+
+        new AlertDialog.Builder(this)
+                .setTitle("📡 Network Strength / Diagnosis")
+                .setMessage(report)
+                .setPositiveButton("OK", null)
+                .setNeutralButton("Refresh Scan", (dialog, which) -> {
+                    triggerManualDeviceScan();
+                    Toast.makeText(this, "Rescanning...", Toast.LENGTH_SHORT).show();
+                })
+                .show();
     }
 
     private void updateConnectivityIcons() {

@@ -197,8 +197,14 @@ public class BluetoothConnectionManager {
     }
 
     public void broadcastData(byte[] data) {
-        for (ConnectedThread thread : activeConnections.values()) {
-            thread.write(data);
+        broadcastData(data, null);
+    }
+
+    public void broadcastData(byte[] data, String excludeAddress) {
+        for (Map.Entry<String, ConnectedThread> entry : activeConnections.entrySet()) {
+            if (excludeAddress == null || !entry.getKey().equals(excludeAddress)) {
+                entry.getValue().write(data);
+            }
         }
     }
 

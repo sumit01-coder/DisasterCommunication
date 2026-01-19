@@ -38,6 +38,7 @@ public class NetworkService extends Service {
     private BluetoothConnectionManager bluetoothConnectionManager;
     private BLEAdvertiser bleAdvertiser;
     private BLEHubClient bleHubClient; // Hub Client
+    private com.example.disastercomm.network.WifiAwareNetworkManager wifiAwareNetworkManager; // ✅ Wi-Fi Aware Manager
     private PacketHandler packetHandler;
     private NetworkStateMonitor networkStateMonitor;
     private NotificationSoundManager notificationSoundManager;
@@ -159,6 +160,32 @@ public class NetworkService extends Service {
         });
         packetHandler.setBleHubClient(bleHubClient);
 
+        // 3.6 Wifi Aware (NAN)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O &&
+                getPackageManager().hasSystemFeature(android.content.pm.PackageManager.FEATURE_WIFI_AWARE)) {
+            wifiAwareNetworkManager = new com.example.disastercomm.network.WifiAwareNetworkManager(this,
+                    new com.example.disastercomm.network.WifiAwareNetworkManager.WifiAwareCallback() {
+                        @Override
+                        public void onNanoDeviceFound(android.net.wifi.aware.PeerHandle peerHandle,
+                                byte[] serviceSpecificInfo) {
+                            Log.d(TAG, "NAN Device Found via Service");
+                            // We can broadcast an update or just let PacketHandler route messages
+                            // For now, simple log. Initial DAP handshake handled inside Manager.
+                            broadcastUpdate("NAN_DEVICE_FOUND", peerHandle.toString(), null);
+                        }
+
+                        @Override
+                        public void onNanoMessageReceived(android.net.wifi.aware.PeerHandle peerHandle,
+                                byte[] message) {
+                            if (packetHandler != null) {
+                                packetHandler.handlePayload("NAN_" + peerHandle.toString(), message);
+                            }
+                        }
+                    });
+            wifiAwareNetworkManager.start();
+            packetHandler.setWifiAwareNetworkManager(wifiAwareNetworkManager);
+        }
+
         // 4. BLE Advertiser (Fast Discovery)
         bleAdvertiser = new BLEAdvertiser(this, username, DeviceUtil.getDeviceId(this),
                 new BLEAdvertiser.BLECallback() {
@@ -246,6 +273,8 @@ public class NetworkService extends Service {
             bleAdvertiser.stop();
         if (bleHubClient != null)
             bleHubClient.disconnect();
+        if (wifiAwareNetworkManager != null)
+            wifiAwareNetworkManager.stop();
         Log.d(TAG, "NetworkService Destroyed");
     }
 
@@ -260,5 +289,37 @@ public class NetworkService extends Service {
 
     public PacketHandler getPacketHandler() {
         return packetHandler;
+    }
+
+    public com.example.disastercomm.network.WifiAwareNetworkManager getWifiAwareNetworkManager() {
+        return wifiAwareNetworkManager;
+    }
+
+    public String getNetworkStrengthReport() {
+        StringBuilder sb = new StringBuilder();
+        int total = 0;
+
+        // Mesh
+        int meshCount = meshNetworkManager != null ? meshNetworkManager.getConnectedEndpoints().size() : 0;
+        sb.append("Wi-Fi Direct: ").append(meshCount).append(" peers\n");
+        total += meshCount;
+
+        // Bluetooth
+        int btCount = bluetoothConnectionManager != null ? bluetoothConnectionManager.getConnectedDevices().size() : 0;
+        sb.append("Bluetooth: ").append(btCount).append(" devices\n");
+        total += btCount;
+
+        // NAN
+        int nanCount = wifiAwareNetworkManager != null ? wifiAwareNetworkManager.getPeerCount() : 0;
+        sb.append("Wi-Fi Aware: ").append(nanCount).append(" peers\n");
+        total += nanCount;
+
+        // Hub
+        boolean hubConnected = bleHubClient != null && bleHubClient.isConnected();
+        sb.append("LoRa Hub: ").append(hubConnected ? "Connected" : "Disconnected").append("\n");
+
+        sb.append("\nTOTAL STRENGTH: ").append(total).append(" Peer(s)");
+
+        return sb.toString();
     }
 }

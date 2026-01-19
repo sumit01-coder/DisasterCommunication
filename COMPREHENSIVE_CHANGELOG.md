@@ -2,6 +2,16 @@
 
 All notable changes to the Disaster Communication App will be documented in this file.
 
+## [v3.1.0] - 2026-01-19
+### New Features
+- **Wi-Fi Aware (NAN) Integration**: Added a new, low-power decentralized mesh layer for Android 8+ devices.
+- **Quad-Layer Connectivity**: App now simultaneously utilizes Wi-Fi Direct, Bluetooth Classic, Wi-Fi Aware, and BLE Hub.
+- **Network Diagnosis**: New "Network Strength" dialog showing real-time peer counts per layer.
+
+### Core Networking Improvements
+- **Managed Flood Routing**: Implemented "Smart Mesh" logic with Echo Suppression and Multi-Path Forwarding.
+- **Lifecycle Management**: Consolidated network manager ownership into `NetworkService`.
+
 ## [v3.0.0] - 2026-01-19
 ### Live Location Enhancements
 - **Live Status HUD**: Added a floating status card on the map for sharers ("You are Live" + Timer + Stop Button).
