@@ -35,8 +35,9 @@ import java.util.UUID;
 public class BLEAdvertiser {
     private static final String TAG = "BLEAdvertiser";
 
-    // Custom service UUID for disaster comm
-    private static final UUID SERVICE_UUID = UUID.fromString("0000180A-0000-1000-8000-00805F9B34FB");
+    // Custom service UUID for disaster comm (Unique to this app to avoid false
+    // positives)
+    private static final UUID SERVICE_UUID = UUID.fromString("A495FF20-C5B1-4B44-B512-1370F02D74DE");
     private static final UUID DEVICE_NAME_CHAR_UUID = UUID.fromString("00002A00-0000-1000-8000-00805F9B34FB");
     private static final UUID DEVICE_ID_CHAR_UUID = UUID.fromString("00002A01-0000-1000-8000-00805F9B34FB");
 
@@ -214,6 +215,12 @@ public class BLEAdvertiser {
                 Log.d(TAG, "BLE scanning stopped");
             }
         }
+    }
+
+    public void restartScanning() {
+        Log.d(TAG, "Manual BLE scan restart requested");
+        stopScanning();
+        startScanning();
     }
 
     private void setupGattServer() {

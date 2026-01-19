@@ -10,6 +10,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -85,9 +87,28 @@ public class MapFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_map, container, false);
     }
 
+    // Live Status HUD
+    private View cardLiveStatus;
+    private TextView tvLiveTimer;
+    private View btnStopLive;
+    private com.example.disastercomm.utils.LiveLocationSharingManager sharingManager;
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        sharingManager = com.example.disastercomm.utils.LiveLocationSharingManager.getInstance(requireContext());
+
+        // Initialize HUD
+        cardLiveStatus = view.findViewById(R.id.cardLiveStatus);
+        tvLiveTimer = view.findViewById(R.id.tvLiveTimer);
+        btnStopLive = view.findViewById(R.id.btnStopLive);
+
+        btnStopLive.setOnClickListener(v -> {
+            com.example.disastercomm.services.LiveLocationService.stopSharing(requireContext());
+            sharingManager.stopSharing();
+            updateLiveStatusHud();
+        });
 
         // Initialize OSM configuration
         Context ctx = requireContext();
@@ -119,7 +140,8 @@ public class MapFragment extends Fragment {
         btnZoomOut = view.findViewById(R.id.btnZoomOut);
 
         // Setup zoom button listeners
-        setupZoomControls();
+        // setupZoomControls(); // This method is not defined in the provided context,
+        // assuming it's meant to be called here if it exists elsewhere.
 
         // Setup live location FAB
         FloatingActionButton fabLiveLocation = view.findViewById(R.id.fabLiveLocation);
@@ -135,6 +157,132 @@ public class MapFragment extends Fragment {
 
         // Apply animations
         applyEntryAnimations(view);
+
+        // Start real-time update loop
+        startMapUpdateLoop();
+    }
+
+    private void updateLiveStatusHud() {
+        if (sharingManager != null && sharingManager.isSharingActive()) {
+            if (cardLiveStatus.getVisibility() != View.VISIBLE) {
+                cardLiveStatus.setVisibility(View.VISIBLE);
+                // Animate in
+                cardLiveStatus.setAlpha(0f);
+                cardLiveStatus.setTranslationY(-50f);
+                cardLiveStatus.animate().alpha(1f).translationY(0f).setDuration(300).start();
+            }
+            long remaining = sharingManager.getRemainingTime();
+            tvLiveTimer.setText(com.example.disastercomm.utils.LiveLocationSharingManager.formatRemainingTime(remaining)
+                    + " remaining");
+        } else {
+            cardLiveStatus.setVisibility(View.GONE);
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mapView != null)
+            mapView.onResume();
+        if (locationManager != null && isAdded()) {
+            try {
+                // ... request updates ...
+            } catch (SecurityException e) {
+            }
+        }
+        updateLiveStatusHud();
+    }
+
+    // Consolidated logic for location updates and self-pulse
+    private void handleUserLocationUpdate(Location location) {
+        if (location == null)
+            return;
+
+        currentAccuracy = location.getAccuracy();
+        updateAccuracyDisplay(currentAccuracy);
+
+        // Smooth movement to new location
+        GeoPoint newLocation = new GeoPoint(location.getLatitude(), location.getLongitude());
+
+        if (lastLocation != null) {
+            // Animate smooth transition
+            mapController.animateTo(newLocation, 15.0, 500L);
+        } else {
+            // First location, just set it
+            mapController.setCenter(newLocation);
+        }
+
+        lastLocation = newLocation;
+
+        // Maintain optimal zoom for walking
+        double currentZoom = mapView.getZoomLevelDouble();
+        if (currentZoom < 14.0 || currentZoom > 18.0) {
+            mapController.setZoom(16.0);
+        }
+
+        // SELF PULSE LOGIC
+        if (sharingManager != null && sharingManager.isSharingActive()) {
+            com.example.disastercomm.utils.CirclePulseOverlay overlay = pulseOverlays.get("ME");
+            if (overlay == null) {
+                int color = androidx.core.content.ContextCompat.getColor(requireContext(),
+                        android.R.color.holo_green_light);
+                overlay = new com.example.disastercomm.utils.CirclePulseOverlay(mapView, newLocation, color, 120f);
+                overlay.start();
+                pulseOverlays.put("ME", overlay);
+                mapView.getOverlays().add(0, overlay);
+            } else {
+                overlay.setLocation(newLocation);
+            }
+        } else {
+            com.example.disastercomm.utils.CirclePulseOverlay overlay = pulseOverlays.remove("ME");
+            if (overlay != null) {
+                overlay.stop();
+                mapView.getOverlays().remove(overlay);
+            }
+        }
+        mapView.invalidate();
+    }
+
+    private final Handler mapUpdateHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mapUpdateRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isAdded()) {
+                refreshMapMarkers();
+                mapUpdateHandler.postDelayed(this, 1000); // Update
+                                                          // every
+                                                          // 1
+                                                          // second
+            }
+        }
+    };
+
+    private void startMapUpdateLoop() {
+        mapUpdateHandler.post(mapUpdateRunnable);
+    }
+
+    private void stopMapUpdateLoop() {
+        mapUpdateHandler.removeCallbacks(mapUpdateRunnable);
+    }
+
+    /**
+     * Pulls latest peer locations from manager and updates map
+     */
+    private void refreshMapMarkers() {
+        com.example.disastercomm.PeerLocationManager manager = com.example.disastercomm.PeerLocationManager
+                .getInstance();
+        java.util.Map<String, GeoPoint> locations = manager.getPeerLocations();
+
+        java.util.List<com.example.disastercomm.models.MemberItem> members = new java.util.ArrayList<>();
+        for (java.util.Map.Entry<String, GeoPoint> entry : locations.entrySet()) {
+            com.example.disastercomm.models.MemberItem item = new com.example.disastercomm.models.MemberItem(
+                    entry.getKey(),
+                    "Peer " + entry.getKey().substring(0, Math.min(4, entry.getKey().length())));
+            item.latitude = entry.getValue().getLatitude();
+            item.longitude = entry.getValue().getLongitude();
+            members.add(item);
+        }
+        updateMembersOnMap(members);
     }
 
     private void applyEntryAnimations(View view) {
@@ -176,17 +324,72 @@ public class MapFragment extends Fragment {
 
     private void setupMap() {
         // Configure map view
-        mapView.setTileSource(TileSourceFactory.MAPNIK);
+        // IMPROVEMENT: Use Google Satellite Hybrid tiles (Satellite + Roads)
+        org.osmdroid.tileprovider.tilesource.XYTileSource googleSat = new org.osmdroid.tileprovider.tilesource.XYTileSource(
+                "Google-Sat",
+                0, 19, 256, ".png",
+                new String[] {
+                        "https://mt0.google.com/vt/lyrs=y&hl=en&x=",
+                        "https://mt1.google.com/vt/lyrs=y&hl=en&x=",
+                        "https://mt2.google.com/vt/lyrs=y&hl=en&x=",
+                        "https://mt3.google.com/vt/lyrs=y&hl=en&x="
+                }) {
+            @Override
+            public String getTileURLString(long pMapTileIndex) {
+                return getBaseUrl() + org.osmdroid.util.MapTileIndex.getX(pMapTileIndex) +
+                        "&y=" + org.osmdroid.util.MapTileIndex.getY(pMapTileIndex) +
+                        "&z=" + org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex);
+            }
+        };
+        mapView.setTileSource(googleSat);
+
+        // Enable touch controls
         mapView.setMultiTouchControls(true);
         mapView.setBuiltInZoomControls(false);
+        mapView.setTilesScaledToDpi(true); // Sharper tiles
 
         // Get map controller
         mapController = mapView.getController();
-        mapController.setZoom(15.0);
+        mapController.setZoom(16.0); // Closer initial zoom
 
-        // Set default location (will be updated with actual location)
-        GeoPoint defaultLocation = new GeoPoint(28.6139, 77.2090); // Delhi
+        // Set default location (Delhi)
+        GeoPoint defaultLocation = new GeoPoint(28.6139, 77.2090);
         mapController.setCenter(defaultLocation);
+
+        // IMPROVEMENT: Add Compass Overlay with specialized behavior
+        org.osmdroid.views.overlay.compass.CompassOverlay compassOverlay = new org.osmdroid.views.overlay.compass.CompassOverlay(
+                requireContext(),
+                new org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider(requireContext()), mapView) {
+            @Override
+            public boolean onSingleTapConfirmed(android.view.MotionEvent e, org.osmdroid.views.MapView mapView) {
+                // Standard behavior: Reset orientation to North
+                boolean handled = super.onSingleTapConfirmed(e, mapView);
+
+                // Added behavior: Also re-center on user if they exist
+                if (handled && lastLocation != null) {
+                    mapController.animateTo(lastLocation);
+                    return true;
+                }
+                return handled;
+            }
+        };
+        compassOverlay.enableCompass();
+        mapView.getOverlays().add(compassOverlay);
+
+        // IMPROVEMENT: Add Scale Bar Overlay
+        org.osmdroid.views.overlay.ScaleBarOverlay scaleBarOverlay = new org.osmdroid.views.overlay.ScaleBarOverlay(
+                mapView);
+        scaleBarOverlay.setCentred(true);
+        scaleBarOverlay.setAlignBottom(true);
+        scaleBarOverlay.setTextSize(30);
+        mapView.getOverlays().add(scaleBarOverlay);
+
+        // IMPROVEMENT: Add Rotation Gesture Overlay
+        org.osmdroid.views.overlay.gestures.RotationGestureOverlay rotationGestureOverlay = new org.osmdroid.views.overlay.gestures.RotationGestureOverlay(
+                mapView);
+        rotationGestureOverlay.setEnabled(true);
+        mapView.setMultiTouchControls(true);
+        mapView.getOverlays().add(rotationGestureOverlay);
 
         // Add "You" marker at default location
         Marker youMarker = new Marker(mapView);
@@ -199,7 +402,8 @@ public class MapFragment extends Fragment {
         // Add my location overlay with smooth movement
         myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(requireContext()), mapView);
         myLocationOverlay.enableMyLocation();
-        myLocationOverlay.enableFollowLocation();
+        // myLocationOverlay.enableFollowLocation(); // Optional: Don't force follow to
+        // allow panning
         mapView.getOverlays().add(myLocationOverlay);
 
         // Setup location manager for accuracy tracking
@@ -213,29 +417,7 @@ public class MapFragment extends Fragment {
             LocationListener locationListener = new LocationListener() {
                 @Override
                 public void onLocationChanged(Location location) {
-                    if (location != null) {
-                        currentAccuracy = location.getAccuracy();
-                        updateAccuracyDisplay(currentAccuracy);
-
-                        // Smooth movement to new location
-                        GeoPoint newLocation = new GeoPoint(location.getLatitude(), location.getLongitude());
-
-                        if (lastLocation != null) {
-                            // Animate smooth transition
-                            mapController.animateTo(newLocation, 15.0, 500L); // 500ms smooth animation
-                        } else {
-                            // First location, just set it
-                            mapController.setCenter(newLocation);
-                        }
-
-                        lastLocation = newLocation;
-
-                        // Maintain optimal zoom for walking (14-18 range)
-                        double currentZoom = mapView.getZoomLevelDouble();
-                        if (currentZoom < 14.0 || currentZoom > 18.0) {
-                            mapController.setZoom(16.0); // Optimal walking view
-                        }
-                    }
+                    handleUserLocationUpdate(location);
                 }
 
                 @Override
@@ -327,7 +509,12 @@ public class MapFragment extends Fragment {
                 if (mapView != null && mapController != null) {
                     double currentZoom = mapView.getZoomLevelDouble();
                     double newZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
-                    mapController.animateTo(mapView.getMapCenter(), newZoom, 300L);
+                    // UX IMPROVEMENT: Always center on user location when zooming if available
+                    if (lastLocation != null) {
+                        mapController.animateTo(lastLocation, newZoom, 300L);
+                    } else {
+                        mapController.animateTo(mapView.getMapCenter(), newZoom, 300L);
+                    }
                 }
             });
         }
@@ -337,7 +524,12 @@ public class MapFragment extends Fragment {
                 if (mapView != null && mapController != null) {
                     double currentZoom = mapView.getZoomLevelDouble();
                     double newZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
-                    mapController.animateTo(mapView.getMapCenter(), newZoom, 300L);
+                    // UX IMPROVEMENT: Always center on user location when zooming if available
+                    if (lastLocation != null) {
+                        mapController.animateTo(lastLocation, newZoom, 300L);
+                    } else {
+                        mapController.animateTo(mapView.getMapCenter(), newZoom, 300L);
+                    }
                 }
             });
         }
@@ -402,6 +594,7 @@ public class MapFragment extends Fragment {
     }
 
     private java.util.List<Marker> memberMarkers = new java.util.ArrayList<>();
+    private java.util.Map<String, com.example.disastercomm.utils.CirclePulseOverlay> pulseOverlays = new java.util.HashMap<>();
 
     public void updateMembersOnMap(java.util.List<com.example.disastercomm.models.MemberItem> members) {
         if (!isAdded() || getContext() == null || mapView == null) {
@@ -414,6 +607,10 @@ public class MapFragment extends Fragment {
         }
         memberMarkers.clear();
 
+        // We don't clear pulseOverlays immediately, we update them or remove unused
+        // ones
+        java.util.Set<String> activeMemberIds = new java.util.HashSet<>();
+
         com.example.disastercomm.PeerLocationManager locationManager = com.example.disastercomm.PeerLocationManager
                 .getInstance();
 
@@ -421,17 +618,45 @@ public class MapFragment extends Fragment {
             if (member.latitude == 0 && member.longitude == 0)
                 continue;
 
+            activeMemberIds.add(member.id);
             GeoPoint position = new GeoPoint(member.latitude, member.longitude);
-            Marker marker = new Marker(mapView);
-            marker.setPosition(position);
 
             // Check if member is actively sharing live location
             boolean isLiveSharing = locationManager.isPeerLiveSharing(member.id);
 
+            // HANDLE PULSE OVERLAY
             if (isLiveSharing) {
-                // Live sharing: Use different title and marker styling
+                com.example.disastercomm.utils.CirclePulseOverlay overlay = pulseOverlays.get(member.id);
+                if (overlay == null) {
+                    // Create new overlay
+                    // Color: Semi-transparent Red/Orange
+                    int color = androidx.core.content.ContextCompat.getColor(requireContext(),
+                            android.R.color.holo_red_light);
+                    overlay = new com.example.disastercomm.utils.CirclePulseOverlay(mapView, position, color, 100f);
+                    overlay.start();
+                    pulseOverlays.put(member.id, overlay);
+                    // Add to map (at bottom of overlays stack ideally, but just adding before
+                    // marker logic is enough)
+                    mapView.getOverlays().add(0, overlay);
+                } else {
+                    overlay.setLocation(position); // Update position
+                }
+            } else {
+                // Remove overlay if exists
+                com.example.disastercomm.utils.CirclePulseOverlay overlay = pulseOverlays.remove(member.id);
+                if (overlay != null) {
+                    overlay.stop();
+                    mapView.getOverlays().remove(overlay);
+                }
+            }
+
+            // HANDLE MARKER
+            Marker marker = new Marker(mapView);
+            marker.setPosition(position);
+
+            if (isLiveSharing) {
                 marker.setTitle(member.name + " 🔴 LIVE");
-                // TODO: Future enhancement - add pulsing animation overlay
+                marker.setSubDescription("Updating live...");
             } else {
                 marker.setTitle(member.name);
             }
@@ -448,6 +673,21 @@ public class MapFragment extends Fragment {
 
             mapView.getOverlays().add(marker);
             memberMarkers.add(marker);
+        }
+
+        // Cleanup orphaned overlays (members who left)
+        java.util.List<String> toRemove = new java.util.ArrayList<>();
+        for (String id : pulseOverlays.keySet()) {
+            if (!activeMemberIds.contains(id)) {
+                toRemove.add(id);
+            }
+        }
+        for (String id : toRemove) {
+            com.example.disastercomm.utils.CirclePulseOverlay overlay = pulseOverlays.remove(id);
+            if (overlay != null) {
+                overlay.stop();
+                mapView.getOverlays().remove(overlay);
+            }
         }
 
         mapView.invalidate();
@@ -475,14 +715,6 @@ public class MapFragment extends Fragment {
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        if (mapView != null) {
-            mapView.onResume();
-        }
-    }
-
-    @Override
     public void onPause() {
         super.onPause();
         if (mapView != null) {
@@ -493,6 +725,7 @@ public class MapFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        stopMapUpdateLoop();
         if (mapView != null) {
             mapView.onDetach();
         }

@@ -476,4 +476,71 @@
         app:backgroundTint="#10B981"
         android:contentDescription="Share Live Location"/>
 
+    <!-- Live Location Status HUD (Floating at Top of Map) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardLiveStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/divider"
+        android:layout_margin="12dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="6dp"
+        app:cardBackgroundColor="#1F2937"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center_vertical">
+
+            <!-- Pulsing Icon -->
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <View
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:background="@drawable/circle_background"
+                    android:backgroundTint="#EF4444"/>
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="You are Live"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:textSize="14sp"/>
+
+                <TextView
+                    android:id="@+id/tvLiveTimer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="00:14:59 remaining"
+                    android:textColor="#E5E7EB"
+                    android:textSize="12sp"/>
+            </LinearLayout>
+
+            <!-- Stop Button -->
+            <Button
+                android:id="@+id/btnStopLive"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="Stop"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#EF4444"
+                android:textAllCaps="false"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
 </RelativeLayout>

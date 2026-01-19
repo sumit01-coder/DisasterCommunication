@@ -59,6 +59,9 @@ public class MainActivity extends AppCompatActivity
     private String username;
     private final List<String> bluetoothDevices = new ArrayList<>();
 
+    // Set to avoid spamming notifications for the same session
+    private final java.util.Set<String> notifiedLiveSharers = new java.util.HashSet<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -503,6 +506,17 @@ public class MainActivity extends AppCompatActivity
                                 lng,
                                 message.isLiveSharing,
                                 message.sharingUntil);
+
+                        // NOTIFY USER if this is a new live session
+                        if (message.isLiveSharing) {
+                            if (!notifiedLiveSharers.contains(message.senderId)) {
+                                notifiedLiveSharers.add(message.senderId);
+                                showLiveTrackingNotification(message.senderId, message.senderName);
+                            }
+                        } else {
+                            // Reset if they stop sharing (optional, but handled by service usually)
+                            notifiedLiveSharers.remove(message.senderId);
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -593,6 +607,37 @@ public class MainActivity extends AppCompatActivity
         if (connectionPoolManager != null) {
             connectionPoolManager.cleanupStaleConnections();
         }
+    }
+
+    private void showLiveTrackingNotification(String userId, String userName) {
+        String name = (userName != null && !userName.isEmpty()) ? userName
+                : userId.substring(0, Math.min(8, userId.length()));
+        String content = "🔴 " + name + " is sharing live location. Tap to track.";
+
+        android.content.Intent intent = new android.content.Intent(this, MapActivity.class);
+        intent.putExtra("TARGET_USER_ID", userId);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, userId.hashCode(), intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+
+        String channelId = "live_location_channel";
+        android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(
+                android.content.Context.NOTIFICATION_SERVICE);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.app.NotificationChannel channel = new android.app.NotificationChannel(channelId, "Live Updates",
+                    android.app.NotificationManager.IMPORTANCE_HIGH);
+            nm.createNotificationChannel(channel);
+        }
+
+        android.app.Notification notification = new androidx.core.app.NotificationCompat.Builder(this, channelId)
+                .setContentTitle("Live Location Started")
+                .setContentText(content)
+                .setSmallIcon(R.drawable.ic_members)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+                .build();
+
+        nm.notify(userId.hashCode(), notification);
     }
 
     @Override

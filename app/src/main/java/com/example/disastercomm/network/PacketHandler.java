@@ -180,6 +180,26 @@ public class PacketHandler {
                     Message deliveredMessage = gson.fromJson(json, Message.class);
                     deliveredMessage.content = decryptedContent;
 
+                    // ✅ CRITICAL: Auto-update Location Manager for immediate tracking
+                    if (deliveredMessage.type == Message.Type.LOCATION_UPDATE) {
+                        try {
+                            String[] parts = deliveredMessage.content.split(",");
+                            if (parts.length == 2) {
+                                double lat = Double.parseDouble(parts[0]);
+                                double lng = Double.parseDouble(parts[1]);
+                                // Update singleton directly
+                                com.example.disastercomm.PeerLocationManager.getInstance().updatePeerLocation(
+                                        deliveredMessage.senderId,
+                                        lat, lng,
+                                        deliveredMessage.isLiveSharing,
+                                        deliveredMessage.sharingUntil);
+                                Log.d(TAG, "📍 Auto-updated location for " + deliveredMessage.senderId);
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to parse auto location update", e);
+                        }
+                    }
+
                     // ✅ DEBUG: Log message details
                     MessageDebugHelper.logMessageReceived(
                             deliveredMessage.id,

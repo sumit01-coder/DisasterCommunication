@@ -37,8 +37,9 @@ public class LiveLocationService extends Service {
     private static final String TAG = "LiveLocationService";
     private static final int NOTIFICATION_ID = 1001;
     private static final String CHANNEL_ID = "live_location_channel";
-    private static final long LOCATION_UPDATE_INTERVAL = 10000; // 10 seconds
-    private static final long LOCATION_FASTEST_INTERVAL = 5000; // 5 seconds
+    // Tuned for Real-Time Tracking
+    private static final long LOCATION_UPDATE_INTERVAL = 5000; // 5 seconds
+    private static final long LOCATION_FASTEST_INTERVAL = 2000; // 2 seconds
 
     public static final String ACTION_START_SHARING = "com.example.disastercomm.START_SHARING";
     public static final String ACTION_STOP_SHARING = "com.example.disastercomm.STOP_SHARING";
@@ -124,6 +125,13 @@ public class LiveLocationService extends Service {
 
         // Start notification update timer
         updateHandler.post(updateRunnable);
+
+        // Notify peers via Chat
+        if (staticPacketHandler != null) {
+            Message startMsg = new Message(deviceId, username, Message.Type.TEXT,
+                    "🔴 Started sharing live location. Track me on the map!");
+            staticPacketHandler.sendMessage(startMsg);
+        }
     }
 
     private void stopLocationSharing() {

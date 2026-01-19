@@ -249,6 +249,11 @@ public class MeshNetworkManager {
         @Override
         public void onDisconnected(@NonNull String endpointId) {
             Log.d(TAG, "Disconnected from: " + endpointId);
+
+            // ✅ Fix: Capture state before removal for auto-reconnect logic
+            boolean wasConnected = connectedEndpoints.containsKey(endpointId);
+            String oldName = connectedEndpoints.get(endpointId);
+
             connectedEndpoints.remove(endpointId);
 
             // Remove from pool
@@ -260,12 +265,19 @@ public class MeshNetworkManager {
                 handler.post(() -> callback.onDeviceDisconnected(endpointId));
             }
 
-            // ✅ Auto-Reconnect: Only if we knew this endpoint
-            if (pendingEndpointNames.containsKey(endpointId) || connectedEndpoints.containsKey(endpointId)) {
-                Log.d(TAG, "Attempting auto-reconnect to " + endpointId);
+            // ✅ Auto-Reconnect: Only if we knew this endpoint or it was previously
+            // connected
+            if (pendingEndpointNames.containsKey(endpointId) || wasConnected) {
+                Log.d(TAG, "Attempting auto-reconnect to " + endpointId + " (" + (oldName != null ? oldName : "Unknown")
+                        + ")");
+                // Put back in pending if it was connected, so we know its name if we reconnect
+                if (oldName != null) {
+                    pendingEndpointNames.put(endpointId, oldName);
+                }
                 handler.postDelayed(() -> requestConnection(endpointId), CONNECTION_RETRY_DELAY);
             }
-            pendingEndpointNames.remove(endpointId);
+            // pendingEndpointNames.remove(endpointId); // Don't remove immediately if we
+            // are retrying
         }
     };
 
