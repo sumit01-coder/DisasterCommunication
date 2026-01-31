@@ -11,12 +11,15 @@ import com.example.disastercomm.models.Message;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Database(entities = { Message.class, com.example.disastercomm.models.User.class }, version = 4, exportSchema = false)
+@Database(entities = { Message.class, com.example.disastercomm.models.User.class,
+        MessageQueueEntity.class }, version = 5, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract MessageDao messageDao();
 
     public abstract UserDao userDao();
+
+    public abstract MessageQueueDao messageQueueDao();
 
     private static volatile AppDatabase INSTANCE;
     private static final int NUMBER_OF_THREADS = 4;

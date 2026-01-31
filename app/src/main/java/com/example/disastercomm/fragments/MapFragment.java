@@ -704,6 +704,24 @@ public class MapFragment extends Fragment {
         controlsFragment.show(getParentFragmentManager(), "LiveLocationControls");
     }
 
+    public void focusOnUser(String userId) {
+        if (!isAdded() || mapController == null)
+            return;
+
+        com.example.disastercomm.PeerLocationManager manager = com.example.disastercomm.PeerLocationManager
+                .getInstance();
+        org.osmdroid.util.GeoPoint location = manager.getPeerLocation(userId);
+
+        if (location != null) {
+            mapController.animateTo(location, 18.0, 1000L); // Zoom in closer
+            android.widget.Toast.makeText(getContext(), "Tracking " + userId, android.widget.Toast.LENGTH_SHORT).show();
+        } else {
+            android.widget.Toast
+                    .makeText(getContext(), "Location not available for " + userId, android.widget.Toast.LENGTH_SHORT)
+                    .show();
+        }
+    }
+
     public void updateMyLocation(double lat, double lng) {
         if (!isAdded() || mapController == null) {
             return;

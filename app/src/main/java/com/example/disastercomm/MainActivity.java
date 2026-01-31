@@ -29,7 +29,8 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity
-        implements MeshNetworkManager.MeshCallback, PacketHandler.MessageListener {
+        implements MeshNetworkManager.MeshCallback, PacketHandler.MessageListener,
+        com.example.disastercomm.ChatAdapter.OnLocationClickListener {
 
     private static final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
 
@@ -380,7 +381,7 @@ public class MainActivity extends AppCompatActivity
             EditText etChatMessage = view.findViewById(R.id.etChatMessage);
             Button btnSendChat = view.findViewById(R.id.btnSendChat);
 
-            chatAdapter = new ChatAdapter(DeviceUtil.getDeviceId(this));
+            chatAdapter = new ChatAdapter(DeviceUtil.getDeviceId(this), this);
             rvChatMessages.setLayoutManager(new LinearLayoutManager(this));
             rvChatMessages.setAdapter(chatAdapter);
 
@@ -638,6 +639,13 @@ public class MainActivity extends AppCompatActivity
                 .build();
 
         nm.notify(userId.hashCode(), notification);
+    }
+
+    @Override
+    public void onLocationClick(String userId) {
+        android.content.Intent intent = new android.content.Intent(this, MapActivity.class);
+        intent.putExtra("TARGET_USER_ID", userId);
+        startActivity(intent);
     }
 
     @Override

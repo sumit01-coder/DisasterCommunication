@@ -24,7 +24,7 @@ import com.example.disastercomm.utils.MessageDebugHelper; // ✅ Debug helper
 
 import java.util.List; // ✅ List import
 
-public class ChatFragment extends Fragment {
+public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClickListener {
 
     private RecyclerView rvMessages;
     private EditText etMessage;
@@ -99,7 +99,7 @@ public class ChatFragment extends Fragment {
         myId = DeviceUtil.getDeviceId(requireContext());
 
         // Setup RecyclerView
-        chatAdapter = new ChatAdapter(myId);
+        chatAdapter = new ChatAdapter(myId, this);
         rvMessages.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvMessages.setAdapter(chatAdapter);
 
@@ -515,6 +515,16 @@ public class ChatFragment extends Fragment {
                 btnClose.setVisibility(View.VISIBLE);
             if (ivAvatar != null)
                 ivAvatar.setImageResource(R.drawable.ic_members); // Use member icon
+        }
+    }
+
+    @Override
+    public void onLocationClick(String userId) {
+        if (getActivity() instanceof com.example.disastercomm.MainActivityNew) {
+            ((com.example.disastercomm.MainActivityNew) getActivity()).openMapAndTrackUser(userId);
+        } else {
+            android.widget.Toast.makeText(getContext(), "Debugging: Location clicked for user " + userId,
+                    android.widget.Toast.LENGTH_SHORT).show();
         }
     }
 }

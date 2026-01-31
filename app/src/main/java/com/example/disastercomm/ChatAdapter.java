@@ -27,9 +27,15 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final Map<String, Integer> messagePositions = new HashMap<>(); // Track message positions by ID
     private final String myDeviceId;
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());
+    private OnLocationClickListener locationClickListener;
 
-    public ChatAdapter(String myDeviceId) {
+    public interface OnLocationClickListener {
+        void onLocationClick(String userId);
+    }
+
+    public ChatAdapter(String myDeviceId, OnLocationClickListener locationClickListener) {
         this.myDeviceId = myDeviceId;
+        this.locationClickListener = locationClickListener;
     }
 
     public void addMessage(Message message) {
@@ -106,15 +112,15 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         // Handle location updates specifically
         if (message.type == Message.Type.LOCATION_UPDATE) {
             if (holder instanceof SentMessageHolder) {
-                ((SentMessageHolder) holder).bindLocation(message, timeFormat);
+                ((SentMessageHolder) holder).bindLocation(message, timeFormat, locationClickListener);
             } else {
-                ((ReceivedMessageHolder) holder).bindLocation(message, timeFormat);
+                ((ReceivedMessageHolder) holder).bindLocation(message, timeFormat, locationClickListener);
             }
         } else {
             if (holder instanceof SentMessageHolder) {
-                ((SentMessageHolder) holder).bind(message, timeFormat);
+                ((SentMessageHolder) holder).bind(message, timeFormat, locationClickListener);
             } else {
-                ((ReceivedMessageHolder) holder).bind(message, timeFormat);
+                ((ReceivedMessageHolder) holder).bind(message, timeFormat, locationClickListener);
             }
         }
     }
@@ -135,7 +141,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ivStatus = itemView.findViewById(R.id.ivStatus);
         }
 
-        void bind(Message message, SimpleDateFormat timeFormat) {
+        void bind(Message message, SimpleDateFormat timeFormat, OnLocationClickListener locationClickListener) {
             tvMessage.setText(message.content);
             tvTimestamp.setText(timeFormat.format(new Date(message.timestamp)));
 
@@ -147,17 +153,33 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (message.type == Message.Type.SOS) {
                 tvMessage.setTextColor(0xFFFF5722); // Red
                 tvMessage.setTypeface(null, android.graphics.Typeface.BOLD);
+
+                // Allow clicking SOS location messages too
+                if (message.content.contains("Location:")) {
+                    tvMessage.setOnClickListener(v -> {
+                        if (locationClickListener != null) {
+                            locationClickListener.onLocationClick(message.senderId);
+                        }
+                    });
+                }
+            } else {
+                tvMessage.setOnClickListener(null); // Reset listener for normal messages
             }
 
             updateStatus(message);
         }
 
-        void bindLocation(Message message, SimpleDateFormat timeFormat) {
+        void bindLocation(Message message, SimpleDateFormat timeFormat, OnLocationClickListener locationClickListener) {
             tvMessage.setText("📍 Shared Live Location\nTap to view on map");
             tvMessage.setTypeface(null, android.graphics.Typeface.BOLD);
             tvTimestamp.setText(timeFormat.format(new Date(message.timestamp)));
 
-            tvMessage.setOnClickListener(v -> openMap(v, message.content));
+            tvMessage.setOnClickListener(v -> {
+                if (locationClickListener != null) {
+                    String userId = message.senderId;
+                    locationClickListener.onLocationClick(userId);
+                }
+            });
             updateStatus(message);
         }
 
@@ -201,7 +223,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvTimestamp = itemView.findViewById(R.id.tvTimestamp);
         }
 
-        void bind(Message message, SimpleDateFormat timeFormat) {
+        void bind(Message message, SimpleDateFormat timeFormat, OnLocationClickListener locationClickListener) {
             String displayName = (message.senderName != null && !message.senderName.isEmpty())
                     ? message.senderName
                     : message.senderId.substring(0, Math.min(8, message.senderId.length()));
@@ -229,13 +251,18 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
 
                 if (message.content.contains("Location:")) {
-                    String locPart = message.content.substring(message.content.indexOf("Location:") + 9).trim();
-                    tvMessage.setOnClickListener(v -> openMap(v, locPart));
+                    tvMessage.setOnClickListener(v -> {
+                        if (locationClickListener != null) {
+                            locationClickListener.onLocationClick(message.senderId);
+                        }
+                    });
                 }
+            } else {
+                tvMessage.setOnClickListener(null);
             }
         }
 
-        void bindLocation(Message message, SimpleDateFormat timeFormat) {
+        void bindLocation(Message message, SimpleDateFormat timeFormat, OnLocationClickListener locationClickListener) {
             String displayName = (message.senderName != null && !message.senderName.isEmpty())
                     ? message.senderName
                     : message.senderId.substring(0, Math.min(8, message.senderId.length()));
@@ -250,34 +277,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvMessage.setTextColor(itemView.getResources().getColor(R.color.primary, null)); // Blue-ish
             tvTimestamp.setText(timeFormat.format(new Date(message.timestamp)));
 
-            tvMessage.setOnClickListener(v -> openMap(v, message.content));
-        }
-    }
-
-    private static void openMap(View v, String locationData) {
-        try {
-            // Parse "lat,long"
-            String[] parts = locationData.split(",");
-            if (parts.length >= 2) {
-                String lat = parts[0].trim();
-                String lng = parts[1].trim();
-                android.net.Uri gmmIntentUri = android.net.Uri
-                        .parse("geo:" + lat + "," + lng + "?q=" + lat + "," + lng + "(Live Location)");
-                android.content.Intent mapIntent = new android.content.Intent(android.content.Intent.ACTION_VIEW,
-                        gmmIntentUri);
-                mapIntent.setPackage("com.google.android.apps.maps");
-
-                if (mapIntent.resolveActivity(v.getContext().getPackageManager()) != null) {
-                    v.getContext().startActivity(mapIntent);
-                } else {
-                    android.content.Intent genericMapIntent = new android.content.Intent(
-                            android.content.Intent.ACTION_VIEW, gmmIntentUri);
-                    v.getContext().startActivity(genericMapIntent);
+            tvMessage.setOnClickListener(v -> {
+                if (locationClickListener != null) {
+                    String userId = message.senderId;
+                    locationClickListener.onLocationClick(userId);
                 }
-            }
-        } catch (Exception e) {
-            android.widget.Toast.makeText(v.getContext(), "Could not open map", android.widget.Toast.LENGTH_SHORT)
-                    .show();
+            });
         }
     }
+
+    // Removed openMap method as it is no longer used internally
 }

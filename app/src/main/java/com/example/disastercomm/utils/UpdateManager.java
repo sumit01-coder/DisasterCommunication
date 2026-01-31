@@ -32,6 +32,11 @@ public class UpdateManager {
     private static final String GITHUB_OWNER = "sumit01-coder";
     private static final String GITHUB_REPO = "DisasterCommunication";
 
+    // SharedPreferences keys for version tracking
+    private static final String PREF_NAME = "UpdatePreferences";
+    private static final String PREF_LAST_DISMISSED_VERSION = "last_dismissed_version";
+    private static final String PREF_LAST_NOTIFIED_VERSION = "last_notified_version";
+
     private final Context context;
 
     public UpdateManager(Context context) {
@@ -111,6 +116,21 @@ public class UpdateManager {
 
                     // Simple string comparison (Assume tag_name starts with 'v')
                     if (!tagName.equalsIgnoreCase(currentVersion) && !tagName.equals("v" + currentVersion)) {
+                        // ✅ Check if this version was already dismissed
+                        String lastDismissedVersion = getLastDismissedVersion();
+                        if (lastDismissedVersion != null &&
+                                (tagName.equalsIgnoreCase(lastDismissedVersion)
+                                        || tagName.equals("v" + lastDismissedVersion))) {
+                            // User already dismissed this version, don't show again
+                            Log.d(TAG, "Update " + tagName + " was already dismissed by user");
+                            if (!isSilentCheck) {
+                                Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show();
+                            }
+                            return;
+                        }
+
+                        // New version available that hasn't been dismissed
+                        saveLastNotifiedVersion(tagName);
                         if (isSilentCheck) {
                             sendUpdateNotification(tagName, body, downloadUrl);
                         } else {
@@ -153,7 +173,11 @@ public class UpdateManager {
                 .setTitle("New Update Available!")
                 .setMessage("Version: " + version + "\n\n" + notes)
                 .setPositiveButton("Update Now", (dialog, which) -> new DownloadTask().execute(downloadUrl))
-                .setNegativeButton("Later", null)
+                .setNegativeButton("Later", (dialog, which) -> {
+                    // ✅ Mark this version as dismissed so we don't show it again
+                    markVersionAsDismissed(version);
+                    Log.d(TAG, "Update " + version + " dismissed by user");
+                })
                 .show();
     }
 
@@ -260,6 +284,8 @@ public class UpdateManager {
         protected void onPostExecute(String path) {
             progressDialog.dismiss();
             if (path != null) {
+                // ✅ Clear dismissed version since user is installing the update
+                clearDismissedVersion();
                 installApk(path);
             } else {
                 Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show();
@@ -300,9 +326,22 @@ public class UpdateManager {
                     boolean isNewer = !tagName.equalsIgnoreCase(currentVersion)
                             && !tagName.equals("v" + currentVersion);
 
+                    // ✅ Check if this version was already dismissed
+                    if (isNewer) {
+                        String lastDismissedVersion = getLastDismissedVersion();
+                        if (lastDismissedVersion != null &&
+                                (tagName.equalsIgnoreCase(lastDismissedVersion)
+                                        || tagName.equals("v" + lastDismissedVersion))) {
+                            // User already dismissed this version
+                            isNewer = false;
+                            Log.d(TAG, "Badge check: Update " + tagName + " was already dismissed");
+                        }
+                    }
+
+                    final boolean finalIsNewer = isNewer;
                     if (context instanceof android.app.Activity) {
                         ((android.app.Activity) context)
-                                .runOnUiThread(() -> callback.onVersionFetched(tagName, isNewer));
+                                .runOnUiThread(() -> callback.onVersionFetched(tagName, finalIsNewer));
                     }
                 } else {
                     int responseCode = conn.getResponseCode();
@@ -344,5 +383,42 @@ public class UpdateManager {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         context.startActivity(intent);
+    }
+
+    // ============================================================
+    // SharedPreferences Helper Methods for Version Tracking
+    // ============================================================
+
+    /**
+     * Get the last version that was dismissed by the user
+     */
+    private String getLastDismissedVersion() {
+        android.content.SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        return prefs.getString(PREF_LAST_DISMISSED_VERSION, null);
+    }
+
+    /**
+     * Save the last version that was notified to the user
+     */
+    private void saveLastNotifiedVersion(String version) {
+        android.content.SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putString(PREF_LAST_NOTIFIED_VERSION, version).apply();
+    }
+
+    /**
+     * Mark a version as dismissed by the user (clicked "Later")
+     */
+    private void markVersionAsDismissed(String version) {
+        android.content.SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putString(PREF_LAST_DISMISSED_VERSION, version).apply();
+    }
+
+    /**
+     * Clear the dismissed version (called when user installs the update)
+     */
+    private void clearDismissedVersion() {
+        android.content.SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        prefs.edit().remove(PREF_LAST_DISMISSED_VERSION).apply();
+        Log.d(TAG, "Cleared dismissed version - user is installing update");
     }
 }

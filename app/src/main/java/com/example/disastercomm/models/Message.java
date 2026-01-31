@@ -19,7 +19,10 @@ public class Message {
         DELIVERY_RECEIPT,
         READ_RECEIPT,
         KEY_EXCHANGE,
-        HEARTBEAT
+        HEARTBEAT,
+        ROUTE_REQUEST, // RREQ - Find path to destination
+        ROUTE_REPLY, // RREP - Path found
+        ROUTE_ERROR // RERR - Link broken
     }
 
     public enum Status {
@@ -59,6 +62,14 @@ public class Message {
     public long tokenExpiry; // Timestamp when this packet expires
     public String publicKey; // For KEY_EXCHANGE messages
 
+    // ===== MESH ROUTING FIELDS =====
+    public int hopCount = 0; // Current number of hops taken
+    public int maxHops = 10; // TTL - max hops allowed
+    public String routePath = ""; // Path taken: "A→B→C"
+    public String nextHop = null; // Next device to forward to
+    public String originatorId = null; // Original sender (for RREQ)
+    public int routeSequence = 0; // Sequence number for route freshness
+
     public Message() {
     }
 
@@ -72,6 +83,9 @@ public class Message {
         this.content = content;
         this.timestamp = System.currentTimeMillis();
         this.ttl = 10;
+        this.maxHops = 10;
+        this.hopCount = 0;
+        this.routePath = senderId;
         this.status = Status.SENDING;
     }
 
