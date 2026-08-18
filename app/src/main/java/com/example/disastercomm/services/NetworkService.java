@@ -39,6 +39,8 @@ public class NetworkService extends Service {
     private BLEAdvertiser bleAdvertiser;
     private BLEHubClient bleHubClient; // Hub Client
     private com.example.disastercomm.network.WifiAwareNetworkManager wifiAwareNetworkManager; // ✅ Wi-Fi Aware Manager
+    private com.example.disastercomm.network.LocalTcpManager localTcpManager;
+    private com.example.disastercomm.network.UdpDiscoveryManager udpDiscoveryManager;
     private PacketHandler packetHandler;
     private NetworkStateMonitor networkStateMonitor;
     private NotificationSoundManager notificationSoundManager;
@@ -90,6 +92,9 @@ public class NetworkService extends Service {
             public void onDeviceConnected(String endpointId, String deviceName) {
                 // Forward to Activity via Broadcast or Callback
                 broadcastUpdate("MESH_CONNECTED", endpointId, deviceName);
+                if (packetHandler != null) {
+                    packetHandler.retryOfflineMessages();
+                }
             }
 
             @Override
@@ -116,6 +121,9 @@ public class NetworkService extends Service {
                     @Override
                     public void onBluetoothConnected(String address, String deviceName) {
                         broadcastUpdate("BT_CONNECTED", address, deviceName);
+                        if (packetHandler != null) {
+                            packetHandler.retryOfflineMessages();
+                        }
                     }
 
                     @Override
@@ -186,15 +194,37 @@ public class NetworkService extends Service {
             packetHandler.setWifiAwareNetworkManager(wifiAwareNetworkManager);
         }
 
+        // 3.7 Local TCP Socket Manager
+        localTcpManager = new com.example.disastercomm.network.LocalTcpManager(username,
+                meshNetworkManager.getConnectionPoolManager(),
+                new com.example.disastercomm.network.LocalTcpManager.PacketReceiver() {
+                    @Override
+                    public void onPacketReceived(String endpointId, byte[] data) {
+                        if (packetHandler != null) {
+                            packetHandler.handlePayload(endpointId, data);
+                        }
+                    }
+                });
+        localTcpManager.setPacketHandler(packetHandler);
+        localTcpManager.start();
+        packetHandler.setLocalTcpManager(localTcpManager);
+
+        // 3.8 UDP Discovery (For Local Wi-Fi Routers)
+        udpDiscoveryManager = new com.example.disastercomm.network.UdpDiscoveryManager(this, username,
+                DeviceUtil.getDeviceId(this), localTcpManager);
+        udpDiscoveryManager.start();
+
         // 4. BLE Advertiser (Fast Discovery)
+        com.example.disastercomm.utils.PreferenceManager preferenceManager = new com.example.disastercomm.utils.PreferenceManager(this);
         bleAdvertiser = new BLEAdvertiser(this, username, DeviceUtil.getDeviceId(this),
                 new BLEAdvertiser.BLECallback() {
                     @Override
                     public void onBLEDeviceFound(String address, String name, int rssi) {
                         Log.d(TAG, "BLE Device Found: " + name + " (" + address + ")");
                         // Trigger fast pairing via Classic Bluetooth
-                        if (name != null && name.contains("DisasterComm_S3")) {
-                            Log.d(TAG, "⚡ Found ESP32 Hub! Connecting via GATT...");
+                        String hubNameFilter = preferenceManager.getHubNameFilter();
+                        if (name != null && name.contains(hubNameFilter)) {
+                            Log.d(TAG, "⚡ Found Official Hub: " + name + "! Connecting via GATT...");
                             android.bluetooth.BluetoothDevice device = android.bluetooth.BluetoothAdapter
                                     .getDefaultAdapter().getRemoteDevice(address);
                             bleHubClient.connect(device);
@@ -224,9 +254,9 @@ public class NetworkService extends Service {
         Log.d(TAG, "Network Managers Started");
     }
 
-    // Broadcast helper
     private void broadcastUpdate(String action, String id, String extra) {
         Intent intent = new Intent("com.example.disastercomm.NETWORK_UPDATE");
+        intent.setPackage(getPackageName());
         intent.putExtra("action", action);
         intent.putExtra("id", id);
         if (extra != null)
@@ -273,8 +303,12 @@ public class NetworkService extends Service {
             bleAdvertiser.stop();
         if (bleHubClient != null)
             bleHubClient.disconnect();
-        if (wifiAwareNetworkManager != null)
+        if (wifiAwareNetworkManager != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             wifiAwareNetworkManager.stop();
+        if (localTcpManager != null)
+            localTcpManager.stop();
+        if (udpDiscoveryManager != null)
+            udpDiscoveryManager.stop();
         Log.d(TAG, "NetworkService Destroyed");
     }
 
@@ -295,6 +329,10 @@ public class NetworkService extends Service {
         return wifiAwareNetworkManager;
     }
 
+    public com.example.disastercomm.network.LocalTcpManager getLocalTcpManager() {
+        return localTcpManager;
+    }
+
     public String getNetworkStrengthReport() {
         StringBuilder sb = new StringBuilder();
         int total = 0;
@@ -310,9 +348,15 @@ public class NetworkService extends Service {
         total += btCount;
 
         // NAN
-        int nanCount = wifiAwareNetworkManager != null ? wifiAwareNetworkManager.getPeerCount() : 0;
+        int nanCount = (wifiAwareNetworkManager != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 
+                ? wifiAwareNetworkManager.getPeerCount() : 0;
         sb.append("Wi-Fi Aware: ").append(nanCount).append(" peers\n");
         total += nanCount;
+
+        // TCP Sockets
+        int tcpCount = localTcpManager != null ? localTcpManager.getActiveConnectionCount() : 0;
+        sb.append("TCP Sockets: ").append(tcpCount).append(" peers\n");
+        total += tcpCount;
 
         // Hub
         boolean hubConnected = bleHubClient != null && bleHubClient.isConnected();

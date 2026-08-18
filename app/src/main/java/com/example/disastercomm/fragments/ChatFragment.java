@@ -451,6 +451,7 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         View viewChatOnlineStatus = chatHeader.findViewById(R.id.viewChatOnlineStatus);
         View btnClose = chatHeader.findViewById(R.id.btnClosePrivateChat);
         android.widget.ImageView ivAvatar = chatHeader.findViewById(R.id.ivChatAvatar);
+        View ivChatSecure = chatHeader.findViewById(R.id.ivChatSecure);
 
         if (recipientId == null) {
             // 🌍 GLOBAL BROADCAST MODE
@@ -464,10 +465,21 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
                 btnClose.setVisibility(View.GONE); // Cant close global
             if (ivAvatar != null)
                 ivAvatar.setImageResource(R.drawable.ic_app_logo); // Use app icon or generic
+            if (ivChatSecure != null)
+                ivChatSecure.setVisibility(View.GONE); // No E2EE on broadcast
         } else {
             // 👤 PRIVATE CHAT MODE
             if (tvChatMemberName != null)
                 tvChatMemberName.setText(recipientName);
+
+            // Toggle E2EE Secure Icon
+            if (ivChatSecure != null) {
+                if (packetHandler != null && packetHandler.hasPublicKey(recipientId)) {
+                    ivChatSecure.setVisibility(View.VISIBLE);
+                } else {
+                    ivChatSecure.setVisibility(View.GONE);
+                }
+            }
 
             // ✅ RICH STATUS DISPLAY
             if (currentRecipient != null) {

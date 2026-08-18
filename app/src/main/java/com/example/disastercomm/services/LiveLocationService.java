@@ -12,6 +12,9 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.content.ServiceConnection;
+import android.content.ComponentName;
+import android.os.IBinder;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -48,7 +51,7 @@ public class LiveLocationService extends Service {
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
     private LiveLocationSharingManager sharingManager;
-    private static PacketHandler staticPacketHandler; // Static reference set by MainActivity
+    // Removed staticPacketHandler to prevent memory leaks
     private NotificationManager notificationManager;
     private Handler updateHandler;
     private Runnable updateRunnable;
@@ -56,18 +59,29 @@ public class LiveLocationService extends Service {
     private String username;
     private String deviceId;
 
-    /**
-     * Set the PacketHandler instance to use for broadcasting
-     * Call this from MainActivity after PacketHandler is initialized
-     */
-    public static void setPacketHandler(PacketHandler handler) {
-        staticPacketHandler = handler;
-    }
+    private NetworkService networkService;
+    private boolean isBound = false;
+
+    private ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            NetworkService.LocalBinder binder = (NetworkService.LocalBinder) service;
+            networkService = binder.getService();
+            isBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            isBound = false;
+        }
+    };
 
     @Override
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "Service created");
+        android.content.Intent bindIntent = new android.content.Intent(this, NetworkService.class);
+        bindService(bindIntent, connection, Context.BIND_AUTO_CREATE);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         sharingManager = LiveLocationSharingManager.getInstance(this);
@@ -127,10 +141,10 @@ public class LiveLocationService extends Service {
         updateHandler.post(updateRunnable);
 
         // Notify peers via Chat
-        if (staticPacketHandler != null) {
+        if (isBound && networkService != null && networkService.getPacketHandler() != null) {
             Message startMsg = new Message(deviceId, username, Message.Type.TEXT,
                     "🔴 Started sharing live location. Track me on the map!");
-            staticPacketHandler.sendMessage(startMsg);
+            networkService.getPacketHandler().sendMessage(startMsg);
         }
     }
 
@@ -177,9 +191,8 @@ public class LiveLocationService extends Service {
     }
 
     private void broadcastLocation(double latitude, double longitude) {
-        // Use the static packet handler reference
-        if (staticPacketHandler == null) {
-            Log.e(TAG, "PacketHandler not available, cannot broadcast location");
+        if (!isBound || networkService == null || networkService.getPacketHandler() == null) {
+            Log.e(TAG, "NetworkService or PacketHandler not available, cannot broadcast location");
             return;
         }
 
@@ -188,7 +201,7 @@ public class LiveLocationService extends Service {
         locMsg.isLiveSharing = true;
         locMsg.sharingUntil = sharingManager.getSharingUntilTimestamp();
 
-        staticPacketHandler.sendMessage(locMsg);
+        networkService.getPacketHandler().sendMessage(locMsg);
         Log.d(TAG, "Broadcast location: " + latitude + ", " + longitude);
     }
 
@@ -255,6 +268,11 @@ public class LiveLocationService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (isBound) {
+            unbindService(connection);
+            isBound = false;
+        }
+        stopSelf();
         Log.d(TAG, "Service destroyed");
 
         if (locationCallback != null) {

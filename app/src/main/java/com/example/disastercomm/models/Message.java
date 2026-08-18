@@ -20,9 +20,9 @@ public class Message {
         READ_RECEIPT,
         KEY_EXCHANGE,
         HEARTBEAT,
-        ROUTE_REQUEST, // RREQ - Find path to destination
-        ROUTE_REPLY, // RREP - Path found
-        ROUTE_ERROR // RERR - Link broken
+        ROUTE_REQUEST, 
+        ROUTE_REPLY, 
+        ROUTE_ERROR
     }
 
     public enum Status {
@@ -54,24 +54,29 @@ public class Message {
 
     // Live Location Sharing Fields
     public boolean isLiveSharing = false;
-    public long sharingUntil = 0; // Timestamp when sharing ends (0 = not sharing, Long.MAX_VALUE = continuous)
+    public long sharingUntil = 0; 
 
     // Security Fields
-    public String encryptedAesKey; // AES key encrypted with Receiver's Public RSA Key
-    public String token; // Routing token (or simply messageID signature)
-    public long tokenExpiry; // Timestamp when this packet expires
-    public String publicKey; // For KEY_EXCHANGE messages
+    public String encryptedAesKey; 
+    public String token; 
+    public long tokenExpiry; 
+    public String publicKey; 
 
     // ===== MESH ROUTING FIELDS =====
-    public int hopCount = 0; // Current number of hops taken
-    public int maxHops = 10; // TTL - max hops allowed
-    public String routePath = ""; // Path taken: "A→B→C"
-    public String nextHop = null; // Next device to forward to
-    public String originatorId = null; // Original sender (for RREQ)
-    public int routeSequence = 0; // Sequence number for route freshness
+    public int hopCount = 0; 
+    public int maxHops = 10; 
+    public String routePath = ""; 
+    public String nextHop = null; 
+    public String originatorId = null; 
+    public int routeSequence = 0; 
 
-    public Message() {
-    }
+    // CIA Security & Availability Fields
+    public String signature; // Integrity: Digital Signature
+    public int priority = 1; // Availability: 1-10 (SOS=10)
+    public String nonce; // Integrity: Anti-Replay
+    public boolean isEncrypted = false; // Confidentiality indicator
+
+    public Message() {}
 
     @androidx.room.Ignore
     public Message(String senderId, String senderName, Type type, String content) {
@@ -87,6 +92,10 @@ public class Message {
         this.hopCount = 0;
         this.routePath = senderId;
         this.status = Status.SENDING;
+        this.nonce = UUID.randomUUID().toString();
+        if (type == Type.SOS) {
+            this.priority = 10;
+        }
     }
 
     public static Message createDeliveryReceipt(String messageId, String senderId, String senderName) {

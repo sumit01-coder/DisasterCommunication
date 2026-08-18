@@ -38,7 +38,7 @@ public class MeshNetworkManager {
     private final String deviceId;
     private String username;
     private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
-    private static final long DISCOVERY_RESTART_DELAY = 2000; // OPTIMIZED: Reduced from 5000ms
+    private static final long DISCOVERY_RESTART_DELAY = 1000; // OPTIMIZED: Reduced from 2000ms
     private static final long CONNECTION_RETRY_DELAY = 1000; // OPTIMIZED: Reduced from 3000ms
     private boolean isDiscoveryActive = false;
     private boolean isAdvertisingActive = false; // ✅ Track advertising state
@@ -46,9 +46,17 @@ public class MeshNetworkManager {
 
     // Map of endpointID -> DeviceName
     private final Map<String, String> connectedEndpoints = new HashMap<>();
+    private final Map<String, Integer> connectionRetryAttempts = new HashMap<>();
 
     // Map to temporarily store names of endpoints during connection initiation
     private final Map<String, String> pendingEndpointNames = new HashMap<>();
+
+    private long getConnectionRetryDelay(String endpointId) {
+        int attempt = connectionRetryAttempts.getOrDefault(endpointId, 0);
+        connectionRetryAttempts.put(endpointId, attempt + 1);
+        long delay = CONNECTION_RETRY_DELAY * (1L << Math.min(attempt, 4)); // 1s, 2s, 4s, 8s, 16s...
+        return Math.min(delay, 15000); // Max 15 seconds
+    }
 
     public interface MeshCallback {
         void onDeviceConnected(String endpointId, String deviceName);
@@ -70,6 +78,10 @@ public class MeshNetworkManager {
 
     public void setConnectionPoolManager(ConnectionPoolManager poolManager) {
         this.poolManager = poolManager;
+    }
+
+    public ConnectionPoolManager getConnectionPoolManager() {
+        return this.poolManager;
     }
 
     /**
@@ -164,7 +176,7 @@ public class MeshNetworkManager {
 
                             // Exponential Backoff
                             handler.postDelayed(this::startDiscovery, discoveryRetryDelay);
-                            discoveryRetryDelay = Math.min(discoveryRetryDelay * 2, 60000); // Max 60s
+                            discoveryRetryDelay = Math.min(discoveryRetryDelay * 2, 15000); // Max 15s
                         });
     }
 
@@ -210,6 +222,7 @@ public class MeshNetworkManager {
             switch (result.getStatus().getStatusCode()) {
                 case ConnectionsStatusCodes.STATUS_OK:
                     Log.d(TAG, "Connected to: " + endpointId);
+                    connectionRetryAttempts.remove(endpointId); // Reset retry count
                     // Retrieve the name we stored earlier
                     String name = pendingEndpointNames.get(endpointId);
                     if (name == null) {
@@ -232,14 +245,16 @@ public class MeshNetworkManager {
                 case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
                     Log.d(TAG, "Connection rejected: " + endpointId + ". Retrying...");
                     pendingEndpointNames.remove(endpointId);
-                    // Retry connection
-                    handler.postDelayed(() -> requestConnection(endpointId), CONNECTION_RETRY_DELAY);
+                    // Retry connection with exponential backoff
+                    long rejectDelay = getConnectionRetryDelay(endpointId);
+                    handler.postDelayed(() -> requestConnection(endpointId), rejectDelay);
                     break;
                 case ConnectionsStatusCodes.STATUS_ERROR:
                     Log.d(TAG, "Connection error: " + endpointId + ". Retrying...");
                     pendingEndpointNames.remove(endpointId);
-                    // Retry connection
-                    handler.postDelayed(() -> requestConnection(endpointId), CONNECTION_RETRY_DELAY);
+                    // Retry connection with exponential backoff
+                    long errorDelay = getConnectionRetryDelay(endpointId);
+                    handler.postDelayed(() -> requestConnection(endpointId), errorDelay);
                     break;
                 default:
                     Log.d(TAG, "Unknown connection status: " + result.getStatus().getStatusCode());
@@ -268,13 +283,14 @@ public class MeshNetworkManager {
             // ✅ Auto-Reconnect: Only if we knew this endpoint or it was previously
             // connected
             if (pendingEndpointNames.containsKey(endpointId) || wasConnected) {
+                long reconnectDelay = getConnectionRetryDelay(endpointId);
                 Log.d(TAG, "Attempting auto-reconnect to " + endpointId + " (" + (oldName != null ? oldName : "Unknown")
-                        + ")");
+                        + ") in " + reconnectDelay + "ms");
                 // Put back in pending if it was connected, so we know its name if we reconnect
                 if (oldName != null) {
                     pendingEndpointNames.put(endpointId, oldName);
                 }
-                handler.postDelayed(() -> requestConnection(endpointId), CONNECTION_RETRY_DELAY);
+                handler.postDelayed(() -> requestConnection(endpointId), reconnectDelay);
             }
             // pendingEndpointNames.remove(endpointId); // Don't remove immediately if we
             // are retrying

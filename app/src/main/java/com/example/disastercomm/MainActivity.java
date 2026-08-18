@@ -319,9 +319,6 @@ public class MainActivity extends AppCompatActivity
         updateNetworkStatus();
         startScanAnimation();
 
-        // Set PacketHandler for LiveLocationService
-        com.example.disastercomm.services.LiveLocationService.setPacketHandler(packetHandler);
-
         Log.d("MainActivity", "Mesh network initialized with BLE and connection pooling");
     }
 

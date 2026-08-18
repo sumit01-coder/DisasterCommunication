@@ -47,7 +47,8 @@ public class ConnectivityStatusManager {
         filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
         filter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION);
 
-        context.registerReceiver(receiver, filter);
+        androidx.core.content.ContextCompat.registerReceiver(
+                context, receiver, filter, androidx.core.content.ContextCompat.RECEIVER_EXPORTED);
     }
 
     public void stopMonitoring() {
@@ -89,7 +90,9 @@ public class ConnectivityStatusManager {
     public void requestEnableBluetooth(Context activityContext) {
         Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
         if (activityContext instanceof android.app.Activity) {
-            ((android.app.Activity) activityContext).startActivityForResult(enableBtIntent, 1001);
+            if (androidx.core.app.ActivityCompat.checkSelfPermission(activityContext, android.Manifest.permission.BLUETOOTH_CONNECT) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                ((android.app.Activity) activityContext).startActivityForResult(enableBtIntent, 1001);
+            }
         }
     }
 

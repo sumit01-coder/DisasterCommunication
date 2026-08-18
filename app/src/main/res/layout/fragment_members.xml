@@ -67,7 +67,6 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Manual Connection Button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnManualConnect"
         android:layout_width="match_parent"
@@ -77,8 +76,8 @@
         android:layout_marginBottom="8dp"
         android:text="🔍 Scan for Nearby Devices"
         android:textColor="@android:color/white"
-        app:backgroundTint="@color/primary"
-        app:cornerRadius="8dp"
+        app:backgroundTint="@color/accent"
+        app:cornerRadius="12dp"
         app:icon="@drawable/ic_wifi"
         app:iconGravity="textStart"
         app:iconTint="@android:color/white"

@@ -24,11 +24,8 @@ public class LoginActivity extends AppCompatActivity {
         com.example.disastercomm.utils.PreferenceManager pm = new com.example.disastercomm.utils.PreferenceManager(
                 this);
         if (pm.isAppLockEnabled()) {
-            // Show blank screen or loading
-            setContentView(R.layout.activity_login);
-            // In a real app we might want a dedicated "Locked" layout, but this works
-            // Hide controls initially to prevent access?
-            // Better: just auth. The prompt covers the screen.
+            // Use blank placeholder view to prevent visual flickering of login form in background
+            setContentView(new android.view.View(this));
 
             com.example.disastercomm.utils.BiometricHelper.authenticate(this,
                     new com.example.disastercomm.utils.BiometricHelper.Callback() {
@@ -72,6 +69,14 @@ public class LoginActivity extends AppCompatActivity {
             String name = etUsername.getText().toString().trim();
             if (name.isEmpty()) {
                 etUsername.setError("Name is required");
+                return;
+            }
+            if (name.length() > 20) {
+                etUsername.setError("Name must be 20 characters or less");
+                return;
+            }
+            if (!name.matches("^[a-zA-Z0-9_ ]+$")) {
+                etUsername.setError("Only alphanumeric, spaces, and underscores allowed");
                 return;
             }
 

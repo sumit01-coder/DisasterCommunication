@@ -12,11 +12,15 @@ import com.example.disastercomm.utils.BiometricHelper;
 import com.example.disastercomm.utils.DeviceUtil;
 import com.example.disastercomm.utils.PreferenceManager;
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.android.material.textfield.TextInputEditText;
+import android.widget.Button;
 
 public class SettingsActivity extends AppCompatActivity {
 
     private SwitchMaterial switchCloudBackup;
     private SwitchMaterial switchAppLock;
+    private TextInputEditText etHubName, etServiceUuid, etTxUuid, etRxUuid;
+    private Button btnSaveHub, btnResetHub;
     private PreferenceManager preferenceManager;
 
     @Override
@@ -41,6 +45,12 @@ public class SettingsActivity extends AppCompatActivity {
 
         switchCloudBackup = findViewById(R.id.switchCloudBackup);
         switchAppLock = findViewById(R.id.switchAppLock);
+        etHubName = findViewById(R.id.etHubName);
+        etServiceUuid = findViewById(R.id.etServiceUuid);
+        etTxUuid = findViewById(R.id.etTxUuid);
+        etRxUuid = findViewById(R.id.etRxUuid);
+        btnSaveHub = findViewById(R.id.btnSaveHub);
+        btnResetHub = findViewById(R.id.btnResetHub);
 
         // Listeners
         switchCloudBackup.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -74,6 +84,10 @@ public class SettingsActivity extends AppCompatActivity {
             });
         });
 
+        // Hub Settings Listeners
+        btnSaveHub.setOnClickListener(v -> saveHubSettings());
+        btnResetHub.setOnClickListener(v -> resetHubSettings());
+
         // Software Update
         findViewById(R.id.layoutCheckUpdate).setOnClickListener(v -> {
             new com.example.disastercomm.utils.UpdateManager(this).checkForUpdates();
@@ -87,6 +101,12 @@ public class SettingsActivity extends AppCompatActivity {
         // App Lock
         switchAppLock.setChecked(preferenceManager.isAppLockEnabled());
 
+        // Hub Settings
+        etHubName.setText(preferenceManager.getHubNameFilter());
+        etServiceUuid.setText(preferenceManager.getHubServiceUuid());
+        etTxUuid.setText(preferenceManager.getHubTxUuid());
+        etRxUuid.setText(preferenceManager.getHubRxUuid());
+
         // Set Version Name
         try {
             String versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
@@ -97,4 +117,32 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
+    private void saveHubSettings() {
+        String name = etHubName.getText().toString().trim();
+        String service = etServiceUuid.getText().toString().trim();
+        String tx = etTxUuid.getText().toString().trim();
+        String rx = etRxUuid.getText().toString().trim();
+
+        if (name.isEmpty() || service.isEmpty() || tx.isEmpty() || rx.isEmpty()) {
+            Toast.makeText(this, "Please fill all Hub fields", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        preferenceManager.setHubNameFilter(name);
+        preferenceManager.setHubServiceUuid(service);
+        preferenceManager.setHubTxUuid(tx);
+        preferenceManager.setHubRxUuid(rx);
+
+        Toast.makeText(this, "Hub Configuration Saved. Please restart the app to apply changes.", Toast.LENGTH_LONG)
+                .show();
+    }
+
+    private void resetHubSettings() {
+        etHubName.setText(PreferenceManager.DEFAULT_HUB_NAME_FILTER);
+        etServiceUuid.setText(PreferenceManager.DEFAULT_HUB_SERVICE_UUID);
+        etTxUuid.setText(PreferenceManager.DEFAULT_HUB_TX_UUID);
+        etRxUuid.setText(PreferenceManager.DEFAULT_HUB_RX_UUID);
+
+        saveHubSettings();
+    }
 }

@@ -324,11 +324,8 @@ public class MainActivityNew extends AppCompatActivity implements
         // Register Broadcast Receiver
         android.content.IntentFilter filter = new android.content.IntentFilter(
                 "com.example.disastercomm.NETWORK_UPDATE");
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(networkReceiver, filter, android.content.Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(networkReceiver, filter);
-        }
+        androidx.core.content.ContextCompat.registerReceiver(
+                this, networkReceiver, filter, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
 
         // Initialize other local helpers
         notificationSoundManager = new NotificationSoundManager(this);

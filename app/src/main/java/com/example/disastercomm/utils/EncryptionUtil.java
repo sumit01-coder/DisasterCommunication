@@ -21,10 +21,16 @@ public class EncryptionUtil {
     public static String encrypt(String plainText) {
         try {
             SecretKeySpec secretKey = new SecretKeySpec(SHARED_KEY, ALGORITHM);
-            Cipher cipher = Cipher.getInstance(ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            byte[] iv = new byte[12];
+            new java.security.SecureRandom().nextBytes(iv);
+            javax.crypto.spec.GCMParameterSpec parameterSpec = new javax.crypto.spec.GCMParameterSpec(128, iv);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec);
             byte[] encryptedBytes = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
-            return Base64.encodeToString(encryptedBytes, Base64.NO_WRAP);
+            java.nio.ByteBuffer byteBuffer = java.nio.ByteBuffer.allocate(iv.length + encryptedBytes.length);
+            byteBuffer.put(iv);
+            byteBuffer.put(encryptedBytes);
+            return Base64.encodeToString(byteBuffer.array(), Base64.NO_WRAP);
         } catch (Exception e) {
             e.printStackTrace();
             return plainText; // Fail open or handle error
@@ -34,10 +40,14 @@ public class EncryptionUtil {
     public static String decrypt(String encryptedText) {
         try {
             SecretKeySpec secretKey = new SecretKeySpec(SHARED_KEY, ALGORITHM);
-            Cipher cipher = Cipher.getInstance(ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, secretKey);
             byte[] decodedBytes = Base64.decode(encryptedText, Base64.NO_WRAP);
-            byte[] decryptedBytes = cipher.doFinal(decodedBytes);
+            if (decodedBytes.length < 12) return null;
+            byte[] iv = java.util.Arrays.copyOfRange(decodedBytes, 0, 12);
+            byte[] encryptedBytes = java.util.Arrays.copyOfRange(decodedBytes, 12, decodedBytes.length);
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            javax.crypto.spec.GCMParameterSpec parameterSpec = new javax.crypto.spec.GCMParameterSpec(128, iv);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
+            byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
             return new String(decryptedBytes, StandardCharsets.UTF_8);
         } catch (Exception e) {
             e.printStackTrace();

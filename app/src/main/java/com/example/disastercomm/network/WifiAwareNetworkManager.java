@@ -99,21 +99,23 @@ public class WifiAwareNetworkManager {
                 .setServiceName(SERVICE_NAME)
                 .build();
 
-        awareSession.publish(config, new DiscoverySessionCallback() {
-            @Override
-            public void onPublishStarted(PublishDiscoverySession session) {
-                Log.d(TAG, "NAN Publishing Started");
-                publishSession = session;
-            }
-
-            @Override
-            public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
-                knownPeers.add(peerHandle); // Track peer
-                if (callback != null) {
-                    callback.onNanoMessageReceived(peerHandle, message);
+        if (androidx.core.app.ActivityCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            awareSession.publish(config, new DiscoverySessionCallback() {
+                @Override
+                public void onPublishStarted(PublishDiscoverySession session) {
+                    Log.d(TAG, "NAN Publishing Started");
+                    publishSession = session;
                 }
-            }
-        }, handler);
+
+                @Override
+                public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
+                    knownPeers.add(peerHandle); // Track peer
+                    if (callback != null) {
+                        callback.onNanoMessageReceived(peerHandle, message);
+                    }
+                }
+            }, handler);
+        }
     }
 
     private void startSubscribing() {
@@ -121,34 +123,36 @@ public class WifiAwareNetworkManager {
                 .setServiceName(SERVICE_NAME)
                 .build();
 
-        awareSession.subscribe(config, new DiscoverySessionCallback() {
-            @Override
-            public void onSubscribeStarted(SubscribeDiscoverySession session) {
-                Log.d(TAG, "NAN Subscribing Started");
-                subscribeSession = session;
-            }
-
-            @Override
-            public void onServiceDiscovered(PeerHandle peerHandle, byte[] serviceSpecificInfo,
-                    List<byte[]> matchFilter) {
-                Log.d(TAG, "NAN Service Discovered: " + peerHandle);
-                knownPeers.add(peerHandle); // Track peer
-                if (callback != null) {
-                    callback.onNanoDeviceFound(peerHandle, serviceSpecificInfo);
+        if (androidx.core.app.ActivityCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            awareSession.subscribe(config, new DiscoverySessionCallback() {
+                @Override
+                public void onSubscribeStarted(SubscribeDiscoverySession session) {
+                    Log.d(TAG, "NAN Subscribing Started");
+                    subscribeSession = session;
                 }
 
-                // Auto-reply to initiate pairing (DAP)
-                sendMessage(peerHandle, "DAP_INIT".getBytes(StandardCharsets.UTF_8));
-            }
+                @Override
+                public void onServiceDiscovered(PeerHandle peerHandle, byte[] serviceSpecificInfo,
+                        List<byte[]> matchFilter) {
+                    Log.d(TAG, "NAN Service Discovered: " + peerHandle);
+                    knownPeers.add(peerHandle); // Track peer
+                    if (callback != null) {
+                        callback.onNanoDeviceFound(peerHandle, serviceSpecificInfo);
+                    }
 
-            @Override
-            public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
-                knownPeers.add(peerHandle); // Track peer
-                if (callback != null) {
-                    callback.onNanoMessageReceived(peerHandle, message);
+                    // Auto-reply to initiate pairing (DAP)
+                    sendMessage(peerHandle, "DAP_INIT".getBytes(StandardCharsets.UTF_8));
                 }
-            }
-        }, handler);
+
+                @Override
+                public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
+                    knownPeers.add(peerHandle); // Track peer
+                    if (callback != null) {
+                        callback.onNanoMessageReceived(peerHandle, message);
+                    }
+                }
+            }, handler);
+        }
     }
 
     public void sendMessage(PeerHandle peerHandle, byte[] message) {
@@ -163,10 +167,10 @@ public class WifiAwareNetworkManager {
         broadcastMessage(message, null);
     }
 
-    public void broadcastMessage(byte[] message, PeerHandle excludeHandle) {
+    public void broadcastMessage(byte[] message, String excludeHandleStr) {
         synchronized (knownPeers) {
             for (PeerHandle peer : knownPeers) {
-                if (excludeHandle == null || !peer.equals(excludeHandle)) {
+                if (excludeHandleStr == null || !peer.toString().equals(excludeHandleStr)) {
                     sendMessage(peer, message);
                 }
             }

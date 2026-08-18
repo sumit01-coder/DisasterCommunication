@@ -74,6 +74,10 @@ public class SecurityUtil {
                 .getString(KEY_PUBLIC_KEY, null);
     }
 
+    public static String encodePublicKey(PublicKey publicKey) {
+        return Base64.encodeToString(publicKey.getEncoded(), Base64.DEFAULT);
+    }
+
     public static PublicKey decodePublicKey(String keyStr) {
         try {
             byte[] keyBytes = Base64.decode(keyStr, Base64.DEFAULT);
@@ -112,10 +116,16 @@ public class SecurityUtil {
 
     public static String encryptAes(String content, SecretKey key) {
         try {
-            Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(Cipher.ENCRYPT_MODE, key);
-            byte[] encryptedBytes = cipher.doFinal(content.getBytes());
-            return Base64.encodeToString(encryptedBytes, Base64.DEFAULT);
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            byte[] iv = new byte[12];
+            new java.security.SecureRandom().nextBytes(iv);
+            javax.crypto.spec.GCMParameterSpec parameterSpec = new javax.crypto.spec.GCMParameterSpec(128, iv);
+            cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
+            byte[] encryptedBytes = cipher.doFinal(content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            java.nio.ByteBuffer byteBuffer = java.nio.ByteBuffer.allocate(iv.length + encryptedBytes.length);
+            byteBuffer.put(iv);
+            byteBuffer.put(encryptedBytes);
+            return Base64.encodeToString(byteBuffer.array(), Base64.DEFAULT);
         } catch (Exception e) {
             Log.e(TAG, "AES Encrypt failed", e);
             return null;
@@ -124,11 +134,15 @@ public class SecurityUtil {
 
     public static String decryptAes(String encryptedContent, SecretKey key) {
         try {
-            Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(Cipher.DECRYPT_MODE, key);
             byte[] decodedBytes = Base64.decode(encryptedContent, Base64.DEFAULT);
-            byte[] decryptedBytes = cipher.doFinal(decodedBytes);
-            return new String(decryptedBytes);
+            if (decodedBytes.length < 12) return null;
+            byte[] iv = java.util.Arrays.copyOfRange(decodedBytes, 0, 12);
+            byte[] encryptedBytes = java.util.Arrays.copyOfRange(decodedBytes, 12, decodedBytes.length);
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            javax.crypto.spec.GCMParameterSpec parameterSpec = new javax.crypto.spec.GCMParameterSpec(128, iv);
+            cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec);
+            byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+            return new String(decryptedBytes, java.nio.charset.StandardCharsets.UTF_8);
         } catch (Exception e) {
             Log.e(TAG, "AES Decrypt failed", e);
             return null;

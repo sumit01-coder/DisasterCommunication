@@ -112,8 +112,10 @@ public class EmergencyBeaconService extends Service {
                 .addManufacturerData(MANUFACTURER_ID, manufacturerData)
                 .build();
 
-        advertiser.startAdvertising(settings, data, advertiseCallback);
-        Log.d(TAG, String.format("📡 Broadcasting SOS beacon: %.6f, %.6f", lastLatitude, lastLongitude));
+        if (androidx.core.app.ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_ADVERTISE) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            advertiser.startAdvertising(settings, data, advertiseCallback);
+            Log.d(TAG, String.format("📡 Broadcasting SOS beacon: %.6f, %.6f", lastLatitude, lastLongitude));
+        }
     }
 
     /**
@@ -166,7 +168,9 @@ public class EmergencyBeaconService extends Service {
      */
     private void stopBeacon() {
         if (advertiser != null && isBeaconing) {
-            advertiser.stopAdvertising(advertiseCallback);
+            if (androidx.core.app.ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_ADVERTISE) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                advertiser.stopAdvertising(advertiseCallback);
+            }
             isBeaconing = false;
             Log.d(TAG, "🛑 Emergency beacon STOPPED");
         }

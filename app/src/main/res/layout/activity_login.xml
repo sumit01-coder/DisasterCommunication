@@ -99,7 +99,7 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/white"
-                app:backgroundTint="@color/error"
+                app:backgroundTint="@color/accent"
                 app:cornerRadius="16dp"
                 app:elevation="4dp"
                 app:icon="@drawable/ic_nearby"

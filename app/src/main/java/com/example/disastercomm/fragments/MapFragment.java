@@ -149,6 +149,12 @@ public class MapFragment extends Fragment {
             fabLiveLocation.setOnClickListener(v -> showLiveLocationControls());
         }
 
+        // Setup map layer switcher FAB
+        FloatingActionButton fabMapLayer = view.findViewById(R.id.fabMapLayer);
+        if (fabMapLayer != null) {
+            fabMapLayer.setOnClickListener(v -> showMapLayerSelectionDialog());
+        }
+
         // Initialize map
         mapView = view.findViewById(R.id.mapView);
         if (mapView != null) {
@@ -324,24 +330,7 @@ public class MapFragment extends Fragment {
 
     private void setupMap() {
         // Configure map view
-        // IMPROVEMENT: Use Google Satellite Hybrid tiles (Satellite + Roads)
-        org.osmdroid.tileprovider.tilesource.XYTileSource googleSat = new org.osmdroid.tileprovider.tilesource.XYTileSource(
-                "Google-Sat",
-                0, 19, 256, ".png",
-                new String[] {
-                        "https://mt0.google.com/vt/lyrs=y&hl=en&x=",
-                        "https://mt1.google.com/vt/lyrs=y&hl=en&x=",
-                        "https://mt2.google.com/vt/lyrs=y&hl=en&x=",
-                        "https://mt3.google.com/vt/lyrs=y&hl=en&x="
-                }) {
-            @Override
-            public String getTileURLString(long pMapTileIndex) {
-                return getBaseUrl() + org.osmdroid.util.MapTileIndex.getX(pMapTileIndex) +
-                        "&y=" + org.osmdroid.util.MapTileIndex.getY(pMapTileIndex) +
-                        "&z=" + org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex);
-            }
-        };
-        mapView.setTileSource(googleSat);
+        setSatelliteHybridTileSource();
 
         // Enable touch controls
         mapView.setMultiTouchControls(true);
@@ -738,6 +727,76 @@ public class MapFragment extends Fragment {
         if (mapView != null) {
             mapView.onPause();
         }
+    }
+
+    private void showMapLayerSelectionDialog() {
+        if (!isAdded()) return;
+
+        String[] options = new String[] {
+                "🛰️ Satellite Hybrid (Best for Landmarks)",
+                "🗺️ Street Map (Best for Roads)",
+                "⛰️ Topographic / Terrain (Best for Elevation)"
+        };
+
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Select Map View")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            setSatelliteHybridTileSource();
+                            break;
+                        case 1:
+                            mapView.setTileSource(org.osmdroid.tileprovider.tilesource.TileSourceFactory.MAPNIK);
+                            mapView.invalidate();
+                            break;
+                        case 2:
+                            setTerrainTileSource();
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void setSatelliteHybridTileSource() {
+        org.osmdroid.tileprovider.tilesource.XYTileSource googleSat = new org.osmdroid.tileprovider.tilesource.XYTileSource(
+                "Google-Sat",
+                0, 19, 256, ".png",
+                new String[] {
+                        "https://mt0.google.com/vt/lyrs=y&hl=en&x=",
+                        "https://mt1.google.com/vt/lyrs=y&hl=en&x=",
+                        "https://mt2.google.com/vt/lyrs=y&hl=en&x=",
+                        "https://mt3.google.com/vt/lyrs=y&hl=en&x="
+                }) {
+            @Override
+            public String getTileURLString(long pMapTileIndex) {
+                return getBaseUrl() + org.osmdroid.util.MapTileIndex.getX(pMapTileIndex) +
+                        "&y=" + org.osmdroid.util.MapTileIndex.getY(pMapTileIndex) +
+                        "&z=" + org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex);
+            }
+        };
+        mapView.setTileSource(googleSat);
+        mapView.invalidate();
+    }
+
+    private void setTerrainTileSource() {
+        org.osmdroid.tileprovider.tilesource.XYTileSource googleTerrain = new org.osmdroid.tileprovider.tilesource.XYTileSource(
+                "Google-Terrain",
+                0, 15, 256, ".png",
+                new String[] {
+                        "https://mt0.google.com/vt/lyrs=t&hl=en&x=",
+                        "https://mt1.google.com/vt/lyrs=t&hl=en&x=",
+                        "https://mt2.google.com/vt/lyrs=t&hl=en&x=",
+                        "https://mt3.google.com/vt/lyrs=t&hl=en&x="
+                }) {
+            @Override
+            public String getTileURLString(long pMapTileIndex) {
+                return getBaseUrl() + org.osmdroid.util.MapTileIndex.getX(pMapTileIndex) +
+                        "&y=" + org.osmdroid.util.MapTileIndex.getY(pMapTileIndex) +
+                        "&z=" + org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex);
+            }
+        };
+        mapView.setTileSource(googleTerrain);
+        mapView.invalidate();
     }
 
     @Override

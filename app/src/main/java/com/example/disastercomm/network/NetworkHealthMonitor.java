@@ -165,18 +165,23 @@ public class NetworkHealthMonitor {
      */
     private void checkDeadNodes() {
         long now = System.currentTimeMillis();
+        java.util.List<String> deadNodes = new java.util.ArrayList<>();
 
         for (Map.Entry<String, Long> entry : lastHeartbeats.entrySet()) {
             long timeSinceLastHeartbeat = now - entry.getValue();
-
             if (timeSinceLastHeartbeat > DEAD_NODE_THRESHOLD_MS) {
-                String deadNodeId = entry.getKey();
-                Log.w(TAG, "💀 Dead node detected: " + deadNodeId.substring(0, 8) +
-                        " (no heartbeat for " + (timeSinceLastHeartbeat / 1000) + "s)");
-
-                lastHeartbeats.remove(deadNodeId);
-                callback.onNodeDead(deadNodeId);
+                deadNodes.add(entry.getKey());
             }
+        }
+
+        for (String deadNodeId : deadNodes) {
+            Long lastSeenTime = lastHeartbeats.get(deadNodeId);
+            long timeDiff = lastSeenTime != null ? now - lastSeenTime : DEAD_NODE_THRESHOLD_MS;
+            Log.w(TAG, "💀 Dead node detected: " + deadNodeId.substring(0, 8) +
+                    " (no heartbeat for " + (timeDiff / 1000) + "s)");
+
+            lastHeartbeats.remove(deadNodeId);
+            callback.onNodeDead(deadNodeId);
         }
 
         // Also cleanup routing table

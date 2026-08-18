@@ -22,6 +22,7 @@ import android.content.pm.PackageManager;
 import android.os.ParcelUuid;
 import android.util.Log;
 import androidx.core.app.ActivityCompat;
+import com.example.disastercomm.utils.PreferenceManager;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ public class BLEAdvertiser {
     private final String deviceName;
     private final String deviceId;
     private final BLECallback callback;
+    private final PreferenceManager preferenceManager;
     private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
     private static final long RETRY_DELAY = 2000;
     private static final long SCAN_RESTART_INTERVAL = 30000; // Restart scan every 30s to stay fresh
@@ -68,6 +70,7 @@ public class BLEAdvertiser {
         this.deviceName = deviceName;
         this.deviceId = deviceId;
         this.callback = callback;
+        this.preferenceManager = new PreferenceManager(context);
         this.bluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         this.bluetoothAdapter = bluetoothManager.getAdapter();
 
@@ -125,8 +128,12 @@ public class BLEAdvertiser {
                 .addManufacturerData(0xFFFF, nameBytes) // 0xFFFF = Test/Reserved ID
                 .build();
 
-        advertiser.startAdvertising(settings, data, scanResponse, advertiseCallback);
-        Log.d(TAG, "BLE advertising started with Custom Name: " + deviceName);
+        if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED) {
+            advertiser.startAdvertising(settings, data, scanResponse, advertiseCallback);
+            Log.d(TAG, "BLE advertising started with Custom Name: " + deviceName);
+        } else {
+            Log.e(TAG, "Missing BLUETOOTH_ADVERTISE permission");
+        }
     }
 
     public void stopAdvertising() {
@@ -172,18 +179,28 @@ public class BLEAdvertiser {
                 .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
                 .build();
 
-        // Filter for our service UUID
+        // 1. Filter for our internal phone-to-phone service (Reliability: Core Mesh)
         List<ScanFilter> filters = new ArrayList<>();
         filters.add(new ScanFilter.Builder()
                 .setServiceUuid(new ParcelUuid(SERVICE_UUID))
                 .build());
 
-        // ✅ ALSO SCAN FOR ESP32 HUB (Nordic UART Service)
-        // UUID must match ESP32_Hub.ino and BLEHubClient.java
-        // 6E400001-B5A3-F393-E0A9-E50E24DCCA9E
+        // 2. Filter for Default ESP32 Hub (Reliability: Fallback)
         filters.add(new ScanFilter.Builder()
-                .setServiceUuid(new ParcelUuid(java.util.UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")))
+                .setServiceUuid(new ParcelUuid(java.util.UUID.fromString(PreferenceManager.DEFAULT_HUB_SERVICE_UUID)))
                 .build());
+
+        // 3. Filter for Relief Team Hub (Reliability: Added Extension)
+        String customHubUuid = preferenceManager.getHubServiceUuid();
+        if (!customHubUuid.equals(PreferenceManager.DEFAULT_HUB_SERVICE_UUID)) {
+            try {
+                filters.add(new ScanFilter.Builder()
+                        .setServiceUuid(new ParcelUuid(java.util.UUID.fromString(customHubUuid)))
+                        .build());
+            } catch (Exception e) {
+                Log.e(TAG, "Invalid Custom UUID in settings: " + customHubUuid);
+            }
+        }
 
         scanner.startScan(filters, scanSettings, scanCallback);
         isScanning = true;

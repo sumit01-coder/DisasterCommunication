@@ -62,7 +62,8 @@ public class BluetoothScanner {
 
         foundAddresses.clear();
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        context.registerReceiver(receiver, filter);
+        androidx.core.content.ContextCompat.registerReceiver(
+                context, receiver, filter, androidx.core.content.ContextCompat.RECEIVER_EXPORTED);
         bluetoothAdapter.startDiscovery();
         isScanning = true;
     }

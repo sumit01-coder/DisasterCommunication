@@ -55,107 +55,82 @@ public class UpdateManager {
         if (!isSilent) {
             Toast.makeText(context, "Checking for updates...", Toast.LENGTH_SHORT).show();
         }
-        new CheckUpdateTask().execute();
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+        executor.execute(() -> {
+            String result = performCheckUpdate();
+            handler.post(() -> onCheckUpdateResult(result));
+        });
     }
 
-    private class CheckUpdateTask extends AsyncTask<Void, Void, String> {
-        @Override
-        protected String doInBackground(Void... voids) {
-            String result = null;
-            try {
-                // Use GitHub API (Latest Release)
-                String apiUrl = "https://api.github.com/repos/" + GITHUB_OWNER + "/" + GITHUB_REPO + "/releases/latest";
-                URL url = new URL(apiUrl);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                // ✅ GitHub API requires User-Agent header or it may reject/timeout
-                conn.setRequestProperty("User-Agent", "DisasterComm-App");
-                conn.setConnectTimeout(15000); // Increased to 15s for slow networks
-                conn.setReadTimeout(15000);
+    private String performCheckUpdate() {
+        String result = null;
+        try {
+            String apiUrl = "https://api.github.com/repos/" + GITHUB_OWNER + "/" + GITHUB_REPO + "/releases/latest";
+            URL url = new URL(apiUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "DisasterComm-App");
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
 
-                if (conn.getResponseCode() == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line);
-                    }
-                    result = sb.toString();
-                } else if (conn.getResponseCode() == 404) {
-                    Log.e(TAG, "GitHub API: 404 Not Found (Release not published yet or Private Repo)");
-                    return "ERROR: Release not found (404). Check GitHub Actions.";
-                } else {
-                    Log.e(TAG, "GitHub API Response: " + conn.getResponseCode());
+            if (conn.getResponseCode() == 200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
                 }
-            } catch (java.net.UnknownHostException | java.net.SocketTimeoutException e) {
-                Log.w(TAG, "Update check skipped (offline/timeout): " + e.getMessage());
-                return "OFFLINE";
-            } catch (Exception e) {
-                Log.e(TAG, "Update check failed", e);
-                return "ERROR: " + e.getMessage();
-            }
-            return result;
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            if ("OFFLINE".equals(result)) {
-                // Don't annoy user with toasts if just offline
-                Log.d(TAG, "Skipping update check - offline");
-            } else if (result != null && !result.startsWith("ERROR:")) {
-                try {
-                    JSONObject release = new JSONObject(result);
-                    String tagName = release.getString("tag_name"); // e.g., "v1.2.0"
-                    String downloadUrl = release.getJSONArray("assets").getJSONObject(0)
-                            .getString("browser_download_url");
-                    String body = release.optString("body", "No release notes.");
-
-                    String currentVersion = getAppVersion();
-
-                    Log.d(TAG, "Current: " + currentVersion + ", Latest: " + tagName);
-
-                    // Simple string comparison (Assume tag_name starts with 'v')
-                    if (!tagName.equalsIgnoreCase(currentVersion) && !tagName.equals("v" + currentVersion)) {
-                        // ✅ Check if this version was already dismissed
-                        String lastDismissedVersion = getLastDismissedVersion();
-                        if (lastDismissedVersion != null &&
-                                (tagName.equalsIgnoreCase(lastDismissedVersion)
-                                        || tagName.equals("v" + lastDismissedVersion))) {
-                            // User already dismissed this version, don't show again
-                            Log.d(TAG, "Update " + tagName + " was already dismissed by user");
-                            if (!isSilentCheck) {
-                                Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show();
-                            }
-                            return;
-                        }
-
-                        // New version available that hasn't been dismissed
-                        saveLastNotifiedVersion(tagName);
-                        if (isSilentCheck) {
-                            sendUpdateNotification(tagName, body, downloadUrl);
-                        } else {
-                            showUpdateDialog(tagName, body, downloadUrl);
-                        }
-                    } else {
-                        if (!isSilentCheck) {
-                            Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                } catch (Exception e) {
-                    Log.e(TAG, "Parsing update failed", e);
-                    if (!isSilentCheck) {
-                        Toast.makeText(context, "Failed to parse update info", Toast.LENGTH_SHORT).show();
-                    }
-                }
+                result = sb.toString();
+            } else if (conn.getResponseCode() == 404) {
+                Log.e(TAG, "GitHub API: 404 Not Found");
+                return "ERROR: Release not found (404). Check GitHub Actions.";
             } else {
-                String error = (result != null && result.startsWith("ERROR:")) ? result.substring(7) : "Check failed";
-                // Only show toast for explicit errors, maybe optional even then
-                Log.w(TAG, "Update error: " + error);
-                if (!isSilentCheck) {
-                    Toast.makeText(context, "Update check failed: " + error, Toast.LENGTH_SHORT).show();
-                }
+                Log.e(TAG, "GitHub API Response: " + conn.getResponseCode());
             }
+        } catch (java.net.UnknownHostException | java.net.SocketTimeoutException e) {
+            Log.w(TAG, "Update check skipped (offline/timeout): " + e.getMessage());
+            return "OFFLINE";
+        } catch (Exception e) {
+            Log.e(TAG, "Update check failed", e);
+            return "ERROR: " + e.getMessage();
+        }
+        return result;
+    }
+
+    private void onCheckUpdateResult(String result) {
+        if ("OFFLINE".equals(result)) {
+            Log.d(TAG, "Skipping update check - offline");
+        } else if (result != null && !result.startsWith("ERROR:")) {
+            try {
+                JSONObject release = new JSONObject(result);
+                String tagName = release.getString("tag_name");
+                String downloadUrl = release.getJSONArray("assets").getJSONObject(0).getString("browser_download_url");
+                String body = release.optString("body", "No release notes.");
+                String currentVersion = getAppVersion();
+
+                if (!tagName.equalsIgnoreCase(currentVersion) && !tagName.equals("v" + currentVersion)) {
+                    String lastDismissedVersion = getLastDismissedVersion();
+                    if (lastDismissedVersion != null &&
+                            (tagName.equalsIgnoreCase(lastDismissedVersion) || tagName.equals("v" + lastDismissedVersion))) {
+                        Log.d(TAG, "Update " + tagName + " was already dismissed by user");
+                        if (!isSilentCheck) Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    saveLastNotifiedVersion(tagName);
+                    if (isSilentCheck) sendUpdateNotification(tagName, body, downloadUrl);
+                    else showUpdateDialog(tagName, body, downloadUrl);
+                } else {
+                    if (!isSilentCheck) Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Parsing update failed", e);
+                if (!isSilentCheck) Toast.makeText(context, "Failed to parse update info", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            String error = (result != null && result.startsWith("ERROR:")) ? result.substring(7) : "Check failed";
+            Log.w(TAG, "Update error: " + error);
+            if (!isSilentCheck) Toast.makeText(context, "Update check failed: " + error, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -172,7 +147,7 @@ public class UpdateManager {
         new AlertDialog.Builder(context)
                 .setTitle("New Update Available!")
                 .setMessage("Version: " + version + "\n\n" + notes)
-                .setPositiveButton("Update Now", (dialog, which) -> new DownloadTask().execute(downloadUrl))
+                .setPositiveButton("Update Now", (dialog, which) -> executeDownload(downloadUrl))
                 .setNegativeButton("Later", (dialog, which) -> {
                     // ✅ Mark this version as dismissed so we don't show it again
                     markVersionAsDismissed(version);
@@ -225,71 +200,61 @@ public class UpdateManager {
         notificationManager.notify(1001, builder.build());
     }
 
-    private class DownloadTask extends AsyncTask<String, Integer, String> {
-        private ProgressDialog progressDialog;
+    public void executeDownload(String apkUrl) {
+        ProgressDialog progressDialog = new ProgressDialog(context);
+        progressDialog.setMessage("Downloading update...");
+        progressDialog.setIndeterminate(false);
+        progressDialog.setMax(100);
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
-        @Override
-        protected void onPreExecute() {
-            progressDialog = new ProgressDialog(context);
-            progressDialog.setMessage("Downloading update...");
-            progressDialog.setIndeterminate(false);
-            progressDialog.setMax(100);
-            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            progressDialog.setCancelable(false);
-            progressDialog.show();
-        }
-
-        @Override
-        protected String doInBackground(String... urls) {
-            String apkUrl = urls[0];
-            try {
-                URL url = new URL(apkUrl);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.connect();
-
-                int fileLength = conn.getContentLength();
-                File outputFile = new File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk");
-                if (outputFile.exists())
-                    outputFile.delete();
-
-                InputStream input = conn.getInputStream();
-                FileOutputStream output = new FileOutputStream(outputFile);
-
-                byte[] data = new byte[4096];
-                long total = 0;
-                int count;
-                while ((count = input.read(data)) != -1) {
-                    total += count;
-                    if (fileLength > 0) {
-                        publishProgress((int) (total * 100 / fileLength));
-                    }
-                    output.write(data, 0, count);
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+        executor.execute(() -> {
+            String path = performDownload(apkUrl, progressDialog, handler);
+            handler.post(() -> {
+                progressDialog.dismiss();
+                if (path != null) {
+                    clearDismissedVersion();
+                    installApk(path);
+                } else {
+                    Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show();
                 }
+            });
+        });
+    }
 
-                output.close();
-                input.close();
-                return outputFile.getAbsolutePath();
-            } catch (Exception e) {
-                Log.e(TAG, "Download failed", e);
-                return null;
+    private String performDownload(String apkUrl, ProgressDialog progressDialog, android.os.Handler handler) {
+        try {
+            URL url = new URL(apkUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.connect();
+
+            int fileLength = conn.getContentLength();
+            File outputFile = new File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk");
+            if (outputFile.exists()) outputFile.delete();
+
+            InputStream input = conn.getInputStream();
+            FileOutputStream output = new FileOutputStream(outputFile);
+
+            byte[] data = new byte[4096];
+            long total = 0;
+            int count;
+            while ((count = input.read(data)) != -1) {
+                total += count;
+                if (fileLength > 0) {
+                    int progress = (int) (total * 100 / fileLength);
+                    handler.post(() -> progressDialog.setProgress(progress));
+                }
+                output.write(data, 0, count);
             }
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            progressDialog.setProgress(values[0]);
-        }
-
-        @Override
-        protected void onPostExecute(String path) {
-            progressDialog.dismiss();
-            if (path != null) {
-                // ✅ Clear dismissed version since user is installing the update
-                clearDismissedVersion();
-                installApk(path);
-            } else {
-                Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show();
-            }
+            output.close();
+            input.close();
+            return outputFile.getAbsolutePath();
+        } catch (Exception e) {
+            Log.e(TAG, "Download failed", e);
+            return null;
         }
     }
 

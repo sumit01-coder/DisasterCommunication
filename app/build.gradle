@@ -8,10 +8,10 @@ android {
 
     defaultConfig {
         applicationId "com.example.disastercomm"
-        minSdk 24 // Nearby Connections requires 21+, but 24 is a safe modern baseline
+        minSdk 26 // Increased from 24 to support WifiAwareNetworkManager natively
         targetSdk 35
-        versionCode 21
-        versionName "4.0.0"
+        versionCode 22
+        versionName "4.0.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

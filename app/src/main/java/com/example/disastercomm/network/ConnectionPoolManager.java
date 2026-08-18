@@ -18,7 +18,10 @@ public class ConnectionPoolManager {
     public enum TransportType {
         BLUETOOTH_CLASSIC,
         BLUETOOTH_LE,
-        NEARBY_WIFI_DIRECT
+        NEARBY_WIFI_DIRECT,
+        WIFI_AWARE,
+        BLE_HUB,
+        TCP_SOCKET
     }
 
     public static class ConnectionInfo {
@@ -258,7 +261,8 @@ public class ConnectionPoolManager {
         int bt = getConnectionsByTransport(TransportType.BLUETOOTH_CLASSIC).size();
         int ble = getConnectionsByTransport(TransportType.BLUETOOTH_LE).size();
         int nearby = getConnectionsByTransport(TransportType.NEARBY_WIFI_DIRECT).size();
+        int tcp = getConnectionsByTransport(TransportType.TCP_SOCKET).size();
 
-        return String.format("Connections: %d (BT:%d, BLE:%d, Nearby:%d)", total, bt, ble, nearby);
+        return String.format("Connections: %d (BT:%d, BLE:%d, Nearby:%d, TCP:%d)", total, bt, ble, nearby, tcp);
     }
 }

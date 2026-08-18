@@ -108,9 +108,11 @@ public class MeshRoutingTable {
 
         // Only update if:
         // 1. No existing route, OR
-        // 2. New route has fewer hops, OR
-        // 3. Same hops but better signal
+        // 2. Existing route has expired, OR
+        // 3. New route has fewer hops, OR
+        // 4. Same hops but better signal
         boolean shouldUpdate = existing == null ||
+                existing.isExpired() ||
                 hopCount < existing.hopCount ||
                 (hopCount == existing.hopCount && signalStrength > existing.signalStrength);
 

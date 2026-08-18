@@ -30,7 +30,7 @@ public class BluetoothConnectionManager {
     private final BluetoothCallback callback;
     private final BluetoothAdapter bluetoothAdapter;
     private final Map<String, ConnectedThread> activeConnections = new ConcurrentHashMap<>();
-    private ExecutorService connectionExecutor = Executors.newFixedThreadPool(4); // Parallel connections - NOT final
+    private ExecutorService connectionExecutor = Executors.newFixedThreadPool(8); // Parallel connections - NOT final
                                                                                   // for restart
     private final Set<String> attemptedDevices = ConcurrentHashMap.newKeySet(); // Track connection attempts
 
@@ -91,7 +91,7 @@ public class BluetoothConnectionManager {
 
         // Recreate executor if it was shutdown
         if (connectionExecutor == null || connectionExecutor.isShutdown()) {
-            connectionExecutor = Executors.newFixedThreadPool(4);
+            connectionExecutor = Executors.newFixedThreadPool(8);
             Log.d(TAG, "ConnectionExecutor recreated");
         }
 
@@ -153,15 +153,17 @@ public class BluetoothConnectionManager {
 
     public void startDiscovery() {
         if (bluetoothAdapter != null && bluetoothAdapter.isEnabled()) {
-            if (bluetoothAdapter.isDiscovering()) {
-                bluetoothAdapter.cancelDiscovery();
-            }
             if (ActivityCompat.checkSelfPermission(context,
                     android.Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
+                if (bluetoothAdapter.isDiscovering()) {
+                    bluetoothAdapter.cancelDiscovery();
+                }
                 bluetoothAdapter.startDiscovery();
                 Log.d(TAG, "Bluetooth discovery started.");
                 // Re-scan paired devices
                 scanPairedDevices();
+            } else {
+                Log.e(TAG, "Missing BLUETOOTH_SCAN permission");
             }
         }
     }
@@ -268,37 +270,50 @@ public class BluetoothConnectionManager {
         @Override
         public void run() {
             BluetoothSocket socket = null;
-            try {
-                if (ActivityCompat.checkSelfPermission(context,
-                        android.Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            boolean connected = false;
 
+            if (ActivityCompat.checkSelfPermission(context,
+                    android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+
+            for (int i = 0; i < 3; i++) {
+                try {
                     // ✅ OPTIMIZED: Use insecure socket (no pairing dialog, faster connection)
                     socket = device.createInsecureRfcommSocketToServiceRecord(SERVICE_UUID);
 
                     // ✅ OPTIMIZED: Reduced timeout for faster failure detection
                     socket.connect(); // 2s timeout vs default 10s
 
-                    // Connection succeeded - remove from attempted list
-                    attemptedDevices.remove(device.getAddress());
-
-                    // manageConnectedSocket will handle pool registration
-                    manageConnectedSocket(socket);
+                    connected = true;
+                    break; // Connection succeeded
+                } catch (IOException e) {
+                    Log.e(TAG, "Connection attempt " + (i + 1) + " failed to " + device.getAddress(), e);
+                    if (socket != null) {
+                        try {
+                            socket.close();
+                        } catch (IOException closeException) {
+                            Log.e(TAG, "Close socket failed", closeException);
+                        }
+                    }
+                    try {
+                        Thread.sleep(500); // Small delay before retry
+                    } catch (InterruptedException ignored) {}
                 }
-            } catch (IOException e) {
-                Log.e(TAG, "Connection failed to " + device.getAddress(), e);
+            }
 
+            if (connected && socket != null) {
+                // Connection succeeded - remove from attempted list
+                attemptedDevices.remove(device.getAddress());
+                // manageConnectedSocket will handle pool registration
+                manageConnectedSocket(socket);
+            } else {
+                Log.e(TAG, "All connection attempts failed to " + device.getAddress());
                 // ✅ Track failure and allow retry on next scan
                 attemptedDevices.remove(device.getAddress());
 
                 if (poolManager != null) {
                     poolManager.recordFailure(device.getAddress());
-                }
-                if (socket != null) {
-                    try {
-                        socket.close();
-                    } catch (IOException closeException) {
-                        Log.e(TAG, "Close socket failed", closeException);
-                    }
                 }
             }
         }
@@ -377,7 +392,7 @@ public class BluetoothConnectionManager {
         }
 
         public void run() {
-            byte[] buffer = new byte[8192]; // OPTIMIZED: Larger buffer for faster transfer
+            byte[] buffer = new byte[16384]; // OPTIMIZED: Larger buffer for faster transfer
             int bytes;
 
             while (isRunning) {

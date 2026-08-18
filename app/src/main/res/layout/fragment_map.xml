@@ -461,6 +461,21 @@
             android:contentDescription="Zoom Out"/>
     </LinearLayout>
 
+    <!-- Map Layer Switcher FAB -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabMapLayer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/fabLiveLocation"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        android:src="@android:drawable/ic_menu_mapmode"
+        app:fabSize="mini"
+        app:tint="@color/white"
+        app:backgroundTint="@color/accent"
+        android:contentDescription="Switch Map Layer"/>
+
     <!-- Live Location Sharing FAB -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabLiveLocation"
