@@ -1,28 +1,28 @@
 <resources>
     <!-- Brand Colors (Accessible Emergency Theme) -->
-    <color name="primary">#DC2626</color>           <!-- Alert/Emergency Red -->
-    <color name="primary_variant">#B91C1C</color>   <!-- Darker Alert Red -->
-    <color name="secondary">#EF4444</color>         <!-- Vibrant Safety Red -->
-    <color name="secondary_variant">#991B1B</color> <!-- Crimson Red -->
-    <color name="accent">#2563EB</color>            <!-- Safety/Rescue Blue -->
+    <color name="primary">#E53935</color>           <!-- Emergency Red -->
+    <color name="primary_variant">#C62828</color>   <!-- Darker Emergency Red -->
+    <color name="secondary">#FF6B6B</color>         <!-- Secondary Light Red -->
+    <color name="secondary_variant">#D32F2F</color> <!-- Crimson Red -->
+    <color name="accent">#E53935</color>            <!-- Use Emergency Red as accent -->
 
     <!-- Semantic Colors -->
     <color name="success">#059669</color>
-    <color name="error">#DC2626</color>
+    <color name="error">#E53935</color>
     <color name="warning">#D97706</color>
     <color name="info">#2563EB</color>
 
     <!-- Backgrounds & Surfaces -->
-    <color name="background">#FFF1F2</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#FCF1F1</color>
+    <color name="background">#F8FAFC</color>        <!-- Soft Grayish White -->
+    <color name="surface">#FFFFFF</color>           <!-- Pure White Cards -->
+    <color name="surface_variant">#F1F5F9</color>   <!-- Slightly darker gray surface -->
     
     <!-- Material 3 Surface Tints -->
-    <color name="surface_tint">#FDE2E4</color>
-    <color name="surface_dim">#F8D7DA</color>
+    <color name="surface_tint">#FFFFFF</color>
+    <color name="surface_dim">#E2E8F0</color>
     <color name="surface_bright">#FFFFFF</color>
-    <color name="surface_container">#FCF1F1</color>
-    <color name="surface_container_high">#FBE2E2</color>
+    <color name="surface_container">#F8FAFC</color>
+    <color name="surface_container_high">#F1F5F9</color>
 
     <!-- Text -->
     <color name="text_primary">#0F172A</color>
@@ -44,12 +44,12 @@
     <color name="status_disconnected">#DC2626</color>
     <color name="status_connecting">#D97706</color>
 
-    <!-- Gradient Colors -->
-    <color name="gradient_start">#DC2626</color>
-    <color name="gradient_middle">#B91C1C</color>
-    <color name="gradient_end">#991B1B</color>
-    <color name="gradient_light_start">#FFF1F2</color>
-    <color name="gradient_light_end">#FFE4E6</color>
+    <!-- Gradient Colors (Disabled for clean UI) -->
+    <color name="gradient_start">#E53935</color>
+    <color name="gradient_middle">#E53935</color>
+    <color name="gradient_end">#E53935</color>
+    <color name="gradient_light_start">#F8FAFC</color>
+    <color name="gradient_light_end">#F1F5F9</color>
 
     <!-- State Colors (for interactions) -->
     <color name="state_hover">#B91C1C20</color>

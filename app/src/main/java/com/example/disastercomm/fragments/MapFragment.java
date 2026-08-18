@@ -73,12 +73,9 @@ public class MapFragment extends Fragment {
         this.memberClickListener = listener;
     }
 
-    // Zoom controls
-    private FloatingActionButton btnZoomIn;
-    private FloatingActionButton btnZoomOut;
-    private static final double MIN_ZOOM = 3.0;
-    private static final double MAX_ZOOM = 20.0;
     private static final double ZOOM_STEP = 1.0;
+
+    private com.example.disastercomm.utils.LiveLocationSharingManager sharingManager;
 
     @Nullable
     @Override
@@ -87,28 +84,11 @@ public class MapFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_map, container, false);
     }
 
-    // Live Status HUD
-    private View cardLiveStatus;
-    private TextView tvLiveTimer;
-    private View btnStopLive;
-    private com.example.disastercomm.utils.LiveLocationSharingManager sharingManager;
-
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         sharingManager = com.example.disastercomm.utils.LiveLocationSharingManager.getInstance(requireContext());
-
-        // Initialize HUD
-        cardLiveStatus = view.findViewById(R.id.cardLiveStatus);
-        tvLiveTimer = view.findViewById(R.id.tvLiveTimer);
-        btnStopLive = view.findViewById(R.id.btnStopLive);
-
-        btnStopLive.setOnClickListener(v -> {
-            com.example.disastercomm.services.LiveLocationService.stopSharing(requireContext());
-            sharingManager.stopSharing();
-            updateLiveStatusHud();
-        });
 
         // Initialize OSM configuration
         Context ctx = requireContext();
@@ -135,25 +115,8 @@ public class MapFragment extends Fragment {
         tvGpsAccuracyCondition = view.findViewById(R.id.tvGpsAccuracyCondition);
         viewGpsAccuracyDot = view.findViewById(R.id.viewGpsAccuracyDot);
 
-        // Initialize zoom buttons
-        btnZoomIn = view.findViewById(R.id.btnZoomIn);
-        btnZoomOut = view.findViewById(R.id.btnZoomOut);
-
         // Setup zoom button listeners
         // setupZoomControls(); // This method is not defined in the provided context,
-        // assuming it's meant to be called here if it exists elsewhere.
-
-        // Setup live location FAB
-        FloatingActionButton fabLiveLocation = view.findViewById(R.id.fabLiveLocation);
-        if (fabLiveLocation != null) {
-            fabLiveLocation.setOnClickListener(v -> showLiveLocationControls());
-        }
-
-        // Setup map layer switcher FAB
-        FloatingActionButton fabMapLayer = view.findViewById(R.id.fabMapLayer);
-        if (fabMapLayer != null) {
-            fabMapLayer.setOnClickListener(v -> showMapLayerSelectionDialog());
-        }
 
         // Initialize map
         mapView = view.findViewById(R.id.mapView);
@@ -169,20 +132,7 @@ public class MapFragment extends Fragment {
     }
 
     private void updateLiveStatusHud() {
-        if (sharingManager != null && sharingManager.isSharingActive()) {
-            if (cardLiveStatus.getVisibility() != View.VISIBLE) {
-                cardLiveStatus.setVisibility(View.VISIBLE);
-                // Animate in
-                cardLiveStatus.setAlpha(0f);
-                cardLiveStatus.setTranslationY(-50f);
-                cardLiveStatus.animate().alpha(1f).translationY(0f).setDuration(300).start();
-            }
-            long remaining = sharingManager.getRemainingTime();
-            tvLiveTimer.setText(com.example.disastercomm.utils.LiveLocationSharingManager.formatRemainingTime(remaining)
-                    + " remaining");
-        } else {
-            cardLiveStatus.setVisibility(View.GONE);
-        }
+        // Obsolete UI removed
     }
 
     @Override
@@ -493,35 +443,7 @@ public class MapFragment extends Fragment {
     }
 
     private void setupZoomControls() {
-        if (btnZoomIn != null) {
-            btnZoomIn.setOnClickListener(v -> {
-                if (mapView != null && mapController != null) {
-                    double currentZoom = mapView.getZoomLevelDouble();
-                    double newZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
-                    // UX IMPROVEMENT: Always center on user location when zooming if available
-                    if (lastLocation != null) {
-                        mapController.animateTo(lastLocation, newZoom, 300L);
-                    } else {
-                        mapController.animateTo(mapView.getMapCenter(), newZoom, 300L);
-                    }
-                }
-            });
-        }
-
-        if (btnZoomOut != null) {
-            btnZoomOut.setOnClickListener(v -> {
-                if (mapView != null && mapController != null) {
-                    double currentZoom = mapView.getZoomLevelDouble();
-                    double newZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
-                    // UX IMPROVEMENT: Always center on user location when zooming if available
-                    if (lastLocation != null) {
-                        mapController.animateTo(lastLocation, newZoom, 300L);
-                    } else {
-                        mapController.animateTo(mapView.getMapCenter(), newZoom, 300L);
-                    }
-                }
-            });
-        }
+        // Removed zoom controls
     }
 
     public void updateMeshStatus(int connectedCount) {

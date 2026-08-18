@@ -41,8 +41,10 @@ public class SecurityUtil {
                 keyPairGenerator.initialize(
                         new KeyGenParameterSpec.Builder(
                                 KEY_ALIAS,
-                                KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                                KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT | KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
                                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
+                                .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
+                                .setDigests(KeyProperties.DIGEST_SHA256)
                                 .setKeySize(2048)
                                 .build());
                 KeyPair keyPair = keyPairGenerator.generateKeyPair();
@@ -171,6 +173,34 @@ public class SecurityUtil {
         } catch (Exception e) {
             Log.e(TAG, "RSA Decrypt failed", e);
             return null;
+        }
+    }
+
+    // --- Cryptographic Signatures (Anti-Spoofing) ---
+
+    public static String signData(String data, PrivateKey privateKey) {
+        try {
+            java.security.Signature signature = java.security.Signature.getInstance("SHA256withRSA");
+            signature.initSign(privateKey);
+            signature.update(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            byte[] sigBytes = signature.sign();
+            return Base64.encodeToString(sigBytes, Base64.DEFAULT);
+        } catch (Exception e) {
+            Log.e(TAG, "RSA Signing failed", e);
+            return null;
+        }
+    }
+
+    public static boolean verifySignature(String data, String signatureStr, PublicKey publicKey) {
+        try {
+            java.security.Signature signature = java.security.Signature.getInstance("SHA256withRSA");
+            signature.initVerify(publicKey);
+            signature.update(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            byte[] sigBytes = Base64.decode(signatureStr, Base64.DEFAULT);
+            return signature.verify(sigBytes);
+        } catch (Exception e) {
+            Log.e(TAG, "RSA Verification failed", e);
+            return false;
         }
     }
 }

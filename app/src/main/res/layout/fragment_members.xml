@@ -5,27 +5,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_light">
+    android:background="@color/background">
 
-    <!-- Header Card -->
-    <com.google.android.material.card.MaterialCardView
+    <!-- Header Area (Flat) -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
-        app:cardBackgroundColor="@color/card_background">
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="@color/surface"
+        android:elevation="2dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="16dp"
             android:gravity="center_vertical">
 
             <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
                 android:src="@drawable/ic_wifi"
                 app:tint="@color/primary"
                 android:layout_marginEnd="12dp"
@@ -42,7 +41,7 @@
                     android:layout_height="wrap_content"
                     android:text="Mesh Network"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold"/>
 
                 <TextView
@@ -59,32 +58,38 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Active"
-                android:textColor="@color/connected_green"
+                android:textColor="@color/success"
                 android:textSize="14sp"
-                android:background="@drawable/rounded_badge"
-                android:backgroundTint="#E8F5E9"
+                android:textStyle="bold"
                 android:padding="8dp"/>
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnManualConnect"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnManualConnect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Scan for Nearby Devices"
+            android:textColor="@color/primary"
+            app:backgroundTint="@color/surface_variant"
+            app:cornerRadius="8dp"
+            app:icon="@drawable/ic_bluetooth"
+            app:iconGravity="textStart"
+            app:iconTint="@color/primary"
+            android:paddingVertical="12dp"
+            android:textAllCaps="false"
+            android:textSize="15sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:text="🔍 Scan for Nearby Devices"
-        android:textColor="@android:color/white"
-        app:backgroundTint="@color/accent"
-        app:cornerRadius="12dp"
-        app:icon="@drawable/ic_wifi"
-        app:iconGravity="textStart"
-        app:iconTint="@android:color/white"
-        android:paddingVertical="12dp"
-        android:textAllCaps="false"
-        android:textSize="15sp"
-        android:textStyle="bold"/>
+        android:text="Nearby Members"
+        android:textStyle="bold"
+        android:textColor="@color/text_secondary"
+        android:padding="16dp"
+        android:textSize="14sp"/>
 
     <!-- Members List -->
     <androidx.recyclerview.widget.RecyclerView
@@ -92,7 +97,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:paddingHorizontal="8dp"
+        android:paddingHorizontal="16dp"
         android:clipToPadding="false"/>
 
     <!-- Range Info -->
@@ -100,8 +105,8 @@
         android:id="@+id/tvRangeInfo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="● Mesh network range: ~500m"
-        android:textColor="@color/text_secondary"
+        android:text="Mesh network range: ~500m"
+        android:textColor="@color/text_tertiary"
         android:textSize="12sp"
         android:padding="16dp"
         android:gravity="center"/>

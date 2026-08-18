@@ -152,9 +152,6 @@ public class MainActivityNew extends AppCompatActivity implements
     private com.example.disastercomm.utils.MessageCounter messageCounter; // ✅ Track unread messages
     private com.example.disastercomm.utils.ConnectivityStatusManager connectivityStatusManager;
 
-    // Status UI Elements
-    private ImageView ivBluetoothStatus, ivWifiStatus, ivNearbyStatus;
-    private ImageView ivUpdateBell;
     private View viewUpdateBadge;
 
     private static final int PERMISSION_REQUEST_CODE = 123;
@@ -372,10 +369,6 @@ public class MainActivityNew extends AppCompatActivity implements
         fabSos = findViewById(R.id.fabSos);
 
         // Status indicators
-        ivBluetoothStatus = findViewById(R.id.ivBluetoothStatus);
-        ivWifiStatus = findViewById(R.id.ivWifiStatus);
-        ivNearbyStatus = findViewById(R.id.ivNearbyStatus);
-        ivUpdateBell = findViewById(R.id.ivUpdateBell);
         viewUpdateBadge = findViewById(R.id.viewUpdateBadge);
 
         // Setup ViewPager
@@ -1194,15 +1187,71 @@ public class MainActivityNew extends AppCompatActivity implements
                 notificationSoundManager.playSosSound();
                 String name = (message.senderName != null && !message.senderName.isEmpty()) ? message.senderName
                         : message.senderId.substring(0, Math.min(8, message.senderId.length()));
-                String displayText = "SOS from " + name + ": " + message.content;
-
-                // Show Notification
-                if (notificationHelper != null) {
-                    notificationHelper.showSosNotification(name, message.content);
+                
+                // Parse location from SOS message
+                double senderLat = 0;
+                double senderLng = 0;
+                boolean hasSenderLoc = false;
+                try {
+                    if (message.content != null && message.content.contains("Location:")) {
+                        String locPart = message.content.substring(message.content.indexOf("Location:") + 9).trim();
+                        String[] parts = locPart.split(",");
+                        if (parts.length == 2) {
+                            senderLat = Double.parseDouble(parts[0].trim());
+                            senderLng = Double.parseDouble(parts[1].trim());
+                            hasSenderLoc = true;
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("DisasterApp", "Error parsing SOS location", e);
                 }
 
-                new AlertDialog.Builder(this).setTitle("🚨 SOS RECEIVED").setMessage(displayText)
-                        .setPositiveButton("OK", null).setIcon(android.R.drawable.ic_dialog_alert).show();
+                final boolean finalHasSenderLoc = hasSenderLoc;
+                final double finalSenderLat = senderLat;
+                final double finalSenderLng = senderLng;
+
+                locationHelper.getCurrentLocation((myLat, myLng) -> {
+                    StringBuilder detailedMessage = new StringBuilder();
+                    detailedMessage.append(message.content).append("\n\n");
+                    
+                    if (finalHasSenderLoc) {
+                        float[] results = new float[1];
+                        android.location.Location.distanceBetween(myLat, myLng, finalSenderLat, finalSenderLng, results);
+                        float distanceMeters = results[0];
+                        String distanceText = (distanceMeters > 1000) ? String.format(java.util.Locale.US, "%.2f km", distanceMeters / 1000) : String.format(java.util.Locale.US, "%.0f m", distanceMeters);
+                        detailedMessage.append("📍 Distance to SOS: ").append(distanceText).append("\n\n");
+                    }
+                    
+                    detailedMessage.append("📡 Active Mesh Nodes (").append(connectedMembers.size()).append("):\n");
+                    if (connectedMembers.isEmpty()) {
+                        detailedMessage.append("No other nodes connected.\n");
+                    } else {
+                        for (MemberItem member : connectedMembers.values()) {
+                            detailedMessage.append("• ").append(member.name).append(" (").append(member.connectionSource).append(")");
+                            if (member.latitude != 0 && member.longitude != 0) {
+                                float[] res = new float[1];
+                                android.location.Location.distanceBetween(myLat, myLng, member.latitude, member.longitude, res);
+                                String dist = (res[0] > 1000) ? String.format(java.util.Locale.US, "%.1f km", res[0] / 1000) : String.format(java.util.Locale.US, "%.0f m", res[0]);
+                                detailedMessage.append(" - ").append(dist);
+                            }
+                            detailedMessage.append("\n");
+                        }
+                    }
+
+                    runOnUiThread(() -> {
+                        // Show Notification
+                        if (notificationHelper != null) {
+                            notificationHelper.showSosNotification(name, message.content);
+                        }
+
+                        new AlertDialog.Builder(MainActivityNew.this)
+                                .setTitle("🚨 SOS RECEIVED FROM " + name)
+                                .setMessage(detailedMessage.toString())
+                                .setPositiveButton("OK", null)
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .show();
+                    });
+                });
 
                 // SOS always goes to global chat
                 if (chatFragment != null && chatFragment.getRecipientId() == null) {
@@ -1595,31 +1644,6 @@ public class MainActivityNew extends AppCompatActivity implements
     private void setupConnectivityStatus() {
         connectivityStatusManager = new com.example.disastercomm.utils.ConnectivityStatusManager(this);
 
-        // Set up click listeners for status icons
-        ivBluetoothStatus.setOnClickListener(v -> {
-            if (!connectivityStatusManager.isBluetoothEnabled()) {
-                requestEnable("Bluetooth", () -> connectivityStatusManager.requestEnableBluetooth(this));
-            } else {
-                showNetworkDiagnosisDialog();
-            }
-        });
-
-        ivWifiStatus.setOnClickListener(v -> {
-            if (!connectivityStatusManager.isWifiEnabled()) {
-                requestEnable("WiFi", () -> connectivityStatusManager.requestEnableWifi());
-            } else {
-                showNetworkDiagnosisDialog();
-            }
-        });
-
-        ivNearbyStatus.setOnClickListener(v -> {
-            if (!connectivityStatusManager.isLocationEnabled()) {
-                requestEnable("Location", () -> connectivityStatusManager.requestEnableLocation(this));
-            } else {
-                showNetworkDiagnosisDialog();
-            }
-        });
-
         // Set listener for status changes
         connectivityStatusManager.setListener(this::updateConnectivityIcons);
 
@@ -1656,29 +1680,10 @@ public class MainActivityNew extends AppCompatActivity implements
     }
 
     private void updateConnectivityIcons() {
-        runOnUiThread(() -> {
-            // Bluetooth
-            boolean btEnabled = connectivityStatusManager.isBluetoothEnabled();
-            ivBluetoothStatus.setImageTintList(android.content.res.ColorStateList.valueOf(
-                    btEnabled ? android.graphics.Color.parseColor("#4CAF50")
-                            : android.graphics.Color.parseColor("#F44336")));
-
-            // WiFi
-            boolean wifiEnabled = connectivityStatusManager.isWifiEnabled();
-            ivWifiStatus.setImageTintList(android.content.res.ColorStateList.valueOf(
-                    wifiEnabled ? android.graphics.Color.parseColor("#4CAF50")
-                            : android.graphics.Color.parseColor("#F44336")));
-
-            // Location/Nearby
-            boolean locationEnabled = connectivityStatusManager.isLocationEnabled();
-            ivNearbyStatus.setImageTintList(android.content.res.ColorStateList.valueOf(
-                    locationEnabled ? android.graphics.Color.parseColor("#4CAF50")
-                            : android.graphics.Color.parseColor("#F44336")));
-        });
+        // UI removed in redesign
     }
 
     private void setupUpdateNotification() {
-        ivUpdateBell.setOnClickListener(v -> showAboutDialog());
         viewUpdateBadge.setVisibility(View.GONE);
     }
 

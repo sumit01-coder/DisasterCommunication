@@ -37,6 +37,7 @@ public class PacketHandler {
     private final Map<String, PublicKey> peerPublicKeys = new java.util.concurrent.ConcurrentHashMap<>();
     private final OfflineMessageQueue offlineQueue;
     private final MessageBufferManager bufferManager; 
+    private final Map<String, Long> rateLimitMap = new java.util.concurrent.ConcurrentHashMap<>();
 
     public interface MessageListener {
         void onMessageReceived(Message message);
@@ -117,8 +118,36 @@ public class PacketHandler {
         seenMessageIds.add(message.id);
         if (seenMessageIds.size() > MAX_CACHE_SIZE) seenMessageIds.clear();
 
+        // 1.5 Rate Limiting (Congestion Mitigation)
+        long lastTime = rateLimitMap.getOrDefault(message.senderId, 0L);
+        long now = System.currentTimeMillis();
+        if (now - lastTime < 500 && message.type != Message.Type.SOS && message.type != Message.Type.KEY_EXCHANGE) { 
+            Log.w(TAG, "Rate limit exceeded for " + message.senderId);
+            return;
+        }
+        rateLimitMap.put(message.senderId, now);
+
         // 2. Anti-Replay (Integrity)
         if (Math.abs(System.currentTimeMillis() - message.timestamp) > 600000) return;
+
+        // 2.5 Anti-Spoofing (Authentication/Integrity)
+        if (message.signature != null && !message.signature.startsWith("SIG_")) {
+            PublicKey senderKey = peerPublicKeys.get(message.senderId);
+            if (senderKey != null) {
+                String dataToVerify = message.id + message.senderId + message.content + message.nonce;
+                if (!SecurityUtil.verifySignature(dataToVerify, message.signature, senderKey)) {
+                    Log.w(TAG, "Spoofing attempt detected! Signature mismatch from " + message.senderId);
+                    return; // Drop packet
+                }
+            }
+        }
+
+        // 2.7 Routing Loop Mitigation
+        String myId = DeviceUtil.getDeviceId(context);
+        if (message.routePath != null && message.routePath.contains(myId) && !message.senderId.equals(myId)) {
+            Log.w(TAG, "♻️ Routing Loop detected! Packet already traversed this node. Dropping.");
+            return;
+        }
 
         // 3. Handle Key Exchange
         if (message.type == Message.Type.KEY_EXCHANGE) {
@@ -126,7 +155,7 @@ public class PacketHandler {
             return;
         }
 
-        String myId = DeviceUtil.getDeviceId(context);
+        // String myId = DeviceUtil.getDeviceId(context); // Already defined above
         boolean isForMe = "ALL".equals(message.receiverId) || myId.equals(message.receiverId);
 
         if (isForMe) {
@@ -135,6 +164,11 @@ public class PacketHandler {
 
         // 4. Relay / Store-and-Forward (Availability)
         if (message.ttl > 0 && (!isForMe || "ALL".equals(message.receiverId))) {
+            // Append self to route path
+            message.routePath = message.routePath == null ? myId : message.routePath + "," + myId;
+            
+            // Dynamic TTL: Reduce TTL faster in dense networks if we had neighbor count, 
+            // for now reduce normally to prevent infinite loops.
             message.ttl--;
             bufferManager.bufferOutbound(message);
         }
@@ -173,7 +207,20 @@ public class PacketHandler {
 
         // 2. Signing & Security (Integrity)
         if (toSend.nonce == null) toSend.nonce = UUID.randomUUID().toString();
-        toSend.signature = "SIG_" + (toSend.id + toSend.nonce).hashCode();
+        
+        try {
+            java.security.KeyPair kp = SecurityUtil.getOrGenerateKeyPair(context);
+            if (kp != null && kp.getPrivate() != null) {
+                String dataToSign = toSend.id + toSend.senderId + toSend.content + toSend.nonce;
+                toSend.signature = SecurityUtil.signData(dataToSign, kp.getPrivate());
+            } else {
+                toSend.signature = "SIG_" + (toSend.id + toSend.nonce).hashCode();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Signing Failed", e);
+            toSend.signature = "SIG_" + (toSend.id + toSend.nonce).hashCode();
+        }
+        
         toSend.tokenExpiry = System.currentTimeMillis() + 300000;
 
         // 3. Physical Transport selection (Availability)
@@ -225,7 +272,17 @@ public class PacketHandler {
 
     private void handleKeyExchange(Message msg) {
         PublicKey pk = SecurityUtil.decodePublicKey(msg.publicKey);
-        if (pk != null) peerPublicKeys.put(msg.senderId, pk);
+        if (pk != null) {
+            PublicKey existingKey = peerPublicKeys.get(msg.senderId);
+            if (existingKey != null && !existingKey.equals(pk)) {
+                Log.w(TAG, "🚨 MITM ATTACK DETECTED! Public key for " + msg.senderId + " changed! Rejecting new key.");
+            } else {
+                if (existingKey == null) {
+                    Log.d(TAG, "Pinned Public Key for " + msg.senderId);
+                }
+                peerPublicKeys.put(msg.senderId, pk);
+            }
+        }
         if (msg.ttl > 0) {
             msg.ttl--;
             bufferManager.bufferOutbound(msg);

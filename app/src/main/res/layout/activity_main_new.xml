@@ -112,49 +112,7 @@
                             android:visibility="gone"/>
                     </FrameLayout>
 
-                    <!-- Connectivity Status Chips -->
-                    <LinearLayout
-                        android:id="@+id/layoutStatusIcons"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="end|center_vertical"
-                        android:layout_marginEnd="4dp"
-                        android:layout_marginStart="16dp"
-                        app:layout_constraintStart_toEndOf="@+id/guidelineCenter"
-                        app:layout_constraintEnd_toStartOf="@+id/frameUpdateIcon"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent">
-                        
-                        <!-- Bluetooth Status -->
-                        <ImageView
-                            android:id="@+id/ivBluetoothStatus"
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:src="@drawable/ic_bluetooth_status"
-                            android:layout_marginEnd="8dp"
-                            app:tint="@android:color/holo_green_light"
-                            android:contentDescription="Bluetooth Status"/>
-                        
-                        <!-- WiFi Status -->
-                        <ImageView
-                            android:id="@+id/ivWifiStatus"
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:src="@drawable/ic_wifi_status"
-                            android:layout_marginEnd="8dp"
-                            app:tint="@android:color/holo_green_light"
-                            android:contentDescription="WiFi Status"/>
-                        
-                        <!-- Location/Nearby Status -->
-                        <ImageView
-                            android:id="@+id/ivNearbyStatus"
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:src="@drawable/ic_nearby_status"
-                            app:tint="@android:color/holo_green_light"
-                            android:contentDescription="Location Status"/>
-                    </LinearLayout>
+                    <!-- Status icons removed for clean UI -->
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.appbar.MaterialToolbar>
@@ -165,20 +123,24 @@
                 android:id="@+id/viewPager"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <!-- Bottom Navigation -->
-            <com.google.android.material.bottomnavigation.BottomNavigationView
-                android:id="@+id/bottomNav"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/white"
-                android:elevation="8dp"
-                app:itemIconTint="@color/primary"
-                app:itemTextColor="@color/primary"
-                app:labelVisibilityMode="labeled"
-                app:menu="@menu/bottom_nav_menu" />
+                android:layout_weight="1"
+                android:paddingBottom="80dp"
+                android:clipToPadding="false" />
         </LinearLayout>
+
+        <!-- Floating Bottom Navigation -->
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNav"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_margin="16dp"
+            android:background="@drawable/rounded_bottom_nav"
+            android:elevation="12dp"
+            app:itemIconTint="@color/primary"
+            app:itemTextColor="@color/primary"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/bottom_nav_menu" />
 
     <FrameLayout
         android:id="@+id/fragment_container"
@@ -188,23 +150,24 @@
         android:elevation="20dp"
         android:visibility="gone" />
 
-    <!-- Floating SOS Button - Positioned higher for better access -->
-    <!-- Floating SOS Button -->
+    <!-- Floating SOS Button - Glowing & Elevated -->
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabSos"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="150dp"
+        android:layout_marginBottom="100dp"
         android:text="SOS"
         android:textColor="@color/white"
         android:textStyle="bold"
         app:icon="@drawable/ic_sos"
         app:iconTint="@color/white"
         app:backgroundTint="@color/error"
+        app:rippleColor="#FFFFFF"
         android:contentDescription="Emergency SOS"
-        app:elevation="6dp"/>
+        app:elevation="12dp"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.ExtraLarge"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

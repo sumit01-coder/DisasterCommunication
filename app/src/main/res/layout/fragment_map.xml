@@ -1,92 +1,156 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/background_light">
+    android:layout_height="match_parent">
 
-    <!-- Status Dashboard -->
+    <!-- OpenStreetMap View (Full Screen Background) -->
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Top Status Bar (Mesh Range) - Floating -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        app:layout_anchor="@id/mapView"
+        app:layout_anchorGravity="top">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_wifi"
+                app:tint="@color/primary"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="Mesh network range: ~500m"
+                android:textSize="14sp"
+                android:textColor="@color/text_primary"/>
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_dialog_info"
+                app:tint="@color/primary"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Map Floating Actions (Right Side) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="end|top"
+        android:layout_margin="16dp">
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnReport"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_dialog_alert"
+            app:fabSize="mini"
+            app:tint="@color/error"
+            app:backgroundTint="@color/surface"
+            app:elevation="4dp"
+            android:layout_marginBottom="16dp"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnShareLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_share"
+            app:fabSize="mini"
+            app:tint="@color/text_primary"
+            app:backgroundTint="@color/surface"
+            android:layout_marginBottom="16dp"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnCenterLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_mylocation"
+            app:fabSize="mini"
+            app:tint="@color/white"
+            app:backgroundTint="@color/primary"
+            app:elevation="4dp"/>
+    </LinearLayout>
+
+    <!-- Bottom Sheet Dashboard -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/statusDashboard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:fillViewport="false">
+        android:background="@drawable/bg_bottom_sheet"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        app:behavior_peekHeight="240dp"
+        app:behavior_hideable="false">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="24dp">
 
-            <!-- Row 1: Mesh Network & Bluetooth -->
+            <!-- Drag Handle -->
+            <View
+                android:layout_width="40dp"
+                android:layout_height="4dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@color/surface_dim"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- Network Overview -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Network Overview"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Grid 2x2 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:weightSum="2">
+                android:weightSum="2"
+                android:layout_marginBottom="12dp">
 
-                <!-- Mesh Network Card -->
+                <!-- Mesh Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
-
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/surface_dim">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="16dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/ic_wifi"
-                                app:tint="@color/primary"/>
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="8dp"
-                                android:text="Mesh Network"
-                                android:textStyle="bold"
-                                android:textSize="14sp"
-                                android:textColor="@color/text_primary"/>
-
-                            <View
-                                android:layout_width="8dp"
-                                android:layout_height="8dp"
-                                android:background="@drawable/circle_background"
-                                android:backgroundTint="@color/connected_green"/>
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tvMeshCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="0 connected"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"/>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Active"
-                            android:textSize="10sp"
-                            android:textColor="@color/connected_green"
-                            android:textStyle="bold"/>
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_wifi" app:tint="@color/primary"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mesh Network" android:textStyle="bold" android:layout_marginTop="8dp"/>
+                        <TextView android:id="@+id/tvMeshCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Active" android:textColor="@color/success" android:textStyle="bold" android:textSize="12sp"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -95,467 +159,205 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
-
+                    android:layout_marginStart="6dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/surface_dim">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="16dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/ic_bluetooth"
-                                app:tint="@color/primary"/>
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="8dp"
-                                android:text="Bluetooth"
-                                android:textStyle="bold"
-                                android:textSize="14sp"
-                                android:textColor="@color/text_primary"/>
-
-                            <View
-                                android:id="@+id/viewBluetoothDot"
-                                android:layout_width="8dp"
-                                android:layout_height="8dp"
-                                android:background="@drawable/circle_background"
-                                android:backgroundTint="@color/connected_green"/>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/stat_sys_data_bluetooth" app:tint="@color/info"/>
+                            <View android:id="@+id/viewBluetoothDot" android:layout_width="8dp" android:layout_height="8dp" android:layout_marginStart="8dp" android:background="@drawable/circle_background" android:backgroundTint="@color/success"/>
                         </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tvBluetoothCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="0 devices"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"/>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Enabled"
-                            android:textSize="10sp"
-                            android:textColor="@color/connected_green"
-                            android:textStyle="bold"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bluetooth" android:textStyle="bold" android:layout_marginTop="8dp"/>
+                        <TextView android:id="@+id/tvBluetoothCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Enabled" android:textColor="@color/success" android:textStyle="bold" android:textSize="12sp"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-            <!-- Row 2: Messages & Signal -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="16dp"
-                android:weightSum="2">
+                android:weightSum="2"
+                android:layout_marginBottom="24dp">
 
                 <!-- Messages Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
-
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/surface_dim">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="16dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/ic_chat"
-                                app:tint="@color/primary"/>
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="8dp"
-                                android:text="Messages"
-                                android:textStyle="bold"
-                                android:textSize="14sp"
-                                android:textColor="@color/text_primary"/>
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tvMessageCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="0 total"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"/>
-
-                        <TextView
-                            android:id="@+id/tvUnreadCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="0 unread"
-                            android:textSize="10sp"
-                            android:textColor="@color/signal_medium"
-                            android:textStyle="bold"/>
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/sym_action_email" app:tint="@color/success"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Messages" android:textStyle="bold" android:layout_marginTop="8dp"/>
+                        <TextView android:id="@+id/tvMessageCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Send &amp; receive" android:textColor="@color/success" android:textSize="12sp"/>
+                        <TextView android:id="@+id/tvUnreadCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Signal Quality Card -->
+                <!-- Signal Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
-
+                    android:layout_marginStart="6dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/surface_dim">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="16dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/ic_signal"
-                                app:tint="@color/primary"/>
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="8dp"
-                                android:text="Signal"
-                                android:textStyle="bold"
-                                android:textSize="14sp"
-                                android:textColor="@color/text_primary"/>
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tvSignalQuality"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="Strong"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"/>
-
-                        <TextView
-                            android:id="@+id/tvSignalRange"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="~500m range"
-                            android:textSize="10sp"
-                            android:textColor="@color/connected_green"
-                            android:textStyle="bold"/>
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_signal" app:tint="@color/info"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Signal" android:textStyle="bold" android:layout_marginTop="8dp"/>
+                        <TextView android:id="@+id/tvSignalQuality" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Strong" android:textColor="@color/success" android:textStyle="bold" android:textSize="12sp"/>
+                        <TextView android:id="@+id/tvSignalRange" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-            <!-- Full Width: Network Range Info -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
+            <!-- Network Status -->
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/primary">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="12dp"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_nearby"
-                        app:tint="@color/white"/>
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:text="Mesh network range: ~500m"
-                        android:textSize="12sp"
-                        android:textColor="@color/white"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="ⓘ"
-                        android:textSize="16sp"
-                        android:textColor="@color/white"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:background="?attr/selectableItemBackgroundBorderless"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
+                android:text="Network Status"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="16dp"/>
+                
             <!-- GPS Accuracy Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/surface_dim">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:padding="16dp"
                     android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_gps_accuracy"
-                        app:tint="@color/primary"/>
-
+                    
+                    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_mylocation" app:tint="@color/primary"/>
+                    
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginStart="16dp"
                         android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="GPS Accuracy"
-                            android:textStyle="bold"
-                            android:textSize="14sp"
-                            android:textColor="@color/text_primary"/>
-
-                        <TextView
-                            android:id="@+id/tvGpsAccuracyValue"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="±3m"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="GPS Accuracy" android:textStyle="bold" android:textColor="@color/text_primary"/>
+                        <TextView android:id="@+id/tvGpsAccuracyValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="±5m" android:textColor="@color/text_secondary" android:textSize="12sp"/>
                     </LinearLayout>
-
+                    
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:gravity="end">
-
-                        <TextView
-                            android:id="@+id/tvGpsAccuracyStatus"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Excellent"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/accuracy_excellent"/>
-
-                        <TextView
-                            android:id="@+id/tvGpsAccuracyCondition"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Open sky"
-                            android:textSize="10sp"
-                            android:textColor="@color/text_tertiary"/>
+                        <TextView android:id="@+id/tvGpsAccuracyStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Excellent" android:textStyle="bold" android:textColor="@color/success"/>
+                        <TextView android:id="@+id/tvGpsAccuracyCondition" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Open sky" android:textSize="12sp" android:textColor="@color/text_secondary"/>
                     </LinearLayout>
+                    <View android:id="@+id/viewGpsAccuracyDot" android:layout_width="8dp" android:layout_height="8dp" android:layout_marginStart="8dp" android:background="@drawable/circle_background" android:backgroundTint="@color/success"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                    <View
-                        android:id="@+id/viewGpsAccuracyDot"
-                        android:layout_width="8dp"
-                        android:layout_height="8dp"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/circle_background"
-                        android:backgroundTint="@color/accuracy_excellent"/>
+            <!-- Quick Actions -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Quick Actions"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="16dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp">
+                
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@android:drawable/ic_menu_report_image" app:backgroundTint="@color/surface" app:tint="@color/primary" app:elevation="2dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Report" android:layout_marginTop="8dp" android:textStyle="bold" android:textSize="12sp"/>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@android:drawable/ic_menu_share" app:backgroundTint="@color/surface" app:tint="@color/text_primary" app:elevation="2dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Share" android:layout_marginTop="8dp" android:textStyle="bold" android:textSize="12sp"/>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@android:drawable/ic_menu_call" app:backgroundTint="@color/primary" app:tint="@color/white" app:elevation="4dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Emergency" android:layout_marginTop="8dp" android:textStyle="bold" android:textSize="12sp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Recent Alerts -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recent Alerts"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="16dp"/>
+                
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="100dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/surface_dim">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+                    
+                    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_dialog_alert" app:tint="@color/primary"/>
+                    
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Heavy rainfall warning" android:textStyle="bold" android:textColor="@color/text_primary"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="City Center • 10 min ago" android:textColor="@color/text_secondary" android:textSize="12sp"/>
+                    </LinearLayout>
+                    
+                    <View android:layout_width="8dp" android:layout_height="8dp" android:background="@drawable/circle_background" android:backgroundTint="@color/primary"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Divider -->
-    <View
-        android:id="@+id/divider"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_below="@id/statusDashboard"
-        android:background="@color/text_secondary"
-        android:alpha="0.2"/>
-
-    <!-- OpenStreetMap View -->
-    <org.osmdroid.views.MapView
-        android:id="@+id/mapView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/divider"/>
-
-    <!-- Zoom Controls -->
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_centerVertical="true"
-        android:layout_marginEnd="16dp"
-        android:orientation="vertical"
-        android:elevation="4dp">
-
-        <!-- Zoom In Button -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/btnZoomIn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="180dp"
-            android:src="@android:drawable/ic_input_add"
-            app:fabSize="mini"
-            app:tint="@color/white"
-            app:backgroundTint="@color/primary"
-            android:contentDescription="Zoom In"/>
-
-        <!-- Zoom Out Button -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/btnZoomOut"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:src="@android:drawable/ic_delete"
-            app:fabSize="mini"
-            app:tint="@color/white"
-            app:backgroundTint="@color/primary"
-            android:contentDescription="Zoom Out"/>
-    </LinearLayout>
-
-    <!-- Map Layer Switcher FAB -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabMapLayer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/fabLiveLocation"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="8dp"
-        android:src="@android:drawable/ic_menu_mapmode"
-        app:fabSize="mini"
-        app:tint="@color/white"
-        app:backgroundTint="@color/accent"
-        android:contentDescription="Switch Map Layer"/>
-
-    <!-- Live Location Sharing FAB -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabLiveLocation"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:src="@drawable/ic_members"
-        app:fabSize="normal"
-        app:tint="@color/white"
-        app:backgroundTint="#10B981"
-        android:contentDescription="Share Live Location"/>
-
-    <!-- Live Location Status HUD (Floating at Top of Map) -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardLiveStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/divider"
-        android:layout_margin="12dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="6dp"
-        app:cardBackgroundColor="#1F2937"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="12dp"
-            android:gravity="center_vertical">
-
-            <!-- Pulsing Icon -->
-            <FrameLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
-                <View
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:background="@drawable/circle_background"
-                    android:backgroundTint="#EF4444"/>
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="12dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="You are Live"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold"
-                    android:textSize="14sp"/>
-
-                <TextView
-                    android:id="@+id/tvLiveTimer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="00:14:59 remaining"
-                    android:textColor="#E5E7EB"
-                    android:textSize="12sp"/>
-            </LinearLayout>
-
-            <!-- Stop Button -->
-            <Button
-                android:id="@+id/btnStopLive"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="Stop"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#EF4444"
-                android:textAllCaps="false"
-                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"/>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-</RelativeLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

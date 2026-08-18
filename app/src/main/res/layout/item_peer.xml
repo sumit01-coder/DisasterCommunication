@@ -5,10 +5,13 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginVertical="4dp"
-    android:layout_marginHorizontal="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="3dp"
-    app:contentPadding="16dp">
+    app:cardCornerRadius="0dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp"
+    app:contentPadding="16dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="?attr/selectableItemBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,30 +21,31 @@
 
         <!-- Device Icon -->
         <FrameLayout
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginEnd="16dp">
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/circle_background"
+            android:backgroundTint="@color/surface_dim">
             
             <ImageView
                 android:id="@+id/ivPeerIcon"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:src="@drawable/ic_app_logo"
-                app:tint="#555555" 
-                android:background="@drawable/circle_background"
-                android:padding="10dp"/>
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_members"
+                app:tint="@color/text_primary"/>
 
             <!-- New Device Badge -->
             <TextView
                 android:id="@+id/tvNewBadge"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
                 android:layout_gravity="top|end"
                 android:background="@drawable/circle_background"
-                android:backgroundTint="#FF5722"
+                android:backgroundTint="@color/primary"
                 android:gravity="center"
                 android:text="N"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/white"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:visibility="gone"/>
@@ -61,13 +65,14 @@
                 android:text="Peer Device"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#212121"/>
+                android:textColor="@color/text_primary"/>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="4dp">
+                android:layout_marginTop="2dp"
+                android:gravity="center_vertical">
 
                 <TextView
                     android:id="@+id/tvPeerStatus"
@@ -75,7 +80,7 @@
                     android:layout_height="wrap_content"
                     android:text="Connected"
                     android:textSize="12sp"
-                    android:textColor="#757575"/>
+                    android:textColor="@color/success"/>
 
                 <!-- Signal Strength Indicator -->
                 <TextView
@@ -83,10 +88,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="📶 Strong"
-                    android:textSize="11sp"
-                    android:textColor="#4CAF50"
-                    android:visibility="gone"/>
+                    android:text="• Strong"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
             </LinearLayout>
 
             <!-- Device Address -->
@@ -96,7 +100,7 @@
                 android:layout_height="wrap_content"
                 android:text="00:00:00:00:00:00"
                 android:textSize="10sp"
-                android:textColor="#9E9E9E"
+                android:textColor="@color/text_tertiary"
                 android:fontFamily="monospace"
                 android:layout_marginTop="2dp"
                 android:visibility="gone"/>
@@ -107,12 +111,13 @@
             android:id="@+id/tvTypeBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="10dp"
+            android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
             android:background="@drawable/rounded_badge"
+            android:backgroundTint="@color/surface_variant"
             android:text="BT"
             android:textSize="11sp"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_secondary"
             android:textStyle="bold"/>
 
     </LinearLayout>

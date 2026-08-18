@@ -6,14 +6,16 @@
     android:orientation="vertical"
     android:background="@color/background_light">
 
-    <androidx.appcompat.widget.Toolbar
+    <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
+        android:background="@drawable/gradient_toolbar"
+        android:elevation="4dp"
         app:title="Settings"
         app:titleTextColor="@android:color/white"
-        app:navigationIcon="@drawable/ic_arrow_back"/>
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="@color/white"/>
 
     <ScrollView
         android:layout_width="match_parent"

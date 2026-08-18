@@ -38,12 +38,12 @@
         android:layout_marginBottom="48dp"/>
 
     <!-- Glassmorphic Card for Form -->
-    <androidx.cardview.widget.CardView
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_glassmorphic_card"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="8dp"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="16dp"
         android:backgroundTint="#F5FFFFFF">
 
         <LinearLayout
@@ -107,7 +107,7 @@
                 app:iconTint="@color/white"/>
 
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- Info Text at Bottom -->
     <TextView

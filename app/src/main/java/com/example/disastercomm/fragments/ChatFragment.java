@@ -28,7 +28,7 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
 
     private RecyclerView rvMessages;
     private EditText etMessage;
-    private ImageButton btnSend;
+    private View btnSend;
     private ChatAdapter chatAdapter;
     private PacketHandler packetHandler;
     private String username;
@@ -38,6 +38,11 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
     private String myId; // ✅ My device ID
     private View chatHeader; // ✅ Chat header for private messages
     private com.example.disastercomm.models.MemberItem currentRecipient; // ✅ Full member object for status
+
+    private View layoutChannelList;
+    private View layoutChannelDetail;
+    private View cardGlobalBroadcast;
+    private android.widget.ImageView btnBackToChannels;
 
     public void setRecipient(String id, String name) {
         this.recipientId = id;
@@ -89,9 +94,26 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        rvMessages = view.findViewById(R.id.rvMessages);
+        layoutChannelList = view.findViewById(R.id.layoutChannelList);
+        layoutChannelDetail = view.findViewById(R.id.layoutChannelDetail);
+        cardGlobalBroadcast = view.findViewById(R.id.cardGlobalBroadcast);
+        btnBackToChannels = view.findViewById(R.id.btnBackToChannels);
+
+        // UI Toggles
+        cardGlobalBroadcast.setOnClickListener(v -> {
+            layoutChannelList.setVisibility(View.GONE);
+            layoutChannelDetail.setVisibility(View.VISIBLE);
+        });
+
+        btnBackToChannels.setOnClickListener(v -> {
+            layoutChannelDetail.setVisibility(View.GONE);
+            layoutChannelList.setVisibility(View.VISIBLE);
+        });
+
+        // Chat UI elements
         etMessage = view.findViewById(R.id.etMessage);
         btnSend = view.findViewById(R.id.btnSend);
+        rvMessages = view.findViewById(R.id.rvMessages);
         chatHeader = view.findViewById(R.id.chatHeader); // ✅ Initialize header
 
         // ✅ Initialize cache and device ID

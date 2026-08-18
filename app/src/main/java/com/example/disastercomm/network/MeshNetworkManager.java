@@ -241,6 +241,12 @@ public class MeshNetworkManager {
                         final String finalName = name;
                         handler.post(() -> callback.onDeviceConnected(endpointId, finalName));
                     }
+                    
+                    // Battery Optimization: Duty Cycle Advertising
+                    if (connectedEndpoints.size() >= 3) {
+                        Log.d(TAG, "Battery Optimization: Sufficient nodes connected. Pausing advertising.");
+                        stopAdvertising();
+                    }
                     break;
                 case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
                     Log.d(TAG, "Connection rejected: " + endpointId + ". Retrying...");
@@ -278,6 +284,12 @@ public class MeshNetworkManager {
 
             if (callback != null) {
                 handler.post(() -> callback.onDeviceDisconnected(endpointId));
+            }
+
+            // Battery Optimization: Resume Advertising if needed
+            if (connectedEndpoints.size() < 3 && !isAdvertisingActive) {
+                Log.d(TAG, "Battery Optimization: Connections dropped below threshold. Resuming advertising.");
+                startAdvertising();
             }
 
             // ✅ Auto-Reconnect: Only if we knew this endpoint or it was previously
