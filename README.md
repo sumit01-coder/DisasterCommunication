@@ -71,22 +71,26 @@ The application is built using a modern **Native Android** stack optimized for o
 
 ## ✨ Key Features
 
-### 🔗 Dual Transport Mesh Network
-- **WiFi Direct (Nearby Connections)**: High-speed, longer range (~100m)
-- **Classic Bluetooth**: Fallback for compatibility (~10-30m)
-- **Automatic Switching**: Uses best available transport
+### 🔗 Advanced Mesh Network
+- **Multi-Hop Routing (AODV)**: Extends communication range significantly (from 100m to 1km+) by routing messages through intermediate devices.
+- **Store-and-Forward**: Messages are queued locally and automatically delivered when devices come back online or into range.
+- **Automatic Relay Mode**: Stationary or charging devices can automatically act as dedicated network relays to strengthen the mesh.
+- **Local TCP & UDP Discovery**: Seamless connection for devices on the same local subnet using efficient UDP discovery.
+- **Dual Transport**: Intelligent auto-switching between WiFi Direct (Nearby Connections) and Classic Bluetooth based on availability.
+- **Network Health Monitoring**: A self-healing network that uses heartbeat protocols to maintain robust routes.
 
 ### 💬 Communication Features
 - **Global Chat**: Broadcast messages to all connected devices
 - **Private Chat**: One-on-one encrypted conversations
-- **SOS Alerts**: Emergency broadcasts with GPS location
 - **Message Receipts**: Delivery and read confirmation
+- **Message Buffering**: Optimized packet handling to manage network congestion
 
-### 📍 Location Services
-- **Real-time Location Sharing**: See other users on map
+### 📍 Location & Emergency Services
+- **Emergency SOS Beacon**: Ultra-low-power BLE broadcasting that can run for 24 hours on just 5% battery.
+- **Real-time Location Sharing**: See other users on an offline OpenStreetMap
 - **GPS Coordinates**: Precise location in emergencies
 - **Distance Calculation**: Know how far others are
-- **Interactive Map**: OpenStreetMap integration
+- **Interactive Map**: Complete OpenStreetMap integration
 
 ### 🔔 Smart Notifications
 - **Message Notifications**: Never miss important communications
@@ -97,7 +101,7 @@ The application is built using a modern **Native Android** stack optimized for o
 ### 🔒 Security & Privacy
 - **Offline-First**: No cloud dependencies, no data uploads
 - **End-to-End Encryption**: Secure message transmission
-- **Local Storage**: All data stored on device
+- **Local Storage**: All data stored securely on the device
 - **No Registration**: No accounts, usernames, or personal data required
 
 ---
@@ -251,8 +255,29 @@ The app uses a robust **Priority Connection Algorithm** to ensure devices connec
     *   **Result**: Extremely fast small-packet updates (Perfect for Location Sharing).
 
     **Why Wi-Fi Aware?**
-    * ## 📡 Quad-Layer Managed Flood Routing (Smart Mesh)
-The application utilizes a robust **Quad-Layer** connectivity approach to ensure message delivery in any environment:
+    *   Provides extremely low power consumption while maintaining discovery over Wi-Fi.
+
+## 📡 Advanced Mesh Routing & Reliability
+
+The application utilizes a robust suite of advanced mesh networking protocols to ensure message delivery in any environment:
+
+### Multi-Hop Routing (AODV)
+Uses the **Ad-hoc On-Demand Distance Vector (AODV)** protocol for multi-hop routing. It dynamically discovers routes between devices, allowing a message to hop across multiple intermediate devices, effectively extending the range from 100 meters to over 1 kilometer.
+
+### Store-and-Forward Protocol
+Guarantees offline delivery through the `StoreAndForwardManager`. When a recipient is unreachable, the message is safely stored in a local queue and automatically forwarded as soon as a valid route or connection becomes available.
+
+### Automatic Relay Mode
+Devices that are stationary and have sufficient battery automatically switch into a dedicated **Relay Mode** via the `RelayModeManager`. This optimizes network topology by creating stable backbone nodes that route traffic for moving users.
+
+### Emergency Beacon Service
+In critical situations where battery is extremely low, the application can switch to the `EmergencyBeaconService`. This ultra-low-power mode uses BLE to continuously broadcast an SOS signal and your location. It can operate for up to 24 hours on just 5% battery life.
+
+### Local TCP & UDP Discovery
+In scenarios where a local router exists (even without internet), `UdpDiscoveryManager` and `LocalTcpManager` provide seamless device discovery and high-speed local network communication, augmenting the peer-to-peer mesh.
+
+### Quad-Layer Managed Flood Routing
+The application utilizes a **Quad-Layer** connectivity approach:
 
 1.  **Wi-Fi Direct (Nearby Connections)**: High-bandwidth, primary mesh layer.
 2.  **Bluetooth Classic**: Reliable fallback for older devices or when Wi-Fi is busy.
