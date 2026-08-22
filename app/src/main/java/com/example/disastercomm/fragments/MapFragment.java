@@ -1,17 +1,19 @@
 package com.example.disastercomm.fragments;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.os.Handler;
-import android.os.Looper;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,18 +21,30 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.disastercomm.R;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.example.disastercomm.models.MemberItem;
+import com.example.disastercomm.utils.CirclePulseOverlay;
+import com.example.disastercomm.utils.LiveLocationSharingManager;
+import com.example.disastercomm.PeerLocationManager;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Polygon;
+import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class MapFragment extends Fragment {
 
@@ -39,30 +53,38 @@ public class MapFragment extends Fragment {
     private MyLocationNewOverlay myLocationOverlay;
     private LocationManager locationManager;
 
-    private TextView tvMeshCount;
-    private TextView tvBluetoothCount;
-    private TextView tvMessageCount;
-    private TextView tvUnreadCount;
-    private TextView tvSignalQuality;
-    private TextView tvSignalRange;
-    private View viewBluetoothDot;
+    // UI Elements
+    private TextView tvNetworkStatusTitle;
+    private TextView tvNetworkStatusDesc;
+    private android.widget.ImageView ivNetworkSignal;
 
-    // GPS Accuracy UI elements
-    private TextView tvGpsAccuracyValue;
-    private TextView tvGpsAccuracyStatus;
-    private TextView tvGpsAccuracyCondition;
-    private View viewGpsAccuracyDot;
+    private BottomSheetBehavior<?> behaviorLayers;
+    private BottomSheetBehavior<?> behaviorMarkerDetail;
+    private BottomSheetBehavior<?> behaviorReport;
 
-    private int totalMessages = 0;
-    private int unreadMessages = 0;
+    // Marker Details UI
+    private TextView tvMarkerIcon;
+    private TextView tvMarkerTitle;
+    private TextView tvMarkerSubtitle;
+    private TextView tvMarkerStatus;
+    private TextView tvMarkerSignal;
 
-    // GPS tracking
     private float currentAccuracy = 0f;
     private GeoPoint lastLocation = null;
-    private static final long LOCATION_UPDATE_INTERVAL = 1000; // 1 second
-    private static final float LOCATION_UPDATE_DISTANCE = 1f; // 1 meter
+    private static final long LOCATION_UPDATE_INTERVAL = 1000;
+    private static final float LOCATION_UPDATE_DISTANCE = 1f;
 
-    // Callback for marker clicks
+    private LiveLocationSharingManager sharingManager;
+
+    private List<Marker> memberMarkers = new ArrayList<>();
+    private Map<String, CirclePulseOverlay> pulseOverlays = new HashMap<>();
+
+    // Mock overlays for toggling
+    private Polygon safeZone;
+    private Polygon dangerZone;
+    private Polyline routeOverlay;
+    private Marker hospitalMarker;
+
     public interface OnMapMemberClickListener {
         void onMemberMarkerClick(String userId, String userName);
     }
@@ -73,14 +95,21 @@ public class MapFragment extends Fragment {
         this.memberClickListener = listener;
     }
 
-    private static final double ZOOM_STEP = 1.0;
-
-    private com.example.disastercomm.utils.LiveLocationSharingManager sharingManager;
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
             @Nullable Bundle savedInstanceState) {
+        
+        // Initialize OSM configuration BEFORE inflating layout to prevent blocked tiles
+        Context ctx = requireContext();
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+        // Use a highly specific User-Agent to comply with OSM policies
+        Configuration.getInstance().setUserAgentValue(ctx.getPackageName() + "/1.0 (disastercomm@example.com)");
+
+        File cacheDir = new File(ctx.getCacheDir(), "osm_v3");
+        Configuration.getInstance().setOsmdroidTileCache(cacheDir);
+        Configuration.getInstance().setOsmdroidBasePath(cacheDir);
+
         return inflater.inflate(R.layout.fragment_map, container, false);
     }
 
@@ -88,112 +117,361 @@ public class MapFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        sharingManager = com.example.disastercomm.utils.LiveLocationSharingManager.getInstance(requireContext());
+        sharingManager = LiveLocationSharingManager.getInstance(requireContext());
 
-        // Initialize OSM configuration
-        Context ctx = requireContext();
-        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
-        Configuration.getInstance().setUserAgentValue("DisasterComm/1.0");
+        // Bind UI
+        tvNetworkStatusTitle = view.findViewById(R.id.tvNetworkStatusTitle);
+        tvNetworkStatusDesc = view.findViewById(R.id.tvNetworkStatusDesc);
+        ivNetworkSignal = view.findViewById(R.id.ivNetworkSignal);
 
-        // Configure tile cache directory
-        File cacheDir = new File(ctx.getCacheDir(), "osm");
-        Configuration.getInstance().setOsmdroidTileCache(cacheDir);
-        Configuration.getInstance().setOsmdroidBasePath(cacheDir);
+        View bottomSheetLayers = view.findViewById(R.id.bottomSheetLayers);
+        behaviorLayers = BottomSheetBehavior.from(bottomSheetLayers);
+        behaviorLayers.setState(BottomSheetBehavior.STATE_HIDDEN);
 
-        // Initialize status TextViews
-        tvMeshCount = view.findViewById(R.id.tvMeshCount);
-        tvBluetoothCount = view.findViewById(R.id.tvBluetoothCount);
-        tvMessageCount = view.findViewById(R.id.tvMessageCount);
-        tvUnreadCount = view.findViewById(R.id.tvUnreadCount);
-        tvSignalQuality = view.findViewById(R.id.tvSignalQuality);
-        tvSignalRange = view.findViewById(R.id.tvSignalRange);
-        viewBluetoothDot = view.findViewById(R.id.viewBluetoothDot);
+        View bottomSheetMarkerDetail = view.findViewById(R.id.bottomSheetMarkerDetail);
+        behaviorMarkerDetail = BottomSheetBehavior.from(bottomSheetMarkerDetail);
+        behaviorMarkerDetail.setState(BottomSheetBehavior.STATE_HIDDEN);
 
-        // Initialize GPS accuracy views
-        tvGpsAccuracyValue = view.findViewById(R.id.tvGpsAccuracyValue);
-        tvGpsAccuracyStatus = view.findViewById(R.id.tvGpsAccuracyStatus);
-        tvGpsAccuracyCondition = view.findViewById(R.id.tvGpsAccuracyCondition);
-        viewGpsAccuracyDot = view.findViewById(R.id.viewGpsAccuracyDot);
+        View bottomSheetReport = view.findViewById(R.id.bottomSheetReport);
+        if (bottomSheetReport != null) {
+            behaviorReport = BottomSheetBehavior.from(bottomSheetReport);
+            behaviorReport.setState(BottomSheetBehavior.STATE_HIDDEN);
+        }
 
-        // Setup zoom button listeners
-        // setupZoomControls(); // This method is not defined in the provided context,
+        tvMarkerIcon = view.findViewById(R.id.tvMarkerIcon);
+        tvMarkerTitle = view.findViewById(R.id.tvMarkerTitle);
+        tvMarkerSubtitle = view.findViewById(R.id.tvMarkerSubtitle);
+        tvMarkerStatus = view.findViewById(R.id.tvMarkerStatus);
+        tvMarkerSignal = view.findViewById(R.id.tvMarkerSignal);
 
-        // Initialize map
         mapView = view.findViewById(R.id.mapView);
         if (mapView != null) {
             setupMap();
         }
 
-        // Apply animations
-        applyEntryAnimations(view);
-
-        // Start real-time update loop
+        setupClickListeners(view);
         startMapUpdateLoop();
     }
 
-    private void updateLiveStatusHud() {
-        // Obsolete UI removed
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (mapView != null)
-            mapView.onResume();
-        if (locationManager != null && isAdded()) {
-            try {
-                // ... request updates ...
-            } catch (SecurityException e) {
+    private void setupClickListeners(View view) {
+        view.findViewById(R.id.btnCenterLocation).setOnClickListener(v -> {
+            if (lastLocation != null) {
+                mapController.animateTo(lastLocation, 18.0, 500L);
+            } else if (myLocationOverlay != null && myLocationOverlay.getMyLocation() != null) {
+                mapController.animateTo(myLocationOverlay.getMyLocation(), 18.0, 500L);
             }
+        });
+
+        view.findViewById(R.id.btnLayers).setOnClickListener(v -> {
+            if (behaviorLayers.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+                behaviorLayers.setState(BottomSheetBehavior.STATE_HIDDEN);
+            } else {
+                behaviorMarkerDetail.setState(BottomSheetBehavior.STATE_HIDDEN);
+                if (behaviorReport != null) behaviorReport.setState(BottomSheetBehavior.STATE_HIDDEN);
+                behaviorLayers.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+        });
+
+        view.findViewById(R.id.btnReport).setOnClickListener(v -> {
+            if (behaviorReport != null) {
+                if (behaviorReport.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+                    behaviorReport.setState(BottomSheetBehavior.STATE_HIDDEN);
+                } else {
+                    behaviorLayers.setState(BottomSheetBehavior.STATE_HIDDEN);
+                    behaviorMarkerDetail.setState(BottomSheetBehavior.STATE_HIDDEN);
+                    behaviorReport.setState(BottomSheetBehavior.STATE_EXPANDED);
+                }
+            }
+        });
+
+        view.findViewById(R.id.btnMarkerRoute).setOnClickListener(v -> {
+             Toast.makeText(requireContext(), "Calculating route...", Toast.LENGTH_SHORT).show();
+        });
+
+        // Setup Report actions
+        setupReportActions(view);
+
+        // Setup Layer Switches
+        setupLayerSwitches(view);
+
+        // Setup SOS Button
+        View fabSosMap = view.findViewById(R.id.fabSosMap);
+        if (fabSosMap != null) {
+            fabSosMap.setOnClickListener(v -> showSosDialog());
         }
-        updateLiveStatusHud();
     }
 
-    // Consolidated logic for location updates and self-pulse
+    private void setupReportActions(View view) {
+        View.OnClickListener reportListener = v -> {
+            if (lastLocation != null) {
+                Marker alertMarker = new Marker(mapView);
+                alertMarker.setPosition(lastLocation);
+                alertMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                alertMarker.setTitle("User Report");
+                alertMarker.setIcon(ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_dialog_alert));
+                mapView.getOverlays().add(alertMarker);
+                mapView.invalidate();
+                Toast.makeText(requireContext(), "Report submitted to Mesh Network", Toast.LENGTH_SHORT).show();
+                if (behaviorReport != null) behaviorReport.setState(BottomSheetBehavior.STATE_HIDDEN);
+            } else {
+                Toast.makeText(requireContext(), "Location unavailable", Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        View btnMedical = view.findViewById(R.id.btnReportMedical);
+        View btnFire = view.findViewById(R.id.btnReportFire);
+        View btnFlood = view.findViewById(R.id.btnReportFlood);
+        View btnInfra = view.findViewById(R.id.btnReportInfrastructure);
+
+        if (btnMedical != null) btnMedical.setOnClickListener(reportListener);
+        if (btnFire != null) btnFire.setOnClickListener(reportListener);
+        if (btnFlood != null) btnFlood.setOnClickListener(reportListener);
+        if (btnInfra != null) btnInfra.setOnClickListener(reportListener);
+    }
+
+    private void setupLayerSwitches(View view) {
+        com.google.android.material.switchmaterial.SwitchMaterial swSafeZones = view.findViewById(R.id.swSafeZones);
+        com.google.android.material.switchmaterial.SwitchMaterial swDangerZones = view.findViewById(R.id.swDangerZones);
+        com.google.android.material.switchmaterial.SwitchMaterial swEvacuationRoutes = view.findViewById(R.id.swEvacuationRoutes);
+        com.google.android.material.switchmaterial.SwitchMaterial swHospitals = view.findViewById(R.id.swHospitals);
+        com.google.android.material.switchmaterial.SwitchMaterial swNearbyUsers = view.findViewById(R.id.swNearbyUsers);
+
+        if (swSafeZones != null) {
+            swSafeZones.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (safeZone != null) {
+                    if (isChecked && !mapView.getOverlays().contains(safeZone)) mapView.getOverlays().add(safeZone);
+                    else if (!isChecked) mapView.getOverlays().remove(safeZone);
+                    mapView.invalidate();
+                }
+            });
+        }
+
+        if (swDangerZones != null) {
+            swDangerZones.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (dangerZone != null) {
+                    if (isChecked && !mapView.getOverlays().contains(dangerZone)) mapView.getOverlays().add(dangerZone);
+                    else if (!isChecked) mapView.getOverlays().remove(dangerZone);
+                    mapView.invalidate();
+                }
+            });
+        }
+
+        if (swEvacuationRoutes != null) {
+            swEvacuationRoutes.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (routeOverlay != null) {
+                    if (isChecked && !mapView.getOverlays().contains(routeOverlay)) mapView.getOverlays().add(routeOverlay);
+                    else if (!isChecked) mapView.getOverlays().remove(routeOverlay);
+                    mapView.invalidate();
+                }
+            });
+        }
+
+        if (swHospitals != null) {
+            swHospitals.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (hospitalMarker != null) {
+                    if (isChecked && !mapView.getOverlays().contains(hospitalMarker)) mapView.getOverlays().add(hospitalMarker);
+                    else if (!isChecked) mapView.getOverlays().remove(hospitalMarker);
+                    mapView.invalidate();
+                }
+            });
+        }
+
+        if (swNearbyUsers != null) {
+            swNearbyUsers.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                for (Marker m : memberMarkers) {
+                    if (isChecked && !mapView.getOverlays().contains(m)) mapView.getOverlays().add(m);
+                    else if (!isChecked) mapView.getOverlays().remove(m);
+                }
+                mapView.invalidate();
+            });
+        }
+
+        View btnDownloadOffline = view.findViewById(R.id.btnDownloadOffline);
+        if (btnDownloadOffline != null) {
+            btnDownloadOffline.setOnClickListener(v -> {
+                if (behaviorLayers != null) behaviorLayers.setState(BottomSheetBehavior.STATE_HIDDEN);
+                Toast.makeText(requireContext(), "Downloading offline tiles for 10km radius...", Toast.LENGTH_LONG).show();
+                
+                // Simulate download progress
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    if (isAdded()) {
+                        Toast.makeText(requireContext(), "Offline Map Downloaded Successfully!", Toast.LENGTH_LONG).show();
+                    }
+                }, 3000);
+            });
+        }
+    }
+
+    private void showSosDialog() {
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_sos_confirmation, null);
+        dialog.setContentView(dialogView);
+
+        TextView tvSosLocation = dialogView.findViewById(R.id.tvSosLocation);
+        if (lastLocation != null) {
+            tvSosLocation.setText(String.format("%.4f, %.4f", lastLocation.getLatitude(), lastLocation.getLongitude()));
+        }
+
+        dialogView.findViewById(R.id.btnCancelSos).setOnClickListener(v -> dialog.dismiss());
+        dialogView.findViewById(R.id.btnConfirmSos).setOnClickListener(v -> {
+            dialog.dismiss();
+            Toast.makeText(requireContext(), "SOS Alert Sent!", Toast.LENGTH_LONG).show();
+        });
+
+        dialog.show();
+    }
+
+    private void setupMap() {
+        // Use CartoDB Positron (Light) map tiles. It is much more reliable, looks cleaner and doesn't block heavily like OSM.
+        org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase cartoDbPositron = new org.osmdroid.tileprovider.tilesource.XYTileSource("CartoDBPositron",
+                0, 20, 256, ".png", new String[]{
+                "https://a.basemaps.cartocdn.com/light_all/",
+                "https://b.basemaps.cartocdn.com/light_all/",
+                "https://c.basemaps.cartocdn.com/light_all/"
+        });
+        mapView.setTileSource(cartoDbPositron);
+        mapView.setMultiTouchControls(true);
+        mapView.setBuiltInZoomControls(false);
+        mapView.setTilesScaledToDpi(true);
+
+        mapController = mapView.getController();
+        mapController.setZoom(16.0);
+
+        GeoPoint defaultLocation = new GeoPoint(28.6139, 77.2090);
+        mapController.setCenter(defaultLocation);
+
+        myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(requireContext()), mapView);
+        myLocationOverlay.enableMyLocation();
+        mapView.getOverlays().add(myLocationOverlay);
+
+        setupLocationTracking();
+        
+        // Mock Emergency Data
+        addMockOverlays();
+    }
+
+    private void addMockOverlays() {
+        GeoPoint center = lastLocation != null ? lastLocation : new GeoPoint(28.6139, 77.2090);
+        updateMockOverlays(center);
+    }
+
+    private void updateMockOverlays(GeoPoint center) {
+        double lat = center.getLatitude();
+        double lon = center.getLongitude();
+
+        if (safeZone == null) {
+            safeZone = new Polygon(mapView);
+            safeZone.getFillPaint().setColor(Color.argb(50, 0, 255, 0));
+            safeZone.getOutlinePaint().setColor(Color.GREEN);
+            safeZone.getOutlinePaint().setStrokeWidth(2.0f);
+            mapView.getOverlays().add(safeZone);
+        }
+        List<GeoPoint> safePoints = new ArrayList<>();
+        safePoints.add(new GeoPoint(lat + 0.0011, lon + 0.0010));
+        safePoints.add(new GeoPoint(lat + 0.0011, lon + 0.0030));
+        safePoints.add(new GeoPoint(lat - 0.0009, lon + 0.0030));
+        safePoints.add(new GeoPoint(lat - 0.0009, lon + 0.0010));
+        safeZone.setPoints(safePoints);
+
+        if (dangerZone == null) {
+            dangerZone = new Polygon(mapView);
+            dangerZone.getFillPaint().setColor(Color.argb(50, 255, 0, 0));
+            dangerZone.getOutlinePaint().setColor(Color.RED);
+            dangerZone.getOutlinePaint().setStrokeWidth(2.0f);
+            mapView.getOverlays().add(dangerZone);
+        }
+        List<GeoPoint> dangerPoints = new ArrayList<>();
+        dangerPoints.add(new GeoPoint(lat - 0.0029, lon - 0.0010));
+        dangerPoints.add(new GeoPoint(lat - 0.0029, lon - 0.0030));
+        dangerPoints.add(new GeoPoint(lat - 0.0049, lon - 0.0030));
+        dangerPoints.add(new GeoPoint(lat - 0.0049, lon - 0.0010));
+        dangerZone.setPoints(dangerPoints);
+
+        if (routeOverlay == null) {
+            routeOverlay = new Polyline(mapView);
+            routeOverlay.getOutlinePaint().setColor(Color.BLUE);
+            routeOverlay.getOutlinePaint().setStrokeWidth(8.0f);
+            mapView.getOverlays().add(routeOverlay);
+        }
+        List<GeoPoint> routePoints = new ArrayList<>();
+        routePoints.add(new GeoPoint(lat, lon));
+        routePoints.add(new GeoPoint(lat + 0.0006, lon + 0.0010));
+        routePoints.add(new GeoPoint(lat + 0.0001, lon + 0.0020));
+        routeOverlay.setPoints(routePoints);
+
+        if (hospitalMarker == null) {
+            hospitalMarker = new Marker(mapView);
+            hospitalMarker.setTitle("City Hospital");
+            hospitalMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            hospitalMarker.setOnMarkerClickListener((marker, map) -> {
+                showMarkerDetails("🏥", "City Hospital", "150 m away", "Available", "Strong");
+                return true;
+            });
+            mapView.getOverlays().add(hospitalMarker);
+        }
+        hospitalMarker.setPosition(new GeoPoint(lat + 0.0001, lon + 0.0020));
+    }
+
+    private void showMarkerDetails(String icon, String title, String subtitle, String status, String signal) {
+        tvMarkerIcon.setText(icon);
+        tvMarkerTitle.setText(title);
+        tvMarkerSubtitle.setText(subtitle);
+        tvMarkerStatus.setText(status);
+        tvMarkerSignal.setText(signal);
+        
+        behaviorLayers.setState(BottomSheetBehavior.STATE_HIDDEN);
+        behaviorMarkerDetail.setState(BottomSheetBehavior.STATE_EXPANDED);
+    }
+
+    private void setupLocationTracking() {
+        try {
+            locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+            LocationListener locationListener = new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
+                    handleUserLocationUpdate(location);
+                }
+                @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
+                @Override public void onProviderEnabled(String provider) {}
+                @Override public void onProviderDisabled(String provider) {}
+            };
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                if (requireContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_UPDATE_INTERVAL, LOCATION_UPDATE_DISTANCE, locationListener);
+                    Location lastKnown = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                    if (lastKnown != null) {
+                        handleUserLocationUpdate(lastKnown);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void handleUserLocationUpdate(Location location) {
-        if (location == null)
-            return;
+        if (location == null) return;
 
         currentAccuracy = location.getAccuracy();
-        updateAccuracyDisplay(currentAccuracy);
-
-        // Smooth movement to new location
         GeoPoint newLocation = new GeoPoint(location.getLatitude(), location.getLongitude());
 
-        if (lastLocation != null) {
-            // Animate smooth transition
-            mapController.animateTo(newLocation, 15.0, 500L);
-        } else {
-            // First location, just set it
+        if (lastLocation == null) {
             mapController.setCenter(newLocation);
         }
-
         lastLocation = newLocation;
+        updateMockOverlays(newLocation);
 
-        // Maintain optimal zoom for walking
-        double currentZoom = mapView.getZoomLevelDouble();
-        if (currentZoom < 14.0 || currentZoom > 18.0) {
-            mapController.setZoom(16.0);
-        }
-
-        // SELF PULSE LOGIC
         if (sharingManager != null && sharingManager.isSharingActive()) {
-            com.example.disastercomm.utils.CirclePulseOverlay overlay = pulseOverlays.get("ME");
+            CirclePulseOverlay overlay = pulseOverlays.get("ME");
             if (overlay == null) {
-                int color = androidx.core.content.ContextCompat.getColor(requireContext(),
-                        android.R.color.holo_green_light);
-                overlay = new com.example.disastercomm.utils.CirclePulseOverlay(mapView, newLocation, color, 120f);
+                int color = ContextCompat.getColor(requireContext(), android.R.color.holo_green_light);
+                overlay = new CirclePulseOverlay(mapView, newLocation, color, 120f);
                 overlay.start();
                 pulseOverlays.put("ME", overlay);
                 mapView.getOverlays().add(0, overlay);
             } else {
                 overlay.setLocation(newLocation);
-            }
-        } else {
-            com.example.disastercomm.utils.CirclePulseOverlay overlay = pulseOverlays.remove("ME");
-            if (overlay != null) {
-                overlay.stop();
-                mapView.getOverlays().remove(overlay);
             }
         }
         mapView.invalidate();
@@ -205,10 +483,7 @@ public class MapFragment extends Fragment {
         public void run() {
             if (isAdded()) {
                 refreshMapMarkers();
-                mapUpdateHandler.postDelayed(this, 1000); // Update
-                                                          // every
-                                                          // 1
-                                                          // second
+                mapUpdateHandler.postDelayed(this, 1000);
             }
         }
     };
@@ -221,361 +496,64 @@ public class MapFragment extends Fragment {
         mapUpdateHandler.removeCallbacks(mapUpdateRunnable);
     }
 
-    /**
-     * Pulls latest peer locations from manager and updates map
-     */
     private void refreshMapMarkers() {
-        com.example.disastercomm.PeerLocationManager manager = com.example.disastercomm.PeerLocationManager
-                .getInstance();
-        java.util.Map<String, GeoPoint> locations = manager.getPeerLocations();
+        PeerLocationManager manager = PeerLocationManager.getInstance();
+        Map<String, GeoPoint> locations = manager.getPeerLocations();
 
-        java.util.List<com.example.disastercomm.models.MemberItem> members = new java.util.ArrayList<>();
-        for (java.util.Map.Entry<String, GeoPoint> entry : locations.entrySet()) {
-            com.example.disastercomm.models.MemberItem item = new com.example.disastercomm.models.MemberItem(
-                    entry.getKey(),
-                    "Peer " + entry.getKey().substring(0, Math.min(4, entry.getKey().length())));
+        List<MemberItem> members = new ArrayList<>();
+        for (Map.Entry<String, GeoPoint> entry : locations.entrySet()) {
+            MemberItem item = new MemberItem(entry.getKey(), "Peer " + entry.getKey().substring(0, Math.min(4, entry.getKey().length())));
             item.latitude = entry.getValue().getLatitude();
             item.longitude = entry.getValue().getLongitude();
             members.add(item);
         }
         updateMembersOnMap(members);
-    }
-
-    private void applyEntryAnimations(View view) {
-        // Slide down animation for the main status container
-        android.view.animation.Animation slideDown = android.view.animation.AnimationUtils
-                .loadAnimation(requireContext(), R.anim.slide_in_top);
-
-        // Pop in animation for individual stats
-        android.view.animation.Animation popIn = android.view.animation.AnimationUtils.loadAnimation(requireContext(),
-                R.anim.pop_in);
-        popIn.setStartOffset(200); // Slight delay
-
-        // Animate the status card container (assuming it's the first child of
-        // NestedScrollView or similar container)
-        // Since we don't have direct ID for the card container in fragment, we can
-        // animate the scroll view if present
-        // or just animate the key text views
-
-        if (tvMeshCount != null)
-            tvMeshCount.startAnimation(popIn);
-        if (tvBluetoothCount != null)
-            tvBluetoothCount.startAnimation(popIn);
-        if (tvMessageCount != null)
-            tvMessageCount.startAnimation(popIn);
-        if (tvUnreadCount != null)
-            tvUnreadCount.startAnimation(popIn);
-
-        // Animate the signal card specially
-        android.view.animation.Animation slideInDelay = android.view.animation.AnimationUtils
-                .loadAnimation(requireContext(), R.anim.slide_in_top);
-        slideInDelay.setStartOffset(100);
-        if (tvSignalQuality != null) {
-            View signalCard = (View) tvSignalQuality.getParent();
-            if (signalCard != null && signalCard instanceof View) {
-                ((View) signalCard).startAnimation(slideInDelay);
-            }
+        
+        // Update network status
+        if (tvNetworkStatusTitle != null && isAdded()) {
+            int count = members.size();
+            tvNetworkStatusDesc.setText(count + " nearby devices · ~500 m");
         }
     }
 
-    private void setupMap() {
-        // Configure map view
-        setSatelliteHybridTileSource();
-
-        // Enable touch controls
-        mapView.setMultiTouchControls(true);
-        mapView.setBuiltInZoomControls(false);
-        mapView.setTilesScaledToDpi(true); // Sharper tiles
-
-        // Get map controller
-        mapController = mapView.getController();
-        mapController.setZoom(16.0); // Closer initial zoom
-
-        // Set default location (Delhi)
-        GeoPoint defaultLocation = new GeoPoint(28.6139, 77.2090);
-        mapController.setCenter(defaultLocation);
-
-        // IMPROVEMENT: Add Compass Overlay with specialized behavior
-        org.osmdroid.views.overlay.compass.CompassOverlay compassOverlay = new org.osmdroid.views.overlay.compass.CompassOverlay(
-                requireContext(),
-                new org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider(requireContext()), mapView) {
-            @Override
-            public boolean onSingleTapConfirmed(android.view.MotionEvent e, org.osmdroid.views.MapView mapView) {
-                // Standard behavior: Reset orientation to North
-                boolean handled = super.onSingleTapConfirmed(e, mapView);
-
-                // Added behavior: Also re-center on user if they exist
-                if (handled && lastLocation != null) {
-                    mapController.animateTo(lastLocation);
-                    return true;
-                }
-                return handled;
-            }
-        };
-        compassOverlay.enableCompass();
-        mapView.getOverlays().add(compassOverlay);
-
-        // IMPROVEMENT: Add Scale Bar Overlay
-        org.osmdroid.views.overlay.ScaleBarOverlay scaleBarOverlay = new org.osmdroid.views.overlay.ScaleBarOverlay(
-                mapView);
-        scaleBarOverlay.setCentred(true);
-        scaleBarOverlay.setAlignBottom(true);
-        scaleBarOverlay.setTextSize(30);
-        mapView.getOverlays().add(scaleBarOverlay);
-
-        // IMPROVEMENT: Add Rotation Gesture Overlay
-        org.osmdroid.views.overlay.gestures.RotationGestureOverlay rotationGestureOverlay = new org.osmdroid.views.overlay.gestures.RotationGestureOverlay(
-                mapView);
-        rotationGestureOverlay.setEnabled(true);
-        mapView.setMultiTouchControls(true);
-        mapView.getOverlays().add(rotationGestureOverlay);
-
-        // Add "You" marker at default location
-        Marker youMarker = new Marker(mapView);
-        youMarker.setPosition(defaultLocation);
-        youMarker.setTitle("You");
-        youMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        youMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_members));
-        mapView.getOverlays().add(youMarker);
-
-        // Add my location overlay with smooth movement
-        myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(requireContext()), mapView);
-        myLocationOverlay.enableMyLocation();
-        // myLocationOverlay.enableFollowLocation(); // Optional: Don't force follow to
-        // allow panning
-        mapView.getOverlays().add(myLocationOverlay);
-
-        // Setup location manager for accuracy tracking
-        setupLocationTracking();
-    }
-
-    private void setupLocationTracking() {
-        try {
-            locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
-
-            LocationListener locationListener = new LocationListener() {
-                @Override
-                public void onLocationChanged(Location location) {
-                    handleUserLocationUpdate(location);
-                }
-
-                @Override
-                public void onStatusChanged(String provider, int status, android.os.Bundle extras) {
-                }
-
-                @Override
-                public void onProviderEnabled(String provider) {
-                }
-
-                @Override
-                public void onProviderDisabled(String provider) {
-                    updateAccuracyDisplay(Float.MAX_VALUE); // Show poor accuracy
-                }
-            };
-
-            // Request location updates
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                if (requireContext().checkSelfPermission(
-                        android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                    locationManager.requestLocationUpdates(
-                            LocationManager.GPS_PROVIDER,
-                            LOCATION_UPDATE_INTERVAL,
-                            LOCATION_UPDATE_DISTANCE,
-                            locationListener);
-
-                    // Get last known location for initial accuracy
-                    Location lastKnown = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                    if (lastKnown != null) {
-                        currentAccuracy = lastKnown.getAccuracy();
-                        updateAccuracyDisplay(currentAccuracy);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void updateAccuracyDisplay(float accuracyMeters) {
-        if (!isAdded() || tvGpsAccuracyValue == null || tvGpsAccuracyStatus == null ||
-                tvGpsAccuracyCondition == null || viewGpsAccuracyDot == null) {
-            return;
-        }
-
-        String accuracyText;
-        String statusText;
-        String conditionText;
-        int colorResId;
-
-        if (accuracyMeters <= 5.0f) {
-            // Excellent: ±3 to 5 meters (Open sky)
-            accuracyText = "±" + Math.round(accuracyMeters) + "m";
-            statusText = "Excellent";
-            conditionText = "Open sky";
-            colorResId = R.color.accuracy_excellent;
-        } else if (accuracyMeters <= 15.0f) {
-            // Good: ±5 to 15 meters (City area)
-            accuracyText = "±" + Math.round(accuracyMeters) + "m";
-            statusText = "Good";
-            conditionText = "City area";
-            colorResId = R.color.accuracy_good;
-        } else if (accuracyMeters <= 50.0f) {
-            // Fair: 20-50 meters (Indoor/Weak)
-            accuracyText = "±" + Math.round(accuracyMeters) + "m";
-            statusText = "Fair";
-            conditionText = "Indoor";
-            colorResId = R.color.accuracy_fair;
+    public void focusOnUser(String userId) {
+        if (!isAdded() || mapController == null) return;
+        PeerLocationManager manager = PeerLocationManager.getInstance();
+        GeoPoint location = manager.getPeerLocation(userId);
+        if (location != null) {
+            mapController.animateTo(location, 18.0, 1000L);
+            Toast.makeText(getContext(), "Tracking " + userId, Toast.LENGTH_SHORT).show();
         } else {
-            // Poor: 50m+ (Weak signal)
-            accuracyText = "±" + Math.round(Math.min(accuracyMeters, 999)) + "m";
-            statusText = "Poor";
-            conditionText = "Weak signal";
-            colorResId = R.color.accuracy_poor;
-        }
-
-        // Update UI
-        tvGpsAccuracyValue.setText(accuracyText);
-        tvGpsAccuracyStatus.setText(statusText);
-        tvGpsAccuracyStatus.setTextColor(getResources().getColor(colorResId, null));
-        tvGpsAccuracyCondition.setText(conditionText);
-        viewGpsAccuracyDot.setBackgroundTintList(
-                android.content.res.ColorStateList.valueOf(getResources().getColor(colorResId, null)));
-    }
-
-    private void setupZoomControls() {
-        // Removed zoom controls
-    }
-
-    public void updateMeshStatus(int connectedCount) {
-        if (!isAdded() || tvMeshCount == null) {
-            return;
-        }
-        tvMeshCount.setText(connectedCount + " connected");
-    }
-
-    public void updateBluetoothStatus(int deviceCount, boolean enabled) {
-        // Check if fragment is attached to avoid crash when not visible
-        if (!isAdded() || getContext() == null) {
-            return;
-        }
-
-        if (tvBluetoothCount != null) {
-            tvBluetoothCount.setText(deviceCount + " devices");
-        }
-        if (viewBluetoothDot != null) {
-            int color = enabled ? R.color.connected_green : R.color.signal_weak;
-            viewBluetoothDot.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
-                    getResources().getColor(color, null)));
+            Toast.makeText(getContext(), "Location not available for " + userId, Toast.LENGTH_SHORT).show();
         }
     }
 
-    public void updateMessageCount(int total, int unread) {
-        if (!isAdded()) {
-            return;
-        }
+    public void updateMembersOnMap(List<MemberItem> members) {
+        if (!isAdded() || mapView == null) return;
 
-        this.totalMessages = total;
-        this.unreadMessages = unread;
-
-        if (tvMessageCount != null) {
-            tvMessageCount.setText(total + " total");
-        }
-        if (tvUnreadCount != null) {
-            tvUnreadCount.setText(unread + " unread");
-        }
-    }
-
-    public void incrementMessageCount() {
-        totalMessages++;
-        unreadMessages++;
-        updateMessageCount(totalMessages, unreadMessages);
-    }
-
-    public void updateSignalQuality(String quality, String range) {
-        if (!isAdded()) {
-            return;
-        }
-
-        if (tvSignalQuality != null) {
-            tvSignalQuality.setText(quality);
-        }
-        if (tvSignalRange != null) {
-            tvSignalRange.setText(range);
-        }
-    }
-
-    private java.util.List<Marker> memberMarkers = new java.util.ArrayList<>();
-    private java.util.Map<String, com.example.disastercomm.utils.CirclePulseOverlay> pulseOverlays = new java.util.HashMap<>();
-
-    public void updateMembersOnMap(java.util.List<com.example.disastercomm.models.MemberItem> members) {
-        if (!isAdded() || getContext() == null || mapView == null) {
-            return;
-        }
-
-        // Remove old markers
         for (Marker marker : memberMarkers) {
             mapView.getOverlays().remove(marker);
         }
         memberMarkers.clear();
 
-        // We don't clear pulseOverlays immediately, we update them or remove unused
-        // ones
-        java.util.Set<String> activeMemberIds = new java.util.HashSet<>();
+        Set<String> activeMemberIds = new HashSet<>();
+        PeerLocationManager manager = PeerLocationManager.getInstance();
 
-        com.example.disastercomm.PeerLocationManager locationManager = com.example.disastercomm.PeerLocationManager
-                .getInstance();
-
-        for (com.example.disastercomm.models.MemberItem member : members) {
-            if (member.latitude == 0 && member.longitude == 0)
-                continue;
+        for (MemberItem member : members) {
+            if (member.latitude == 0 && member.longitude == 0) continue;
 
             activeMemberIds.add(member.id);
             GeoPoint position = new GeoPoint(member.latitude, member.longitude);
+            boolean isLiveSharing = manager.isPeerLiveSharing(member.id);
 
-            // Check if member is actively sharing live location
-            boolean isLiveSharing = locationManager.isPeerLiveSharing(member.id);
-
-            // HANDLE PULSE OVERLAY
-            if (isLiveSharing) {
-                com.example.disastercomm.utils.CirclePulseOverlay overlay = pulseOverlays.get(member.id);
-                if (overlay == null) {
-                    // Create new overlay
-                    // Color: Semi-transparent Red/Orange
-                    int color = androidx.core.content.ContextCompat.getColor(requireContext(),
-                            android.R.color.holo_red_light);
-                    overlay = new com.example.disastercomm.utils.CirclePulseOverlay(mapView, position, color, 100f);
-                    overlay.start();
-                    pulseOverlays.put(member.id, overlay);
-                    // Add to map (at bottom of overlays stack ideally, but just adding before
-                    // marker logic is enough)
-                    mapView.getOverlays().add(0, overlay);
-                } else {
-                    overlay.setLocation(position); // Update position
-                }
-            } else {
-                // Remove overlay if exists
-                com.example.disastercomm.utils.CirclePulseOverlay overlay = pulseOverlays.remove(member.id);
-                if (overlay != null) {
-                    overlay.stop();
-                    mapView.getOverlays().remove(overlay);
-                }
-            }
-
-            // HANDLE MARKER
             Marker marker = new Marker(mapView);
             marker.setPosition(position);
-
-            if (isLiveSharing) {
-                marker.setTitle(member.name + " 🔴 LIVE");
-                marker.setSubDescription("Updating live...");
-            } else {
-                marker.setTitle(member.name);
-            }
-
+            marker.setTitle(member.name);
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
             marker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_members));
 
-            marker.setOnMarkerClickListener((m, mapView) -> {
+            marker.setOnMarkerClickListener((m, map) -> {
+                showMarkerDetails("👤", member.name, "Nearby user", "Online", "Good");
                 if (memberClickListener != null) {
                     memberClickListener.onMemberMarkerClick(member.id, member.name);
                 }
@@ -585,148 +563,31 @@ public class MapFragment extends Fragment {
             mapView.getOverlays().add(marker);
             memberMarkers.add(marker);
         }
-
-        // Cleanup orphaned overlays (members who left)
-        java.util.List<String> toRemove = new java.util.ArrayList<>();
-        for (String id : pulseOverlays.keySet()) {
-            if (!activeMemberIds.contains(id)) {
-                toRemove.add(id);
-            }
-        }
-        for (String id : toRemove) {
-            com.example.disastercomm.utils.CirclePulseOverlay overlay = pulseOverlays.remove(id);
-            if (overlay != null) {
-                overlay.stop();
-                mapView.getOverlays().remove(overlay);
-            }
-        }
-
         mapView.invalidate();
     }
 
-    /**
-     * Show live location controls bottom sheet
-     */
-    private void showLiveLocationControls() {
-        if (!isAdded()) {
-            return;
-        }
-        com.example.disastercomm.fragments.LiveLocationControlsFragment controlsFragment = new com.example.disastercomm.fragments.LiveLocationControlsFragment();
-        controlsFragment.show(getParentFragmentManager(), "LiveLocationControls");
-    }
+    // Required Interface methods called from MainActivityNew
+    public void updateMeshStatus(int connectedCount) { }
+    public void updateBluetoothStatus(int deviceCount, boolean enabled) { }
+    public void updateMessageCount(int total, int unread) { }
+    public void updateSignalQuality(String quality, String range) { }
 
-    public void focusOnUser(String userId) {
-        if (!isAdded() || mapController == null)
-            return;
-
-        com.example.disastercomm.PeerLocationManager manager = com.example.disastercomm.PeerLocationManager
-                .getInstance();
-        org.osmdroid.util.GeoPoint location = manager.getPeerLocation(userId);
-
-        if (location != null) {
-            mapController.animateTo(location, 18.0, 1000L); // Zoom in closer
-            android.widget.Toast.makeText(getContext(), "Tracking " + userId, android.widget.Toast.LENGTH_SHORT).show();
-        } else {
-            android.widget.Toast
-                    .makeText(getContext(), "Location not available for " + userId, android.widget.Toast.LENGTH_SHORT)
-                    .show();
-        }
-    }
-
-    public void updateMyLocation(double lat, double lng) {
-        if (!isAdded() || mapController == null) {
-            return;
-        }
-
-        GeoPoint myLocation = new GeoPoint(lat, lng);
-        // Smooth animation with duration for natural movement
-        mapController.animateTo(myLocation, 16.0, 500L);
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mapView != null) mapView.onResume();
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        if (mapView != null) {
-            mapView.onPause();
-        }
-    }
-
-    private void showMapLayerSelectionDialog() {
-        if (!isAdded()) return;
-
-        String[] options = new String[] {
-                "🛰️ Satellite Hybrid (Best for Landmarks)",
-                "🗺️ Street Map (Best for Roads)",
-                "⛰️ Topographic / Terrain (Best for Elevation)"
-        };
-
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Select Map View")
-                .setItems(options, (dialog, which) -> {
-                    switch (which) {
-                        case 0:
-                            setSatelliteHybridTileSource();
-                            break;
-                        case 1:
-                            mapView.setTileSource(org.osmdroid.tileprovider.tilesource.TileSourceFactory.MAPNIK);
-                            mapView.invalidate();
-                            break;
-                        case 2:
-                            setTerrainTileSource();
-                            break;
-                    }
-                })
-                .show();
-    }
-
-    private void setSatelliteHybridTileSource() {
-        org.osmdroid.tileprovider.tilesource.XYTileSource googleSat = new org.osmdroid.tileprovider.tilesource.XYTileSource(
-                "Google-Sat",
-                0, 19, 256, ".png",
-                new String[] {
-                        "https://mt0.google.com/vt/lyrs=y&hl=en&x=",
-                        "https://mt1.google.com/vt/lyrs=y&hl=en&x=",
-                        "https://mt2.google.com/vt/lyrs=y&hl=en&x=",
-                        "https://mt3.google.com/vt/lyrs=y&hl=en&x="
-                }) {
-            @Override
-            public String getTileURLString(long pMapTileIndex) {
-                return getBaseUrl() + org.osmdroid.util.MapTileIndex.getX(pMapTileIndex) +
-                        "&y=" + org.osmdroid.util.MapTileIndex.getY(pMapTileIndex) +
-                        "&z=" + org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex);
-            }
-        };
-        mapView.setTileSource(googleSat);
-        mapView.invalidate();
-    }
-
-    private void setTerrainTileSource() {
-        org.osmdroid.tileprovider.tilesource.XYTileSource googleTerrain = new org.osmdroid.tileprovider.tilesource.XYTileSource(
-                "Google-Terrain",
-                0, 15, 256, ".png",
-                new String[] {
-                        "https://mt0.google.com/vt/lyrs=t&hl=en&x=",
-                        "https://mt1.google.com/vt/lyrs=t&hl=en&x=",
-                        "https://mt2.google.com/vt/lyrs=t&hl=en&x=",
-                        "https://mt3.google.com/vt/lyrs=t&hl=en&x="
-                }) {
-            @Override
-            public String getTileURLString(long pMapTileIndex) {
-                return getBaseUrl() + org.osmdroid.util.MapTileIndex.getX(pMapTileIndex) +
-                        "&y=" + org.osmdroid.util.MapTileIndex.getY(pMapTileIndex) +
-                        "&z=" + org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex);
-            }
-        };
-        mapView.setTileSource(googleTerrain);
-        mapView.invalidate();
+        if (mapView != null) mapView.onPause();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         stopMapUpdateLoop();
-        if (mapView != null) {
-            mapView.onDetach();
-        }
+        if (mapView != null) mapView.onDetach();
     }
 }

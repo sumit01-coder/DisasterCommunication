@@ -206,7 +206,7 @@ public class MainActivityNew extends AppCompatActivity implements
         // initManagers(); -> Moved to onServiceConnected
 
         setupBottomNavigation();
-        setupSosButton();
+        // setupSosButton(); (Removed as part of Phase 1 theme update)
 
         checkAndRequestPermissions();
 
@@ -366,7 +366,6 @@ public class MainActivityNew extends AppCompatActivity implements
         toolbar = findViewById(R.id.toolbar);
         viewPager = findViewById(R.id.viewPager);
         bottomNav = findViewById(R.id.bottomNav);
-        fabSos = findViewById(R.id.fabSos);
 
         // Status indicators
         viewUpdateBadge = findViewById(R.id.viewUpdateBadge);
@@ -961,40 +960,18 @@ public class MainActivityNew extends AppCompatActivity implements
 
         AlertDialog dialog = new AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create();
 
-        TextView tvCountdown = dialogView.findViewById(R.id.tvCountdown);
-        android.widget.ProgressBar progressBar = dialogView.findViewById(R.id.progressBar);
-        android.widget.Button btnCancel = dialogView.findViewById(R.id.btnCancel);
-        android.widget.Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
+
+        android.widget.Button btnCancel = dialogView.findViewById(R.id.btnCancelSos);
+        // Global SOS Button (Removed to match new theme)
+        android.widget.Button btnConfirm = dialogView.findViewById(R.id.btnConfirmSos);
 
         btnCancel.setOnClickListener(v -> dialog.dismiss());
 
         btnConfirm.setOnClickListener(v -> {
-            // Show countdown
-            tvCountdown.setVisibility(View.VISIBLE);
-            progressBar.setVisibility(View.VISIBLE);
             btnConfirm.setEnabled(false);
-
-            final int[] countdown = { 3 };
-            android.os.Handler handler = new android.os.Handler();
-
-            Runnable countdownRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    if (countdown[0] > 0) {
-                        tvCountdown.setText("Sending in " + countdown[0] + "...");
-                        progressBar.setProgress((4 - countdown[0]) * 33);
-                        countdown[0]--;
-                        handler.postDelayed(this, 1000);
-                    } else {
-                        tvCountdown.setText("Sending SOS now!");
-                        progressBar.setProgress(100);
-                        sendSosImmediate();
-                        handler.postDelayed(() -> dialog.dismiss(), 500);
-                    }
-                }
-            };
-
-            handler.post(countdownRunnable);
+            sendSosImmediate();
+            android.widget.Toast.makeText(MainActivityNew.this, "SOS Broadcast Sent!", android.widget.Toast.LENGTH_LONG).show();
+            dialog.dismiss();
         });
 
         dialog.show();

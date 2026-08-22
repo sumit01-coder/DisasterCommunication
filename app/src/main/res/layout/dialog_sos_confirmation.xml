@@ -1,102 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:cardCornerRadius="24dp"
-    app:cardElevation="16dp"
-    app:cardBackgroundColor="@color/error">
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_bottom_sheet">
+
+    <ImageView
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_dialog_alert"
+        app:tint="@color/error"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send Emergency Alert?"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/error"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="24dp"/>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/surface_dim">
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+            
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+                <TextView android:layout_width="100dp" android:layout_height="wrap_content" android:text="Location:" android:textColor="@color/text_secondary"/>
+                <TextView android:id="@+id/tvSosLocation" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Acquiring..." android:textColor="@color/text_primary" android:textStyle="bold"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+                <TextView android:layout_width="100dp" android:layout_height="wrap_content" android:text="Nearby:" android:textColor="@color/text_secondary"/>
+                <TextView android:id="@+id/tvSosNearby" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12 users" android:textColor="@color/text_primary" android:textStyle="bold"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+                <TextView android:layout_width="100dp" android:layout_height="wrap_content" android:text="Mesh Status:" android:textColor="@color/text_secondary"/>
+                <TextView android:id="@+id/tvSosMesh" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Active (Strong)" android:textColor="@color/success" android:textStyle="bold"/>
+            </LinearLayout>
+            
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView android:layout_width="100dp" android:layout_height="wrap_content" android:text="Broadcast:" android:textColor="@color/text_secondary"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ready" android:textColor="@color/success" android:textStyle="bold"/>
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="This will immediately notify all nearby users and emergency responders on the mesh network."
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:textAlignment="center"
+        android:layout_marginBottom="24dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="32dp"
-        android:gravity="center">
-
-        <!-- Warning Icon -->
-        <ImageView
-            android:layout_width="96dp"
-            android:layout_height="96dp"
-            android:src="@drawable/ic_sos"
-            app:tint="@color/white"
-            android:contentDescription="Emergency"/>
-
-        <!-- Title -->
-        <TextView
-            android:layout_width="wrap_content"
+        android:orientation="horizontal">
+        
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelSos"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="EMERGENCY SOS"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Cancel"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfirmSos"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="SEND SOS"
+            app:backgroundTint="@color/error"
             android:textColor="@color/white"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.05"/>
-
-        <!-- Description -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="This will alert ALL connected devices immediately and transmit your precise GPS coordinates."
-            android:textColor="#FEE2E2"
-            android:textSize="16sp"
-            android:gravity="center"
-            android:lineSpacingExtra="4dp"/>
-
-        <!-- Countdown Display -->
-        <TextView
-            android:id="@+id/tvCountdown"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="SENDING IN 3..."
-            android:textColor="@color/white"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:visibility="gone"/>
-
-        <!-- Progress Bar -->
-        <ProgressBar
-            android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="8dp"
-            android:layout_marginTop="16dp"
-            android:progressTint="@color/white"
-            android:progressBackgroundTint="#7F0000"
-            android:max="100"
-            android:visibility="gone"/>
-
-        <!-- Buttons -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:orientation="vertical"
-            android:gravity="center">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnConfirm"
-                android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:text="SEND SOS NOW"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                app:backgroundTint="@color/white"
-                android:textColor="@color/error"
-                app:cornerRadius="16dp"/>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCancel"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="CANCEL"
-                android:textSize="16sp"
-                android:textColor="#FEE2E2"/>
-        </LinearLayout>
+            style="@style/Widget.MaterialComponents.Button"/>
     </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+</LinearLayout>

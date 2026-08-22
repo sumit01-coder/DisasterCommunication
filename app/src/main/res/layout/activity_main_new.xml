@@ -26,7 +26,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="?attr/actionBarSize"
                 android:paddingTop="32dp"
-                android:background="@drawable/gradient_toolbar"
+                android:background="@color/primary"
                 android:elevation="4dp"
                 app:titleTextAppearance="@style/TextAppearance.AppCompat.Widget.ActionBar.Title"
                 app:titleTextColor="@color/white">
@@ -128,17 +128,17 @@
                 android:clipToPadding="false" />
         </LinearLayout>
 
-        <!-- Floating Bottom Navigation -->
+        <!-- Docked Bottom Navigation -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:layout_margin="16dp"
-            android:background="@drawable/rounded_bottom_nav"
-            android:elevation="12dp"
+            android:background="@color/white"
+            android:elevation="16dp"
             app:itemIconTint="@color/primary"
             app:itemTextColor="@color/primary"
+            app:itemActiveIndicatorStyle="@style/App.BottomNav.ActiveIndicator"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_nav_menu" />
 
@@ -150,24 +150,11 @@
         android:elevation="20dp"
         android:visibility="gone" />
 
-    <!-- Floating SOS Button - Glowing & Elevated -->
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/fabSos"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="100dp"
-        android:text="SOS"
-        android:textColor="@color/white"
-        android:textStyle="bold"
-        app:icon="@drawable/ic_sos"
-        app:iconTint="@color/white"
-        app:backgroundTint="@color/error"
-        app:rippleColor="#FFFFFF"
-        android:contentDescription="Emergency SOS"
-        app:elevation="12dp"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.ExtraLarge"/>
+    <!-- Floating SOS Button (Global) -->
+    <!-- Removed to match design where SOS is in dashboard and map respectively -->
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
