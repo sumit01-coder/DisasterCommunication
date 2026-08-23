@@ -13,6 +13,22 @@ public class PeerLocationManager {
     private final Map<String, Boolean> liveShareStatus = new HashMap<>();
     private final Map<String, Long> sharingUntilTimestamp = new HashMap<>();
     private final Map<String, Long> lastUpdateTimestamp = new HashMap<>();
+    private final Map<String, String> peerRoles = new HashMap<>();
+
+    public static class Hazard {
+        public String type; // "🌊", "🔥", "🛡️", "🚧"
+        public String title;
+        public GeoPoint location;
+        public long timestamp;
+        
+        public Hazard(String type, String title, GeoPoint location) {
+            this.type = type;
+            this.title = title;
+            this.location = location;
+            this.timestamp = System.currentTimeMillis();
+        }
+    }
+    private final Map<String, Hazard> hazards = new HashMap<>();
 
     private PeerLocationManager() {
     }
@@ -40,6 +56,22 @@ public class PeerLocationManager {
         liveShareStatus.put(endpointId, isLiveSharing);
         sharingUntilTimestamp.put(endpointId, sharingUntil);
         lastUpdateTimestamp.put(endpointId, System.currentTimeMillis());
+    }
+
+    public void updatePeerRole(String endpointId, String role) {
+        peerRoles.put(endpointId, role);
+    }
+
+    public String getPeerRole(String endpointId) {
+        return peerRoles.containsKey(endpointId) ? peerRoles.get(endpointId) : "CIVILIAN";
+    }
+
+    public void addHazard(String id, String type, String title, double lat, double lng) {
+        hazards.put(id, new Hazard(type, title, new GeoPoint(lat, lng)));
+    }
+
+    public Map<String, Hazard> getHazards() {
+        return new HashMap<>(hazards);
     }
 
     public Map<String, GeoPoint> getPeerLocations() {
@@ -90,6 +122,7 @@ public class PeerLocationManager {
         liveShareStatus.remove(endpointId);
         sharingUntilTimestamp.remove(endpointId);
         lastUpdateTimestamp.remove(endpointId);
+        peerRoles.remove(endpointId);
     }
 
     /**

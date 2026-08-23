@@ -22,7 +22,8 @@ public class Message {
         HEARTBEAT,
         ROUTE_REQUEST, 
         ROUTE_REPLY, 
-        ROUTE_ERROR
+        ROUTE_ERROR,
+        MAP_MARKER
     }
 
     public enum Status {

@@ -67,11 +67,16 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Load Username
+        // Load Username and Role
         android.content.SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         username = prefs.getString("username", "Unknown");
+        String currentRole = prefs.getString("user_role", null);
 
         setContentView(R.layout.activity_main);
+
+        if (currentRole == null) {
+            showRoleSelectionDialog();
+        }
 
         tvStatus = findViewById(R.id.tvStatus);
         viewScanRipple = findViewById(R.id.viewScanRipple);
@@ -79,6 +84,12 @@ public class MainActivity extends AppCompatActivity
         btnSos = findViewById(R.id.btnSos);
         btnChat = findViewById(R.id.btnChat);
         Button btnMap = findViewById(R.id.btnMap);
+        Button btnGlobalAlert = findViewById(R.id.btnGlobalAlert);
+
+        if ("RESCUE".equals(currentRole)) {
+            btnGlobalAlert.setVisibility(android.view.View.VISIBLE);
+            btnGlobalAlert.setOnClickListener(v -> sendGlobalAlert());
+        }
 
         peersAdapter = new PeersAdapter();
         rvPeers.setLayoutManager(new LinearLayoutManager(this));
@@ -141,8 +152,65 @@ public class MainActivity extends AppCompatActivity
         btnChat.setOnClickListener(v -> showChatDialog());
         btnMap.setOnClickListener(v -> startActivity(new android.content.Intent(this, MapActivity.class)));
 
+        com.google.android.material.switchmaterial.SwitchMaterial swLowPowerMode = findViewById(R.id.swLowPowerMode);
+        swLowPowerMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (meshNetworkManager != null) {
+                meshNetworkManager.setLowPowerMode(isChecked);
+            }
+            // Save state so MapActivity can pick it up
+            getSharedPreferences("UserPrefs", MODE_PRIVATE).edit().putBoolean("low_power_mode", isChecked).apply();
+            
+            if (isChecked) {
+                Toast.makeText(this, "Low Power Mode ENABLED. Scanning paused.", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Low Power Mode DISABLED. Scanning resumed.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         // Update Title with Greeting
         getSupportActionBar().setTitle("D-Comm: " + username);
+
+        // Listen for internal map intents to broadcast
+        android.content.IntentFilter filter = new android.content.IntentFilter("com.example.disastercomm.SEND_MESH_MESSAGE");
+        androidx.core.content.ContextCompat.registerReceiver(this, meshBroadcastReceiver, filter, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
+    } // End of onCreate
+
+    private final android.content.BroadcastReceiver meshBroadcastReceiver = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, android.content.Intent intent) {
+            String type = intent.getStringExtra("type");
+            String content = intent.getStringExtra("content");
+            if ("MAP_MARKER".equals(type) && packetHandler != null) {
+                Message msg = new Message(DeviceUtil.getDeviceId(MainActivity.this), username, Message.Type.MAP_MARKER, content);
+                packetHandler.sendMessage(msg);
+            }
+        }
+    };
+
+    private void showRoleSelectionDialog() {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
+        android.view.View view = getLayoutInflater().inflate(R.layout.dialog_role_selection, null);
+        dialog.setContentView(view);
+        dialog.setCancelable(false); // Force selection
+
+        android.view.View.OnClickListener roleClickListener = v -> {
+            String role = "CIVILIAN";
+            int id = v.getId();
+            if (id == R.id.cardRoleRescue) role = "RESCUE";
+            else if (id == R.id.cardRoleMedical) role = "MEDICAL";
+            else if (id == R.id.cardRoleVolunteer) role = "VOLUNTEER";
+
+            getSharedPreferences("UserPrefs", MODE_PRIVATE).edit().putString("user_role", role).apply();
+            Toast.makeText(this, "Role saved: " + role, Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        };
+
+        view.findViewById(R.id.cardRoleCivilian).setOnClickListener(roleClickListener);
+        view.findViewById(R.id.cardRoleRescue).setOnClickListener(roleClickListener);
+        view.findViewById(R.id.cardRoleMedical).setOnClickListener(roleClickListener);
+        view.findViewById(R.id.cardRoleVolunteer).setOnClickListener(roleClickListener);
+
+        dialog.show();
     }
 
     private void initNetworkMonitor() {
@@ -342,6 +410,25 @@ public class MainActivity extends AppCompatActivity
         }, 3000);
     }
 
+    private void sendGlobalAlert() {
+        if (packetHandler == null) {
+            Toast.makeText(this, "Mesh network not ready", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        new AlertDialog.Builder(this)
+            .setTitle("SEND GLOBAL BROADCAST?")
+            .setMessage("This will trigger a maximum volume siren on ALL connected devices. Only use for extreme emergencies.")
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setPositiveButton("BROADCAST", (dialog, which) -> {
+                Message alert = new Message(DeviceUtil.getDeviceId(this), username, Message.Type.GOVT_ALERT, "EVACUATE IMMEDIATELY");
+                packetHandler.sendMessage(alert);
+                Toast.makeText(this, "GLOBAL ALERT SENT", Toast.LENGTH_LONG).show();
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
     private void sendSos() {
         if (packetHandler == null) {
             Toast.makeText(this, "Mesh not ready. Grant permissions first.", Toast.LENGTH_SHORT).show();
@@ -449,6 +536,27 @@ public class MainActivity extends AppCompatActivity
                     packetHandler.sendMessage(locMsg);
                 });
             }
+            
+            // Phase 5: "Store and Forward" Messaging
+            // Sync critical hazard and SOS messages to newly connected peers so they catch up on history.
+            java.util.concurrent.Executors.newSingleThreadExecutor().execute(() -> {
+                com.example.disastercomm.data.AppDatabase db = com.example.disastercomm.data.AppDatabase.getDatabase(this);
+                if (db != null && packetHandler != null) {
+                    java.util.List<Message> toForward = new java.util.ArrayList<>();
+                    
+                    // Fetch recent critical messages (limit to 10 each to avoid flooding)
+                    toForward.addAll(db.messageDao().getRecentSosMessages(10));
+                    toForward.addAll(db.messageDao().getRecentMapMarkers(10));
+                    toForward.addAll(db.messageDao().getRecentGovtAlerts(10));
+                    
+                    for (Message msg : toForward) {
+                        // Reset TTL to ensure it gets relayed slightly further but doesn't live forever
+                        msg.ttl = 3; 
+                        packetHandler.sendMessage(msg);
+                    }
+                    Log.d("StoreAndForward", "Forwarded " + toForward.size() + " historical critical messages to mesh.");
+                }
+            });
         });
     }
 
@@ -515,6 +623,40 @@ public class MainActivity extends AppCompatActivity
                             // Reset if they stop sharing (optional, but handled by service usually)
                             notifiedLiveSharers.remove(message.senderId);
                         }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return;
+            }
+
+            if (message.type == Message.Type.GOVT_ALERT) {
+                // Bypass silent mode and trigger maximum volume siren
+                notificationSoundManager.playGovtAlert();
+                
+                runOnUiThread(() -> {
+                    new AlertDialog.Builder(this)
+                        .setTitle("🚨 GLOBAL EMERGENCY ALERT 🚨")
+                        .setMessage("From Rescue Worker " + message.senderName + ":\n\n" + message.content)
+                        .setPositiveButton("OK", null)
+                        .setCancelable(false)
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show();
+                });
+                return;
+            }
+
+            if (message.type == Message.Type.MAP_MARKER) {
+                try {
+                    String[] parts = message.content.split("\\|");
+                    if (parts.length == 4) {
+                        String emoji = parts[0];
+                        String title = parts[1];
+                        double lat = Double.parseDouble(parts[2]);
+                        double lng = Double.parseDouble(parts[3]);
+                        
+                        PeerLocationManager.getInstance().addHazard(message.id, emoji, title, lat, lng);
+                        Toast.makeText(this, "⚠️ New Hazard Reported: " + title, Toast.LENGTH_SHORT).show();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -604,6 +746,11 @@ public class MainActivity extends AppCompatActivity
         // Cleanup connection pool
         if (connectionPoolManager != null) {
             connectionPoolManager.cleanupStaleConnections();
+        }
+        try {
+            unregisterReceiver(meshBroadcastReceiver);
+        } catch (IllegalArgumentException e) {
+            // Receiver not registered
         }
     }
 

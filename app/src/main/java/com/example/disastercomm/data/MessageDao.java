@@ -44,4 +44,10 @@ public interface MessageDao {
     // ✅ PAGINATION: Get recent SOS messages (limit)
     @Query("SELECT * FROM messages WHERE type = 'SOS' ORDER BY timestamp DESC LIMIT :limit")
     List<Message> getRecentSosMessages(int limit);
+
+    @Query("SELECT * FROM messages WHERE type = 'MAP_MARKER' ORDER BY timestamp DESC LIMIT :limit")
+    List<Message> getRecentMapMarkers(int limit);
+
+    @Query("SELECT * FROM messages WHERE type = 'GOVT_ALERT' ORDER BY timestamp DESC LIMIT :limit")
+    List<Message> getRecentGovtAlerts(int limit);
 }

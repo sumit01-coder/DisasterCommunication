@@ -56,17 +56,34 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Peers Section -->
-    <TextView
-        android:id="@+id/tvPeersHeader"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/layoutPeersHeader"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Nearby Devices"
-        android:textColor="#333333"
-        android:textSize="16sp"
-        android:textStyle="bold"
+        android:orientation="horizontal"
         android:layout_margin="16dp"
-        app:layout_constraintTop_toBottomOf="@id/cardStatus"
-        app:layout_constraintStart_toStartOf="parent"/>
+        app:layout_constraintTop_toBottomOf="@id/cardStatus">
+        
+        <TextView
+            android:id="@+id/tvPeersHeader"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Nearby Devices"
+            android:textColor="#333333"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_vertical"/>
+            
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/swLowPowerMode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Low Power Mode "
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#D32F2F"/>
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvPeers"
@@ -79,10 +96,9 @@
         android:elevation="2dp"
         android:clipToPadding="false"
         android:padding="8dp"
-        app:layout_constraintTop_toBottomOf="@id/tvPeersHeader"
+        app:layout_constraintTop_toBottomOf="@id/layoutPeersHeader"
         app:layout_constraintBottom_toTopOf="@id/layoutActions" />
 
-    <!-- Action Buttons Grid -->
     <LinearLayout
         android:id="@+id/layoutActions"
         android:layout_width="match_parent"
@@ -90,6 +106,21 @@
         android:orientation="vertical"
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- Global Alert Button (Hidden by Default, RESCUE only) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGlobalAlert"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:text="GLOBAL BROADCAST"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:backgroundTint="#FF9800"
+            app:cornerRadius="8dp"
+            app:icon="@android:drawable/ic_dialog_alert"
+            app:iconGravity="textStart"
+            android:visibility="gone"
+            android:layout_marginBottom="12dp"/>
 
         <!-- SOS Button -->
         <com.google.android.material.button.MaterialButton

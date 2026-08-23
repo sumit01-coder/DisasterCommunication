@@ -1,28 +1,28 @@
 <resources>
-    <!-- Brand Colors (Accessible Emergency Theme) -->
-    <color name="primary">#E53935</color>           <!-- Emergency Red -->
-    <color name="primary_variant">#C62828</color>   <!-- Darker Emergency Red -->
-    <color name="secondary">#FF6B6B</color>         <!-- Secondary Light Red -->
-    <color name="secondary_variant">#D32F2F</color> <!-- Crimson Red -->
-    <color name="accent">#E53935</color>            <!-- Use Emergency Red as accent -->
+    <!-- Brand Colors (Accessible Emergency Theme - Blue & Green) -->
+    <color name="primary">#2563EB</color>           <!-- Messenger Blue -->
+    <color name="primary_variant">#1D4ED8</color>   <!-- Darker Blue -->
+    <color name="secondary">#6366F1</color>         <!-- Indigo -->
+    <color name="secondary_variant">#4F46E5</color> <!-- Darker Indigo -->
+    <color name="accent">#059669</color>            <!-- Online Green -->
 
     <!-- Semantic Colors -->
     <color name="success">#059669</color>
-    <color name="error">#E53935</color>
+    <color name="error">#DC2626</color>
     <color name="warning">#D97706</color>
     <color name="info">#2563EB</color>
 
     <!-- Backgrounds & Surfaces -->
-    <color name="background">#F8FAFC</color>        <!-- Soft Grayish White -->
+    <color name="background">#FFFFFF</color>        <!-- Pure White -->
     <color name="surface">#FFFFFF</color>           <!-- Pure White Cards -->
-    <color name="surface_variant">#F1F5F9</color>   <!-- Slightly darker gray surface -->
+    <color name="surface_variant">#F1F5FD</color>   <!-- Muted background -->
     
     <!-- Material 3 Surface Tints -->
     <color name="surface_tint">#FFFFFF</color>
-    <color name="surface_dim">#E2E8F0</color>
+    <color name="surface_dim">#E4ECFC</color>       <!-- Border color from design system -->
     <color name="surface_bright">#FFFFFF</color>
-    <color name="surface_container">#F8FAFC</color>
-    <color name="surface_container_high">#F1F5F9</color>
+    <color name="surface_container">#FFFFFF</color>
+    <color name="surface_container_high">#F1F5FD</color>
 
     <!-- Text -->
     <color name="text_primary">#0F172A</color>
@@ -45,17 +45,17 @@
     <color name="status_connecting">#D97706</color>
 
     <!-- Gradient Colors (Disabled for clean UI) -->
-    <color name="gradient_start">#E53935</color>
-    <color name="gradient_middle">#E53935</color>
-    <color name="gradient_end">#E53935</color>
-    <color name="gradient_light_start">#F8FAFC</color>
-    <color name="gradient_light_end">#F1F5F9</color>
+    <color name="gradient_start">#2563EB</color>
+    <color name="gradient_middle">#2563EB</color>
+    <color name="gradient_end">#2563EB</color>
+    <color name="gradient_light_start">#FFFFFF</color>
+    <color name="gradient_light_end">#F1F5FD</color>
 
     <!-- State Colors (for interactions) -->
-    <color name="state_hover">#B91C1C20</color>
-    <color name="state_pressed">#B91C1C40</color>
+    <color name="state_hover">#2563EB20</color>
+    <color name="state_pressed">#2563EB40</color>
     <color name="state_disabled">#64748B</color>
-    <color name="state_focused">#DC262640</color>
+    <color name="state_focused">#2563EB40</color>
 
     <!-- Overlay Colors -->
     <color name="overlay_dark">#00000080</color>
@@ -81,7 +81,7 @@
 
     <color name="avatar_purple">@color/secondary</color>
     <color name="online_green">@color/success</color>
-    <color name="divider">#E2E8F0</color>
+    <color name="divider">#E4ECFC</color>
 
     <!-- GPS Accuracy Status Colors -->
     <color name="accuracy_excellent">#059669</color>

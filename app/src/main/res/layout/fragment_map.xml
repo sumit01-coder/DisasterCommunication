@@ -12,129 +12,74 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Top Status Cards Container -->
-    <LinearLayout
+    <!-- Unified Top Status Bar -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardUnifiedStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:layout_gravity="top"
-        android:clipToPadding="false"
-        android:padding="16dp">
-
-        <!-- Top Status Bar (Mesh Range) - Floating -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardTopStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="@color/surface">
+        android:layout_margin="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="@color/surface">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-            
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_wifi"
-                    app:tint="@color/primary"/>
-                
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:orientation="vertical">
-                    
-                    <TextView
-                        android:id="@+id/tvNetworkStatusTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Offline Mode · Mesh Active"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"/>
-                        
-                    <TextView
-                        android:id="@+id/tvNetworkStatusDesc"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="12 nearby devices · ~500 m"
-                        android:textSize="12sp"
-                        android:textColor="@color/text_secondary"/>
-                </LinearLayout>
-
-                <ImageView
-                    android:id="@+id/ivNetworkSignal"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_signal"
-                    app:tint="@color/success"/>
-            </LinearLayout>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-        <!-- Top Left Status Bar (GPS Accuracy) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardGpsStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="@color/surface">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:padding="12dp"
             android:gravity="center_vertical">
             
+            <!-- Network Status -->
             <ImageView
                 android:layout_width="24dp"
                 android:layout_height="24dp"
+                android:src="@drawable/ic_wifi"
+                app:tint="@color/primary"/>
+            
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:orientation="vertical">
+                
+                <TextView
+                    android:id="@+id/tvNetworkStatusTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mesh Active"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"/>
+                    
+                <TextView
+                    android:id="@+id/tvNetworkStatusDesc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="12 devices · ~500m"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:layout_marginHorizontal="12dp"
+                android:background="@color/surface_dim"/>
+
+            <!-- GPS Status -->
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:src="@android:drawable/ic_menu_mylocation"
                 app:tint="@color/primary"/>
                 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="8dp"
                 android:orientation="vertical">
-                
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="GPS Accuracy"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary"/>
-                    
-                <TextView
-                    android:id="@+id/tvGpsAccuracy"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="±5m"
-                    android:textSize="12sp"
-                    android:textColor="@color/text_secondary"/>
-            </LinearLayout>
-            
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="24dp"
-                android:orientation="vertical"
-                android:gravity="end">
                 
                 <TextView
                     android:id="@+id/tvGpsStatus"
@@ -146,15 +91,15 @@
                     android:textColor="@color/success"/>
                     
                 <TextView
+                    android:id="@+id/tvGpsAccuracy"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Open sky"
+                    android:text="±5m · Open sky"
                     android:textSize="12sp"
                     android:textColor="@color/text_secondary"/>
             </LinearLayout>
         </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-    </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- Map Floating Actions (Right Side) -->
     <LinearLayout
@@ -236,36 +181,36 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="12dp">
 
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp" android:gravity="center_vertical">
-                <TextView android:layout_width="24dp" android:layout_height="wrap_content" android:text="🔵" android:textSize="14sp" android:gravity="center"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="You" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="8dp"/>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp" android:gravity="center_vertical">
+                <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_you" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="You" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="12dp"/>
             </LinearLayout>
 
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp" android:gravity="center_vertical">
-                <TextView android:layout_width="24dp" android:layout_height="wrap_content" android:text="👤" android:textSize="14sp" android:gravity="center"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nearby Users" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="8dp"/>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp" android:gravity="center_vertical">
+                <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_person" app:tint="@color/primary"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nearby Users" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="12dp"/>
             </LinearLayout>
 
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp" android:gravity="center_vertical">
-                <TextView android:layout_width="24dp" android:layout_height="wrap_content" android:text="🟩" android:textSize="14sp" android:gravity="center"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Safe Zone" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="8dp"/>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp" android:gravity="center_vertical">
+                <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_safe_zone" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Safe Zone" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="12dp"/>
             </LinearLayout>
 
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp" android:gravity="center_vertical">
-                <TextView android:layout_width="24dp" android:layout_height="wrap_content" android:text="⚠️" android:textSize="14sp" android:gravity="center"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Danger Zone" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="8dp"/>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp" android:gravity="center_vertical">
+                <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_danger_zone" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Danger Zone" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="12dp"/>
             </LinearLayout>
 
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp" android:gravity="center_vertical">
-                <TextView android:layout_width="24dp" android:layout_height="wrap_content" android:text="➖" android:textSize="14sp" android:gravity="center"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Evacuation Route" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="8dp"/>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp" android:gravity="center_vertical">
+                <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_evacuation_route" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Evac Route" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="12dp"/>
             </LinearLayout>
 
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                <TextView android:layout_width="24dp" android:layout_height="wrap_content" android:text="🏥" android:textSize="14sp" android:gravity="center"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hospital" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="8dp"/>
+                <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_hospital_new" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hospital" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="12dp"/>
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -276,6 +221,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_bottom_sheet"
+        android:elevation="16dp"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
         app:behavior_hideable="true"
         app:behavior_peekHeight="0dp">
@@ -321,35 +267,67 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Safe Zones"
-                android:checked="true"/>
+                android:checked="false"/>
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/swDangerZones"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Danger Zones"
-                android:checked="true"/>
+                android:checked="false"/>
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/swShelters"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Emergency Shelters"
-                android:checked="true"/>
+                android:checked="false"/>
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/swHospitals"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Hospitals"
-                android:checked="true"/>
+                android:checked="false"/>
+
+            <LinearLayout
+                android:id="@+id/layoutHospitalSearch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp"
+                android:gravity="center_vertical">
+                
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etHospitalRadius"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:text="25"
+                        android:hint="Radius (km)"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSearchHospitals"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Search"
+                    style="@style/Widget.MaterialComponents.Button"/>
+            </LinearLayout>
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/swEvacuationRoutes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Evacuation Routes"
-                android:checked="true"/>
+                android:checked="false"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDownloadOffline"
@@ -369,6 +347,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_bottom_sheet"
+        android:elevation="16dp"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
         app:behavior_hideable="true"
         app:behavior_peekHeight="0dp">

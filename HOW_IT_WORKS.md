@@ -41,5 +41,13 @@ This happens automatically. The more people having the app, the stronger and lar
 - **Encryption**: Messages are encrypted so random people can't snoop easily (in a full version).
 - **Battery**: The app uses energy to scan, but in a real event, reliable information is worth the battery cost. (Future versions will have "Low Power Mode").
 
+## 6. User Roles & Capabilities
+To help organize the chaos of a disaster, the app allows users to identify themselves with specific roles. This helps the network understand who to look for:
+
+- 👤 **Civilian (Default):** Standard users. Capable of sending SOS alerts, chatting, and marking danger zones they encounter.
+- 🚨 **Rescue Worker:** First responders (Police, Fire, Search & Rescue). Their icon appears as a distinct red shield on the map, allowing civilians to quickly locate authority figures. In future updates, they will have the ability to broadcast "Global Override Alerts" to everyone in the mesh.
+- 🏥 **Medical Professional:** Off-duty doctors, nurses, or EMTs. Their green cross icon allows injured civilians to find nearby medical assistance before official ambulances arrive.
+- 🤝 **Community Volunteer:** Civilians who have stepped up to help coordinate local relief (handing out water, organizing shelters). Identified by yellow hands on the map.
+
 ## Summary
 It is a **digital life-line** that creates a community network out of thin air when all central infrastructure fails.

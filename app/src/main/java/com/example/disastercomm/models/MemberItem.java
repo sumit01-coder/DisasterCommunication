@@ -20,6 +20,7 @@ public class MemberItem {
     public long lastSeenTimestamp; // Timestamp when last seen online
     public boolean isTyping; // Whether user is currently typing
     public int coverageRange; // Max range in meters for this node's connection type
+    public String role; // "CIVILIAN", "RESCUE", "MEDICAL", "VOLUNTEER"
 
     // Live Location Sharing Fields
     public boolean isLiveSharing = false; // Whether actively sharing live location
@@ -44,6 +45,7 @@ public class MemberItem {
         // Mesh/WiFi Direct: ~500m
         // Bluetooth: ~30m
         this.coverageRange = 500;
+        this.role = "CIVILIAN"; // Default role
     }
 
     public String getDistanceText() {

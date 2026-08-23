@@ -40,8 +40,11 @@ public class MeshNetworkManager {
     private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
     private static final long DISCOVERY_RESTART_DELAY = 1000; // OPTIMIZED: Reduced from 2000ms
     private static final long CONNECTION_RETRY_DELAY = 1000; // OPTIMIZED: Reduced from 3000ms
+    private boolean isAdvertisingActive = false;
     private boolean isDiscoveryActive = false;
-    private boolean isAdvertisingActive = false; // ✅ Track advertising state
+    private boolean isLowPowerMode = false;
+
+    // Retry mechanism state
     private ConnectionPoolManager poolManager;
 
     // Map of endpointID -> DeviceName
@@ -106,6 +109,15 @@ public class MeshNetworkManager {
         connectedEndpoints.clear();
         pendingEndpointNames.clear();
     }
+    
+    public void setLowPowerMode(boolean lowPower) {
+        this.isLowPowerMode = lowPower;
+        if (lowPower) {
+            stopDiscovery(); // Stop actively scanning to save battery
+        } else {
+            startDiscovery(); // Resume normal scanning
+        }
+    }
 
     public void stopAdvertising() {
         if (isAdvertisingActive) {
@@ -154,6 +166,11 @@ public class MeshNetworkManager {
         // ✅ Check state before starting
         if (isDiscoveryActive) {
             Log.d(TAG, "Discovery already active, skipping");
+            return;
+        }
+        
+        if (isLowPowerMode) {
+            Log.d(TAG, "Skipping discovery due to Low Power Mode");
             return;
         }
 

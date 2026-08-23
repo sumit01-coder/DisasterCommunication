@@ -65,6 +65,41 @@ public class NotificationSoundManager {
     }
 
     /**
+     * Play siren for Global Govt Alert (forces maximum volume)
+     */
+    public void playGovtAlert() {
+        try {
+            android.media.AudioManager audioManager = (android.media.AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (audioManager != null) {
+                // Force max volume for alarm stream
+                int maxVolume = audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_ALARM);
+                audioManager.setStreamVolume(android.media.AudioManager.STREAM_ALARM, maxVolume, 0);
+            }
+
+            MediaPlayer govtPlayer = MediaPlayer.create(context, android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI);
+            if (govtPlayer != null) {
+                govtPlayer.setAudioStreamType(android.media.AudioManager.STREAM_ALARM);
+                govtPlayer.setLooping(false);
+                govtPlayer.start();
+                govtPlayer.setOnCompletionListener(MediaPlayer::release);
+            }
+            
+            // Long, aggressive vibration pattern
+            Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrator != null && vibrator.hasVibrator()) {
+                long[] pattern = {0, 500, 200, 500, 200, 500};
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
+                } else {
+                    vibrator.vibrate(pattern, -1);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to play Govt Alert", e);
+        }
+    }
+
+    /**
      * Vibrate device
      */
     public void vibrate(long duration) {

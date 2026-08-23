@@ -22,6 +22,9 @@
         
         <!-- Disable M3 Surface Tinting so cards remain white -->
         <item name="elevationOverlayEnabled">false</item>
+        
+        <!-- Apply custom flat button style -->
+        <item name="materialButtonStyle">@style/Widget.App.Button</item>
     </style>
 
     <style name="Theme.DisasterComm.NoActionBar" parent="Theme.DisasterComm">
@@ -62,6 +65,14 @@
     <style name="ShapeAppearance.App.SmallComponent" parent="ShapeAppearance.MaterialComponents.SmallComponent">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">12dp</item>
+    </style>
+
+    <!-- Button styles for accessibility (min touch target 48dp, flat design) -->
+    <style name="Widget.App.Button" parent="Widget.Material3.Button">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:minWidth">48dp</item>
+        <item name="android:stateListAnimator">@null</item> <!-- Remove shadow elevation -->
+        <item name="android:elevation">0dp</item>
     </style>
 
     <style name="App.BottomNav.ActiveIndicator" parent="">

@@ -37,14 +37,28 @@ import org.osmdroid.views.overlay.Polygon;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
+import org.osmdroid.events.MapEventsReceiver;
+import org.osmdroid.views.overlay.MapEventsOverlay;
+import com.example.disastercomm.models.Message;
+import com.example.disastercomm.network.PacketHandler;
 
 import java.io.File;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class MapFragment extends Fragment {
 
@@ -56,7 +70,6 @@ public class MapFragment extends Fragment {
     // UI Elements
     private TextView tvNetworkStatusTitle;
     private TextView tvNetworkStatusDesc;
-    private android.widget.ImageView ivNetworkSignal;
 
     private BottomSheetBehavior<?> behaviorLayers;
     private BottomSheetBehavior<?> behaviorMarkerDetail;
@@ -71,7 +84,7 @@ public class MapFragment extends Fragment {
 
     private float currentAccuracy = 0f;
     private GeoPoint lastLocation = null;
-    private static final long LOCATION_UPDATE_INTERVAL = 1000;
+    private long locationUpdateInterval = 1000; // default 1s
     private static final float LOCATION_UPDATE_DISTANCE = 1f;
 
     private LiveLocationSharingManager sharingManager;
@@ -83,7 +96,11 @@ public class MapFragment extends Fragment {
     private Polygon safeZone;
     private Polygon dangerZone;
     private Polyline routeOverlay;
-    private Marker hospitalMarker;
+
+    private List<Marker> activeHospitalMarkers = new ArrayList<>();
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private boolean hospitalsFetched = false;
+    private List<Marker> activeHazardMarkers = new ArrayList<>();
 
     public interface OnMapMemberClickListener {
         void onMemberMarkerClick(String userId, String userName);
@@ -122,7 +139,6 @@ public class MapFragment extends Fragment {
         // Bind UI
         tvNetworkStatusTitle = view.findViewById(R.id.tvNetworkStatusTitle);
         tvNetworkStatusDesc = view.findViewById(R.id.tvNetworkStatusDesc);
-        ivNetworkSignal = view.findViewById(R.id.ivNetworkSignal);
 
         View bottomSheetLayers = view.findViewById(R.id.bottomSheetLayers);
         behaviorLayers = BottomSheetBehavior.from(bottomSheetLayers);
@@ -266,13 +282,49 @@ public class MapFragment extends Fragment {
             });
         }
 
+        View layoutHospitalSearch = view.findViewById(R.id.layoutHospitalSearch);
+        com.google.android.material.textfield.TextInputEditText etHospitalRadius = view.findViewById(R.id.etHospitalRadius);
+        com.google.android.material.button.MaterialButton btnSearchHospitals = view.findViewById(R.id.btnSearchHospitals);
+
         if (swHospitals != null) {
             swHospitals.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (hospitalMarker != null) {
-                    if (isChecked && !mapView.getOverlays().contains(hospitalMarker)) mapView.getOverlays().add(hospitalMarker);
-                    else if (!isChecked) mapView.getOverlays().remove(hospitalMarker);
+                if (isChecked) {
+                    if (layoutHospitalSearch != null) layoutHospitalSearch.setVisibility(View.VISIBLE);
+                    if (!hospitalsFetched) {
+                        int radiusKm = 25;
+                        try {
+                            radiusKm = Integer.parseInt(etHospitalRadius.getText().toString());
+                        } catch (Exception e) {}
+                        fetchNearbyHospitals(radiusKm * 1000);
+                    } else {
+                        for (Marker m : activeHospitalMarkers) {
+                            if (!mapView.getOverlays().contains(m)) mapView.getOverlays().add(m);
+                        }
+                        mapView.invalidate();
+                    }
+                } else {
+                    if (layoutHospitalSearch != null) layoutHospitalSearch.setVisibility(View.GONE);
+                    for (Marker m : activeHospitalMarkers) {
+                        mapView.getOverlays().remove(m);
+                    }
                     mapView.invalidate();
                 }
+            });
+        }
+        
+        if (btnSearchHospitals != null) {
+            btnSearchHospitals.setOnClickListener(v -> {
+                int radiusKm = 25;
+                try {
+                    radiusKm = Integer.parseInt(etHospitalRadius.getText().toString());
+                } catch (Exception e) {}
+                for (Marker m : activeHospitalMarkers) {
+                    mapView.getOverlays().remove(m);
+                }
+                activeHospitalMarkers.clear();
+                mapView.invalidate();
+                
+                fetchNearbyHospitals(radiusKm * 1000);
             });
         }
 
@@ -290,14 +342,56 @@ public class MapFragment extends Fragment {
         if (btnDownloadOffline != null) {
             btnDownloadOffline.setOnClickListener(v -> {
                 if (behaviorLayers != null) behaviorLayers.setState(BottomSheetBehavior.STATE_HIDDEN);
-                Toast.makeText(requireContext(), "Downloading offline tiles for 10km radius...", Toast.LENGTH_LONG).show();
                 
-                // Simulate download progress
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    if (isAdded()) {
-                        Toast.makeText(requireContext(), "Offline Map Downloaded Successfully!", Toast.LENGTH_LONG).show();
-                    }
-                }, 3000);
+                if (lastLocation == null) {
+                    Toast.makeText(requireContext(), "Waiting for location to determine download area...", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                Toast.makeText(requireContext(), "Starting offline map download (10km radius)...", Toast.LENGTH_LONG).show();
+                
+                try {
+                    org.osmdroid.tileprovider.cachemanager.CacheManager cacheManager = new org.osmdroid.tileprovider.cachemanager.CacheManager(mapView);
+                    
+                    double radiusMeters = 10000; // 10km
+                    GeoPoint northEast = lastLocation.destinationPoint(radiusMeters, 45);
+                    GeoPoint southWest = lastLocation.destinationPoint(radiusMeters, 225);
+                    org.osmdroid.util.BoundingBox bbox = new org.osmdroid.util.BoundingBox(northEast.getLatitude(), northEast.getLongitude(), southWest.getLatitude(), southWest.getLongitude());
+                    
+                    cacheManager.downloadAreaAsync(requireContext(), bbox, 13, 16, new org.osmdroid.tileprovider.cachemanager.CacheManager.CacheManagerCallback() {
+                        @Override
+                        public void onTaskComplete() {
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                if (isAdded()) {
+                                    Toast.makeText(requireContext(), "Offline Map Downloaded Successfully!", Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
+                        @Override
+                        public void onTaskFailed(int errors) {
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                if (isAdded()) {
+                                    Toast.makeText(requireContext(), "Download finished with " + errors + " errors. (Some tiles may have failed)", Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
+                        @Override
+                        public void updateProgress(int progress, int currentZoomLevel, int zoomMin, int zoomMax) {}
+                        @Override
+                        public void downloadStarted() {}
+                        @Override
+                        public void setPossibleTilesInArea(int total) {
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                if (isAdded()) {
+                                    Toast.makeText(requireContext(), "Found " + total + " tiles to download. Please wait...", Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Toast.makeText(requireContext(), "Failed to start download: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
             });
         }
     }
@@ -333,6 +427,12 @@ public class MapFragment extends Fragment {
         mapView.setMultiTouchControls(true);
         mapView.setBuiltInZoomControls(false);
         mapView.setTilesScaledToDpi(true);
+        
+        // Prevent ViewPager2 from intercepting horizontal swipes on the map
+        mapView.setOnTouchListener((v, event) -> {
+            v.getParent().requestDisallowInterceptTouchEvent(true);
+            return false;
+        });
 
         mapController = mapView.getController();
         mapController.setZoom(16.0);
@@ -344,10 +444,78 @@ public class MapFragment extends Fragment {
         myLocationOverlay.enableMyLocation();
         mapView.getOverlays().add(myLocationOverlay);
 
+        boolean isLowPower = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE).getBoolean("low_power_mode", false);
+        if (isLowPower) {
+            locationUpdateInterval = 30000; // 30 seconds
+            // Invert map colors for dark mode (save battery on OLED)
+            float[] colorMatrixInvert = {
+                -1.0f, 0.0f,  0.0f,  0.0f,  255f, // red
+                0.0f,  -1.0f, 0.0f,  0.0f,  255f, // green
+                0.0f,  0.0f,  -1.0f, 0.0f,  255f, // blue
+                0.0f,  0.0f,  0.0f,  1.0f,  0.0f  // alpha
+            };
+            mapView.getOverlayManager().getTilesOverlay().setColorFilter(new android.graphics.ColorMatrixColorFilter(colorMatrixInvert));
+        }
+
         setupLocationTracking();
         
+        // Setup Map Events for Long Press
+        MapEventsReceiver mReceive = new MapEventsReceiver() {
+            @Override
+            public boolean singleTapConfirmedHelper(GeoPoint p) {
+                return false;
+            }
+            @Override
+            public boolean longPressHelper(GeoPoint p) {
+                showHazardDialog(p);
+                return true;
+            }
+        };
+        MapEventsOverlay overlayEvents = new MapEventsOverlay(mReceive);
+        mapView.getOverlays().add(overlayEvents);
+
         // Mock Emergency Data
         addMockOverlays();
+    }
+
+    private void showHazardDialog(GeoPoint location) {
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View view = getLayoutInflater().inflate(R.layout.dialog_map_marker, null);
+        dialog.setContentView(view);
+
+        View.OnClickListener clickListener = v -> {
+            String emoji = "🚨";
+            String title = "Hazard";
+            int id = v.getId();
+            if (id == R.id.cardMarkerFlood) { emoji = "🌊"; title = "Flood / High Water"; }
+            else if (id == R.id.cardMarkerFire) { emoji = "🔥"; title = "Fire / Smoke"; }
+            else if (id == R.id.cardMarkerSafe) { emoji = "🛡️"; title = "Safe Zone"; }
+            else if (id == R.id.cardMarkerBlocked) { emoji = "🚧"; title = "Blocked Road"; }
+
+            String hazardId = java.util.UUID.randomUUID().toString();
+            PeerLocationManager.getInstance().addHazard(hazardId, emoji, title, location.getLatitude(), location.getLongitude());
+            
+            // Broadcast via Intent to MainActivity
+            String username = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE).getString("username", "Unknown");
+            String payload = emoji + "|" + title + "|" + location.getLatitude() + "|" + location.getLongitude();
+            
+            android.content.Intent intent = new android.content.Intent("com.example.disastercomm.SEND_MESH_MESSAGE");
+            intent.setPackage(requireContext().getPackageName());
+            intent.putExtra("type", "MAP_MARKER");
+            intent.putExtra("content", payload);
+            requireContext().sendBroadcast(intent);
+            
+            Toast.makeText(requireContext(), title + " marker dropped and broadcasted!", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+            refreshMapMarkers();
+        };
+
+        view.findViewById(R.id.cardMarkerFlood).setOnClickListener(clickListener);
+        view.findViewById(R.id.cardMarkerFire).setOnClickListener(clickListener);
+        view.findViewById(R.id.cardMarkerSafe).setOnClickListener(clickListener);
+        view.findViewById(R.id.cardMarkerBlocked).setOnClickListener(clickListener);
+
+        dialog.show();
     }
 
     private void addMockOverlays() {
@@ -356,60 +524,18 @@ public class MapFragment extends Fragment {
     }
 
     private void updateMockOverlays(GeoPoint center) {
-        double lat = center.getLatitude();
-        double lon = center.getLongitude();
+        // Add some mock nearby users for testing the UI
+        PeerLocationManager manager = PeerLocationManager.getInstance();
+        if (manager.getPeerLocations().isEmpty()) {
+            manager.updatePeerLocation("MOCK1", center.getLatitude() + 0.005, center.getLongitude() + 0.005);
+            manager.updatePeerRole("MOCK1", "RESCUE");
 
-        if (safeZone == null) {
-            safeZone = new Polygon(mapView);
-            safeZone.getFillPaint().setColor(Color.argb(50, 0, 255, 0));
-            safeZone.getOutlinePaint().setColor(Color.GREEN);
-            safeZone.getOutlinePaint().setStrokeWidth(2.0f);
-            mapView.getOverlays().add(safeZone);
-        }
-        List<GeoPoint> safePoints = new ArrayList<>();
-        safePoints.add(new GeoPoint(lat + 0.0011, lon + 0.0010));
-        safePoints.add(new GeoPoint(lat + 0.0011, lon + 0.0030));
-        safePoints.add(new GeoPoint(lat - 0.0009, lon + 0.0030));
-        safePoints.add(new GeoPoint(lat - 0.0009, lon + 0.0010));
-        safeZone.setPoints(safePoints);
+            manager.updatePeerLocation("MOCK2", center.getLatitude() - 0.003, center.getLongitude() - 0.004);
+            manager.updatePeerRole("MOCK2", "MEDICAL");
 
-        if (dangerZone == null) {
-            dangerZone = new Polygon(mapView);
-            dangerZone.getFillPaint().setColor(Color.argb(50, 255, 0, 0));
-            dangerZone.getOutlinePaint().setColor(Color.RED);
-            dangerZone.getOutlinePaint().setStrokeWidth(2.0f);
-            mapView.getOverlays().add(dangerZone);
+            manager.updatePeerLocation("MOCK3", center.getLatitude() + 0.008, center.getLongitude() - 0.002);
+            manager.updatePeerRole("MOCK3", "VOLUNTEER");
         }
-        List<GeoPoint> dangerPoints = new ArrayList<>();
-        dangerPoints.add(new GeoPoint(lat - 0.0029, lon - 0.0010));
-        dangerPoints.add(new GeoPoint(lat - 0.0029, lon - 0.0030));
-        dangerPoints.add(new GeoPoint(lat - 0.0049, lon - 0.0030));
-        dangerPoints.add(new GeoPoint(lat - 0.0049, lon - 0.0010));
-        dangerZone.setPoints(dangerPoints);
-
-        if (routeOverlay == null) {
-            routeOverlay = new Polyline(mapView);
-            routeOverlay.getOutlinePaint().setColor(Color.BLUE);
-            routeOverlay.getOutlinePaint().setStrokeWidth(8.0f);
-            mapView.getOverlays().add(routeOverlay);
-        }
-        List<GeoPoint> routePoints = new ArrayList<>();
-        routePoints.add(new GeoPoint(lat, lon));
-        routePoints.add(new GeoPoint(lat + 0.0006, lon + 0.0010));
-        routePoints.add(new GeoPoint(lat + 0.0001, lon + 0.0020));
-        routeOverlay.setPoints(routePoints);
-
-        if (hospitalMarker == null) {
-            hospitalMarker = new Marker(mapView);
-            hospitalMarker.setTitle("City Hospital");
-            hospitalMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            hospitalMarker.setOnMarkerClickListener((marker, map) -> {
-                showMarkerDetails("🏥", "City Hospital", "150 m away", "Available", "Strong");
-                return true;
-            });
-            mapView.getOverlays().add(hospitalMarker);
-        }
-        hospitalMarker.setPosition(new GeoPoint(lat + 0.0001, lon + 0.0020));
     }
 
     private void showMarkerDetails(String icon, String title, String subtitle, String status, String signal) {
@@ -421,6 +547,102 @@ public class MapFragment extends Fragment {
         
         behaviorLayers.setState(BottomSheetBehavior.STATE_HIDDEN);
         behaviorMarkerDetail.setState(BottomSheetBehavior.STATE_EXPANDED);
+    }
+
+    private void fetchNearbyHospitals(int radiusMeters) {
+        if (lastLocation == null) {
+            Toast.makeText(requireContext(), "Location not available yet", Toast.LENGTH_SHORT).show();
+            if (getView() != null) {
+                com.google.android.material.switchmaterial.SwitchMaterial swHospitals = getView().findViewById(R.id.swHospitals);
+                if (swHospitals != null) swHospitals.setChecked(false);
+            }
+            return;
+        }
+
+        Toast.makeText(requireContext(), "Searching for hospitals within " + (radiusMeters/1000) + "km...", Toast.LENGTH_SHORT).show();
+        double lat = lastLocation.getLatitude();
+        double lon = lastLocation.getLongitude();
+        
+        executorService.execute(() -> {
+            try {
+                // Overpass API Query: Find hospitals within requested radius
+                String query = "[out:json];(node[\"amenity\"=\"hospital\"](around:" + radiusMeters + "," + lat + "," + lon + ");way[\"amenity\"=\"hospital\"](around:" + radiusMeters + "," + lat + "," + lon + "););out center;";
+                String urlString = "https://overpass-api.de/api/interpreter?data=" + java.net.URLEncoder.encode(query, "UTF-8");
+                URL url = new URL(urlString);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                
+                InputStreamReader reader = new InputStreamReader(conn.getInputStream());
+                JsonObject jsonResponse = JsonParser.parseReader(reader).getAsJsonObject();
+                JsonArray elements = jsonResponse.getAsJsonArray("elements");
+                
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (!isAdded()) return;
+                    hospitalsFetched = true;
+                    if (elements.size() == 0) {
+                        Toast.makeText(requireContext(), "No hospitals found within " + (radiusMeters/1000) + "km", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    List<GeoPoint> points = new ArrayList<>();
+                    if (lastLocation != null) points.add(lastLocation);
+
+                    for (JsonElement el : elements) {
+                        JsonObject obj = el.getAsJsonObject();
+                        double hLat = obj.has("lat") ? obj.get("lat").getAsDouble() : (obj.has("center") ? obj.getAsJsonObject("center").get("lat").getAsDouble() : 0);
+                        double hLon = obj.has("lon") ? obj.get("lon").getAsDouble() : (obj.has("center") ? obj.getAsJsonObject("center").get("lon").getAsDouble() : 0);
+                        
+                        if (hLat == 0 && hLon == 0) continue;
+
+                        String name = "Hospital";
+                        if (obj.has("tags")) {
+                            JsonObject tags = obj.getAsJsonObject("tags");
+                            if (tags.has("name")) {
+                                name = tags.get("name").getAsString();
+                            }
+                        }
+                        
+                        GeoPoint point = new GeoPoint(hLat, hLon);
+                        points.add(point);
+                        
+                        Marker hospitalMarker = new Marker(mapView);
+                        hospitalMarker.setPosition(point);
+                        hospitalMarker.setTitle(name);
+                        hospitalMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                        hospitalMarker.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_hospital_new));
+                        final String finalName = name;
+                        hospitalMarker.setOnMarkerClickListener((marker, map) -> {
+                            showMarkerDetails("🏥", finalName, "Nearby Hospital", "Available", "Network: Normal");
+                            return true;
+                        });
+                        
+                        activeHospitalMarkers.add(hospitalMarker);
+                        mapView.getOverlays().add(hospitalMarker);
+                    }
+                    mapView.invalidate();
+
+                    if (points.size() > 1) {
+                        org.osmdroid.util.BoundingBox boundingBox = org.osmdroid.util.BoundingBox.fromGeoPoints(points);
+                        mapView.zoomToBoundingBox(boundingBox, true, 200);
+                    }
+
+                    Toast.makeText(requireContext(), "Found " + elements.size() + " hospitals", Toast.LENGTH_SHORT).show();
+                });
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (isAdded()) {
+                        Toast.makeText(requireContext(), "Failed to fetch hospitals. Check internet connection.", Toast.LENGTH_SHORT).show();
+                        if (getView() != null) {
+                            com.google.android.material.switchmaterial.SwitchMaterial swHospitals = getView().findViewById(R.id.swHospitals);
+                            if (swHospitals != null) swHospitals.setChecked(false);
+                        }
+                        hospitalsFetched = false;
+                    }
+                });
+            }
+        });
     }
 
     private void setupLocationTracking() {
@@ -438,7 +660,7 @@ public class MapFragment extends Fragment {
 
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
                 if (requireContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_UPDATE_INTERVAL, LOCATION_UPDATE_DISTANCE, locationListener);
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, locationUpdateInterval, LOCATION_UPDATE_DISTANCE, locationListener);
                     Location lastKnown = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                     if (lastKnown != null) {
                         handleUserLocationUpdate(lastKnown);
@@ -502,12 +724,15 @@ public class MapFragment extends Fragment {
 
         List<MemberItem> members = new ArrayList<>();
         for (Map.Entry<String, GeoPoint> entry : locations.entrySet()) {
-            MemberItem item = new MemberItem(entry.getKey(), "Peer " + entry.getKey().substring(0, Math.min(4, entry.getKey().length())));
+            String peerId = entry.getKey();
+            MemberItem item = new MemberItem(peerId, "Peer " + peerId.substring(0, Math.min(4, peerId.length())));
             item.latitude = entry.getValue().getLatitude();
             item.longitude = entry.getValue().getLongitude();
+            item.role = manager.getPeerRole(peerId);
             members.add(item);
         }
         updateMembersOnMap(members);
+        updateHazardsOnMap();
         
         // Update network status
         if (tvNetworkStatusTitle != null && isAdded()) {
@@ -539,6 +764,12 @@ public class MapFragment extends Fragment {
         Set<String> activeMemberIds = new HashSet<>();
         PeerLocationManager manager = PeerLocationManager.getInstance();
 
+        boolean showNearbyUsers = true;
+        if (getView() != null) {
+            com.google.android.material.switchmaterial.SwitchMaterial sw = getView().findViewById(R.id.swNearbyUsers);
+            if (sw != null) showNearbyUsers = sw.isChecked();
+        }
+
         for (MemberItem member : members) {
             if (member.latitude == 0 && member.longitude == 0) continue;
 
@@ -550,18 +781,71 @@ public class MapFragment extends Fragment {
             marker.setPosition(position);
             marker.setTitle(member.name);
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            marker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_members));
+            
+            int iconRes = R.drawable.ic_members;
+            String emojiIcon = "👤";
+            String subtitle = "Nearby user";
+            
+            if ("RESCUE".equals(member.role)) {
+                iconRes = R.drawable.ic_role_rescue;
+                emojiIcon = "🚨";
+                subtitle = "Rescue Worker";
+            } else if ("MEDICAL".equals(member.role)) {
+                iconRes = R.drawable.ic_role_medical;
+                emojiIcon = "🏥";
+                subtitle = "Medical Professional";
+            } else if ("VOLUNTEER".equals(member.role)) {
+                iconRes = R.drawable.ic_role_volunteer;
+                emojiIcon = "🤝";
+                subtitle = "Community Volunteer";
+            }
+            
+            marker.setIcon(ContextCompat.getDrawable(requireContext(), iconRes));
 
+            final String fEmoji = emojiIcon;
+            final String fSub = subtitle;
             marker.setOnMarkerClickListener((m, map) -> {
-                showMarkerDetails("👤", member.name, "Nearby user", "Online", "Good");
+                showMarkerDetails(fEmoji, member.name, fSub, "Online", "Good");
                 if (memberClickListener != null) {
                     memberClickListener.onMemberMarkerClick(member.id, member.name);
                 }
                 return true;
             });
 
-            mapView.getOverlays().add(marker);
+            if (showNearbyUsers) {
+                mapView.getOverlays().add(marker);
+            }
             memberMarkers.add(marker);
+        }
+        mapView.invalidate();
+    }
+
+    private void updateHazardsOnMap() {
+        if (!isAdded() || mapView == null) return;
+        
+        for (Marker m : activeHazardMarkers) {
+            mapView.getOverlays().remove(m);
+        }
+        activeHazardMarkers.clear();
+
+        Map<String, PeerLocationManager.Hazard> hazards = PeerLocationManager.getInstance().getHazards();
+        for (Map.Entry<String, PeerLocationManager.Hazard> entry : hazards.entrySet()) {
+            PeerLocationManager.Hazard h = entry.getValue();
+            Marker marker = new Marker(mapView);
+            marker.setPosition(h.location);
+            marker.setTitle(h.type + " " + h.title);
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            
+            // We'll use a generic alert and rely on the text/emoji
+            marker.setIcon(ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_dialog_alert));
+
+            marker.setOnMarkerClickListener((m, map) -> {
+                showMarkerDetails(h.type, h.title, "Crowdsourced Hazard", "Active", "By Mesh Network");
+                return true;
+            });
+            
+            activeHazardMarkers.add(marker);
+            mapView.getOverlays().add(marker);
         }
         mapView.invalidate();
     }
