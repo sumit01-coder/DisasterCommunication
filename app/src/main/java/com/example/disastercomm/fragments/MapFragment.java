@@ -82,6 +82,9 @@ public class MapFragment extends Fragment {
     private TextView tvMarkerStatus;
     private TextView tvMarkerSignal;
 
+    private GeoPoint selectedMarkerLocation;
+    private Polyline currentRoute;
+
     private float currentAccuracy = 0f;
     private GeoPoint lastLocation = null;
     private long locationUpdateInterval = 1000; // default 1s
@@ -124,10 +127,41 @@ public class MapFragment extends Fragment {
         Configuration.getInstance().setUserAgentValue(ctx.getPackageName() + "/1.0 (disastercomm@example.com)");
 
         File cacheDir = new File(ctx.getCacheDir(), "osm_v3");
+        if (!cacheDir.exists()) cacheDir.mkdirs();
         Configuration.getInstance().setOsmdroidTileCache(cacheDir);
         Configuration.getInstance().setOsmdroidBasePath(cacheDir);
+        
+        checkAndCopyOfflineMap(ctx, cacheDir);
 
         return inflater.inflate(R.layout.fragment_map, container, false);
+    }
+
+    private void checkAndCopyOfflineMap(Context ctx, File cacheDir) {
+        File offlineMap = new File(cacheDir, "offline_map.sqlite");
+        if (!offlineMap.exists()) {
+            executorService.execute(() -> {
+                try {
+                    java.io.InputStream is = ctx.getAssets().open("offline_map.sqlite");
+                    java.io.OutputStream os = new java.io.FileOutputStream(offlineMap);
+                    byte[] buffer = new byte[8192];
+                    int length;
+                    while ((length = is.read(buffer)) > 0) {
+                        os.write(buffer, 0, length);
+                    }
+                    os.flush();
+                    os.close();
+                    is.close();
+                    new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                        if (isAdded()) {
+                            android.widget.Toast.makeText(ctx, "Pre-built offline map unpacked!", android.widget.Toast.LENGTH_SHORT).show();
+                            if (mapView != null) mapView.invalidate();
+                        }
+                    });
+                } catch (Exception e) {
+                    // No offline_map.sqlite in assets, which is fine
+                }
+            });
+        }
     }
 
     @Override
@@ -201,7 +235,11 @@ public class MapFragment extends Fragment {
         });
 
         view.findViewById(R.id.btnMarkerRoute).setOnClickListener(v -> {
-             Toast.makeText(requireContext(), "Calculating route...", Toast.LENGTH_SHORT).show();
+            if (selectedMarkerLocation != null && lastLocation != null) {
+                fetchRoadRoute(lastLocation, selectedMarkerLocation);
+            } else {
+                Toast.makeText(requireContext(), "Location unavailable.", Toast.LENGTH_SHORT).show();
+            }
         });
 
         // Setup Report actions
@@ -310,8 +348,7 @@ public class MapFragment extends Fragment {
                     mapView.invalidate();
                 }
             });
-        }
-        
+        }        
         if (btnSearchHospitals != null) {
             btnSearchHospitals.setOnClickListener(v -> {
                 int radiusKm = 25;
@@ -474,8 +511,7 @@ public class MapFragment extends Fragment {
         MapEventsOverlay overlayEvents = new MapEventsOverlay(mReceive);
         mapView.getOverlays().add(overlayEvents);
 
-        // Mock Emergency Data
-        addMockOverlays();
+        // Ready for real emergency data from the network
     }
 
     private void showHazardDialog(GeoPoint location) {
@@ -518,27 +554,10 @@ public class MapFragment extends Fragment {
         dialog.show();
     }
 
-    private void addMockOverlays() {
-        GeoPoint center = lastLocation != null ? lastLocation : new GeoPoint(28.6139, 77.2090);
-        updateMockOverlays(center);
-    }
 
-    private void updateMockOverlays(GeoPoint center) {
-        // Add some mock nearby users for testing the UI
-        PeerLocationManager manager = PeerLocationManager.getInstance();
-        if (manager.getPeerLocations().isEmpty()) {
-            manager.updatePeerLocation("MOCK1", center.getLatitude() + 0.005, center.getLongitude() + 0.005);
-            manager.updatePeerRole("MOCK1", "RESCUE");
 
-            manager.updatePeerLocation("MOCK2", center.getLatitude() - 0.003, center.getLongitude() - 0.004);
-            manager.updatePeerRole("MOCK2", "MEDICAL");
-
-            manager.updatePeerLocation("MOCK3", center.getLatitude() + 0.008, center.getLongitude() - 0.002);
-            manager.updatePeerRole("MOCK3", "VOLUNTEER");
-        }
-    }
-
-    private void showMarkerDetails(String icon, String title, String subtitle, String status, String signal) {
+    private void showMarkerDetails(String icon, String title, String subtitle, String status, String signal, GeoPoint location) {
+        this.selectedMarkerLocation = location;
         tvMarkerIcon.setText(icon);
         tvMarkerTitle.setText(title);
         tvMarkerSubtitle.setText(subtitle);
@@ -612,7 +631,7 @@ public class MapFragment extends Fragment {
                         hospitalMarker.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_hospital_new));
                         final String finalName = name;
                         hospitalMarker.setOnMarkerClickListener((marker, map) -> {
-                            showMarkerDetails("🏥", finalName, "Nearby Hospital", "Available", "Network: Normal");
+                            showMarkerDetails("🏥", finalName, "Nearby Hospital", "Available", "Network: Normal", point);
                             return true;
                         });
                         
@@ -640,6 +659,97 @@ public class MapFragment extends Fragment {
                         }
                         hospitalsFetched = false;
                     }
+                });
+            }
+        });
+    }
+
+    private void fetchRoadRoute(GeoPoint start, GeoPoint end) {
+        if (currentRoute != null) {
+            mapView.getOverlays().remove(currentRoute);
+            currentRoute = null;
+        }
+        
+        Toast.makeText(requireContext(), "Calculating road route...", Toast.LENGTH_SHORT).show();
+        behaviorMarkerDetail.setState(BottomSheetBehavior.STATE_HIDDEN);
+        
+        executorService.execute(() -> {
+            boolean success = false;
+            try {
+                // OSRM Public API (Requires Internet)
+                String urlString = "https://router.project-osrm.org/route/v1/driving/" + 
+                                   start.getLongitude() + "," + start.getLatitude() + ";" + 
+                                   end.getLongitude() + "," + end.getLatitude() + 
+                                   "?overview=full&geometries=geojson";
+                
+                URL url = new URL(urlString);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("User-Agent", "DisasterCommApp/1.0 (disastercomm@example.com)");
+                conn.setConnectTimeout(5000); // 5s timeout
+                conn.setReadTimeout(5000);
+                
+                if (conn.getResponseCode() == 200) {
+                    java.io.InputStreamReader reader = new java.io.InputStreamReader(conn.getInputStream());
+                    com.google.gson.JsonObject jsonResponse = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+                    
+                    if (jsonResponse.has("code") && jsonResponse.get("code").getAsString().equals("Ok") && jsonResponse.has("routes")) {
+                        com.google.gson.JsonArray routes = jsonResponse.getAsJsonArray("routes");
+                        if (routes != null && routes.size() > 0) {
+                            com.google.gson.JsonObject route = routes.get(0).getAsJsonObject();
+                        JsonObject geometry = route.getAsJsonObject("geometry");
+                        JsonArray coordinates = geometry.getAsJsonArray("coordinates");
+                        
+                        List<GeoPoint> routePoints = new ArrayList<>();
+                        for (JsonElement coord : coordinates) {
+                            JsonArray point = coord.getAsJsonArray();
+                            double lon = point.get(0).getAsDouble();
+                            double lat = point.get(1).getAsDouble();
+                            routePoints.add(new GeoPoint(lat, lon));
+                        }
+                        
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            if (!isAdded()) return;
+                            currentRoute = new Polyline(mapView);
+                            currentRoute.setPoints(routePoints);
+                            currentRoute.getOutlinePaint().setColor(Color.parseColor("#1976D2")); // Solid Blue for roads
+                            currentRoute.getOutlinePaint().setStrokeWidth(15f);
+                            currentRoute.getOutlinePaint().setStrokeCap(android.graphics.Paint.Cap.ROUND);
+                            currentRoute.getOutlinePaint().setStrokeJoin(android.graphics.Paint.Join.ROUND);
+                            
+                            mapView.getOverlays().add(currentRoute);
+                            mapView.invalidate();
+                            mapView.zoomToBoundingBox(org.osmdroid.util.BoundingBox.fromGeoPoints(routePoints), true, 200);
+                        });
+                        success = true;
+                        }
+                    }
+                } else {
+                    System.out.println("OSRM Error: HTTP " + conn.getResponseCode());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
+            if (!success) {
+                // Offline Fallback: Draw a direct straight dashed line
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (!isAdded()) return;
+                    Toast.makeText(requireContext(), "Offline: Showing direct emergency route.", Toast.LENGTH_SHORT).show();
+                    currentRoute = new Polyline(mapView);
+                    currentRoute.addPoint(start);
+                    currentRoute.addPoint(end);
+                    currentRoute.getOutlinePaint().setColor(Color.parseColor("#EF4444")); // Red for fallback
+                    currentRoute.getOutlinePaint().setStrokeWidth(12f);
+                    currentRoute.getOutlinePaint().setPathEffect(new android.graphics.DashPathEffect(new float[]{20f, 20f}, 0));
+                    
+                    mapView.getOverlays().add(currentRoute);
+                    mapView.invalidate();
+                    
+                    List<GeoPoint> points = new ArrayList<>();
+                    points.add(start);
+                    points.add(end);
+                    mapView.zoomToBoundingBox(org.osmdroid.util.BoundingBox.fromGeoPoints(points), true, 200);
                 });
             }
         });
@@ -682,7 +792,7 @@ public class MapFragment extends Fragment {
             mapController.setCenter(newLocation);
         }
         lastLocation = newLocation;
-        updateMockOverlays(newLocation);
+        // updateMockOverlays(newLocation);
 
         if (sharingManager != null && sharingManager.isSharingActive()) {
             CirclePulseOverlay overlay = pulseOverlays.get("ME");
@@ -805,7 +915,7 @@ public class MapFragment extends Fragment {
             final String fEmoji = emojiIcon;
             final String fSub = subtitle;
             marker.setOnMarkerClickListener((m, map) -> {
-                showMarkerDetails(fEmoji, member.name, fSub, "Online", "Good");
+                showMarkerDetails(fEmoji, member.name, fSub, "Online", "Good", new org.osmdroid.util.GeoPoint(member.latitude, member.longitude));
                 if (memberClickListener != null) {
                     memberClickListener.onMemberMarkerClick(member.id, member.name);
                 }
@@ -840,7 +950,7 @@ public class MapFragment extends Fragment {
             marker.setIcon(ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_dialog_alert));
 
             marker.setOnMarkerClickListener((m, map) -> {
-                showMarkerDetails(h.type, h.title, "Crowdsourced Hazard", "Active", "By Mesh Network");
+                showMarkerDetails(h.type, h.title, "Crowdsourced Hazard", "Active", "By Mesh Network", h.location);
                 return true;
             });
             

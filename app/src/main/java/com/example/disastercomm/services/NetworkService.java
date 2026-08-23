@@ -46,6 +46,9 @@ public class NetworkService extends Service {
     private NotificationSoundManager notificationSoundManager;
     private NotificationHelper notificationHelper;
 
+    private android.os.PowerManager.WakeLock wakeLock;
+    private android.net.wifi.WifiManager.WifiLock wifiLock;
+
     private String username;
 
     public class LocalBinder extends Binder {
@@ -59,6 +62,19 @@ public class NetworkService extends Service {
         super.onCreate();
         Log.d(TAG, "NetworkService Created");
         createNotificationChannel();
+        
+        // Acquire WakeLocks to keep mesh active in Doze mode
+        android.os.PowerManager powerManager = (android.os.PowerManager) getSystemService(android.content.Context.POWER_SERVICE);
+        if (powerManager != null) {
+            wakeLock = powerManager.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "DisasterComm:MeshWakeLock");
+            wakeLock.acquire();
+        }
+        
+        android.net.wifi.WifiManager wifiManager = (android.net.wifi.WifiManager) getApplicationContext().getSystemService(android.content.Context.WIFI_SERVICE);
+        if (wifiManager != null) {
+            wifiLock = wifiManager.createWifiLock(android.net.wifi.WifiManager.WIFI_MODE_FULL_HIGH_PERF, "DisasterComm:MeshWifiLock");
+            wifiLock.acquire();
+        }
     }
 
     @Override
@@ -309,6 +325,15 @@ public class NetworkService extends Service {
             localTcpManager.stop();
         if (udpDiscoveryManager != null)
             udpDiscoveryManager.stop();
+            
+        // Release WakeLocks
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+        }
+        if (wifiLock != null && wifiLock.isHeld()) {
+            wifiLock.release();
+        }
+            
         Log.d(TAG, "NetworkService Destroyed");
     }
 
