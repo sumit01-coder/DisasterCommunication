@@ -29,6 +29,8 @@ public class MeshRoutingTable {
         public String nextHop; // Next device to forward to
         public int hopCount; // Number of hops to destination
         public int signalStrength; // RSSI if available
+        public int batteryLevel; // Battery of next hop
+        public double pheromoneLevel; // Swarm Intelligence score
         public long lastUpdated; // Timestamp
         public int sequenceNumber; // For route freshness
         public String[] fullPath; // Complete path if known
@@ -39,6 +41,27 @@ public class MeshRoutingTable {
             this.hopCount = hopCount;
             this.lastUpdated = System.currentTimeMillis();
             this.signalStrength = -999;
+            this.batteryLevel = 100;
+            this.pheromoneLevel = 1.0;
+        }
+
+        public void calculatePheromone() {
+            // Swarm Intelligence (ACO) Formula
+            // Penalize long paths
+            double hopPenalty = Math.max(1, hopCount);
+            // Reward good signal (RSSI is negative, e.g. -50 is better than -90)
+            double signalFactor = Math.max(0.1, 100 + signalStrength);
+            // Reward high battery
+            double batteryFactor = Math.max(1, batteryLevel);
+            
+            // Base calculation
+            double newPheromone = (signalFactor * batteryFactor) / hopPenalty;
+            
+            // Evaporate over time
+            long ageMs = System.currentTimeMillis() - lastUpdated;
+            double decayRate = Math.exp(-ageMs / 60000.0); // decays exponentially per minute
+            
+            this.pheromoneLevel = newPheromone * decayRate;
         }
 
         public boolean isExpired() {
@@ -101,29 +124,41 @@ public class MeshRoutingTable {
     }
 
     /**
-     * Add or update a route to a destination
+     * Add or update a route to a destination using Swarm Intelligence
      */
     public void addRoute(String destinationId, String nextHop, int hopCount, int signalStrength) {
         RouteInfo existing = routeTable.get(destinationId);
+        
+        RouteInfo proposedRoute = new RouteInfo(destinationId, nextHop, hopCount);
+        proposedRoute.signalStrength = signalStrength;
+        // In a real swarm, battery would be passed in the routing packet.
+        // We will default to 100 for now or fetch from neighbors.
+        if (neighbors.containsKey(nextHop)) {
+            proposedRoute.batteryLevel = neighbors.get(nextHop).batteryLevel;
+        }
+        proposedRoute.calculatePheromone();
 
         // Only update if:
         // 1. No existing route, OR
         // 2. Existing route has expired, OR
-        // 3. New route has fewer hops, OR
-        // 4. Same hops but better signal
-        boolean shouldUpdate = existing == null ||
-                existing.isExpired() ||
-                hopCount < existing.hopCount ||
-                (hopCount == existing.hopCount && signalStrength > existing.signalStrength);
+        // 3. New route has a higher pheromone concentration
+        boolean shouldUpdate = false;
+        
+        if (existing == null || existing.isExpired()) {
+            shouldUpdate = true;
+        } else {
+            existing.calculatePheromone(); // Recalculate existing with decay
+            if (proposedRoute.pheromoneLevel > existing.pheromoneLevel) {
+                shouldUpdate = true;
+            }
+        }
 
         if (shouldUpdate) {
-            RouteInfo route = new RouteInfo(destinationId, nextHop, hopCount);
-            route.signalStrength = signalStrength;
-            route.sequenceNumber = sequenceNumber++;
-            routeTable.put(destinationId, route);
+            proposedRoute.sequenceNumber = sequenceNumber++;
+            routeTable.put(destinationId, proposedRoute);
 
-            Log.d(TAG, String.format("🔄 Route updated: %s → %s (%d hops, signal: %d)",
-                    destinationId.substring(0, 8), nextHop.substring(0, 8), hopCount, signalStrength));
+            Log.d(TAG, String.format("🐜 Swarm Route updated: %s → %s (Pheromone: %.2f)",
+                    destinationId.substring(0, 8), nextHop.substring(0, 8), proposedRoute.pheromoneLevel));
         }
     }
 

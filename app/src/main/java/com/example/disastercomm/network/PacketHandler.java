@@ -130,12 +130,19 @@ public class PacketHandler {
         // 2. Anti-Replay (Integrity)
         if (Math.abs(System.currentTimeMillis() - message.timestamp) > 600000) return;
 
-        // 2.5 Anti-Spoofing (Authentication/Integrity)
+        // 2.5 Anti-Spoofing & Web of Trust (Integrity)
         if (message.signature != null && !message.signature.startsWith("SIG_")) {
             PublicKey senderKey = peerPublicKeys.get(message.senderId);
             if (senderKey != null) {
                 String dataToVerify = message.id + message.senderId + message.content + message.nonce;
-                if (!SecurityUtil.verifySignature(dataToVerify, message.signature, senderKey)) {
+                // Try ECDSA verification first (Fast/Battery Efficient)
+                boolean verified = SecurityUtil.verifySignatureEcdsa(dataToVerify, message.signature, senderKey);
+                // Fallback to RSA if ECDSA fails (backward compatibility)
+                if (!verified) {
+                    verified = SecurityUtil.verifySignature(dataToVerify, message.signature, senderKey);
+                }
+                
+                if (!verified) {
                     Log.w(TAG, "Spoofing attempt detected! Signature mismatch from " + message.senderId);
                     return; // Drop packet
                 }
@@ -209,15 +216,16 @@ public class PacketHandler {
         if (toSend.nonce == null) toSend.nonce = UUID.randomUUID().toString();
         
         try {
-            java.security.KeyPair kp = SecurityUtil.getOrGenerateKeyPair(context);
-            if (kp != null && kp.getPrivate() != null) {
+            // Use advanced ECDSA for signing (much faster, saves battery compared to RSA)
+            java.security.KeyPair ecdsaKp = SecurityUtil.getOrGenerateEcdsaKeyPair(context);
+            if (ecdsaKp != null && ecdsaKp.getPrivate() != null) {
                 String dataToSign = toSend.id + toSend.senderId + toSend.content + toSend.nonce;
-                toSend.signature = SecurityUtil.signData(dataToSign, kp.getPrivate());
+                toSend.signature = SecurityUtil.signDataEcdsa(dataToSign, ecdsaKp.getPrivate());
             } else {
                 toSend.signature = "SIG_" + (toSend.id + toSend.nonce).hashCode();
             }
         } catch (Exception e) {
-            Log.e(TAG, "Signing Failed", e);
+            Log.e(TAG, "ECDSA Signing Failed", e);
             toSend.signature = "SIG_" + (toSend.id + toSend.nonce).hashCode();
         }
         
@@ -272,13 +280,18 @@ public class PacketHandler {
 
     private void handleKeyExchange(Message msg) {
         PublicKey pk = SecurityUtil.decodePublicKey(msg.publicKey);
+        if (pk == null) {
+            // Try decoding as ECDSA
+            pk = SecurityUtil.decodeEcdsaPublicKey(msg.publicKey);
+        }
+        
         if (pk != null) {
             PublicKey existingKey = peerPublicKeys.get(msg.senderId);
             if (existingKey != null && !existingKey.equals(pk)) {
                 Log.w(TAG, "🚨 MITM ATTACK DETECTED! Public key for " + msg.senderId + " changed! Rejecting new key.");
             } else {
                 if (existingKey == null) {
-                    Log.d(TAG, "Pinned Public Key for " + msg.senderId);
+                    Log.d(TAG, "Pinned Public Key (Web of Trust) for " + msg.senderId);
                 }
                 peerPublicKeys.put(msg.senderId, pk);
             }
@@ -330,9 +343,10 @@ public class PacketHandler {
     public void broadcastPublicKey(String username) {
         executor.execute(() -> {
             try {
-                java.security.KeyPair kp = SecurityUtil.getOrGenerateKeyPair(context);
+                // Broadcast the ECDSA Web of Trust Public Key instead of heavy RSA
+                java.security.KeyPair kp = SecurityUtil.getOrGenerateEcdsaKeyPair(context);
                 if (kp != null && kp.getPublic() != null) {
-                    String pubKeyStr = SecurityUtil.encodePublicKey(kp.getPublic());
+                    String pubKeyStr = android.util.Base64.encodeToString(kp.getPublic().getEncoded(), android.util.Base64.DEFAULT);
                     Message msg = new Message(DeviceUtil.getDeviceId(context), username, Message.Type.KEY_EXCHANGE, "KEY_EXCHANGE");
                     msg.publicKey = pubKeyStr;
                     msg.receiverId = "ALL";

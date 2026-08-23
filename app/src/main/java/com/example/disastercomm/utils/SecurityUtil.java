@@ -26,6 +26,9 @@ public class SecurityUtil {
     private static final String KEY_ALIAS = "DisasterCommKey";
     private static final String PREFS_NAME = "SecurityPrefs";
     private static final String KEY_PUBLIC_KEY = "my_public_key";
+    
+    private static final String ECDSA_KEY_ALIAS = "DisasterCommECDSAKey";
+    private static final String KEY_ECDSA_PUBLIC_KEY = "my_ecdsa_public_key";
 
     // --- RSA Key Management ---
 
@@ -88,6 +91,53 @@ public class SecurityUtil {
             return keyFactory.generatePublic(spec);
         } catch (Exception e) {
             Log.e(TAG, "Error decoding public key", e);
+            return null;
+        }
+    }
+
+    // --- ECDSA Key Management (Web of Trust) ---
+
+    public static KeyPair getOrGenerateEcdsaKeyPair(Context context) {
+        try {
+            KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
+            keyStore.load(null);
+
+            if (!keyStore.containsAlias(ECDSA_KEY_ALIAS)) {
+                // Generate new ECDSA KeyPair for fast Web of Trust signing
+                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(
+                        KeyProperties.KEY_ALGORITHM_EC, KEYSTORE_PROVIDER);
+                keyPairGenerator.initialize(
+                        new KeyGenParameterSpec.Builder(
+                                ECDSA_KEY_ALIAS,
+                                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
+                                .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
+                                .build());
+                KeyPair keyPair = keyPairGenerator.generateKeyPair();
+
+                // Save Public Key
+                String pubKeyStr = Base64.encodeToString(keyPair.getPublic().getEncoded(), Base64.DEFAULT);
+                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        .edit().putString(KEY_ECDSA_PUBLIC_KEY, pubKeyStr).apply();
+                return keyPair;
+            } else {
+                KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(ECDSA_KEY_ALIAS, null);
+                PublicKey publicKey = keyStore.getCertificate(ECDSA_KEY_ALIAS).getPublicKey();
+                return new KeyPair(publicKey, privateKeyEntry.getPrivateKey());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error managing ECDSA keys", e);
+            return null;
+        }
+    }
+
+    public static PublicKey decodeEcdsaPublicKey(String keyStr) {
+        try {
+            byte[] keyBytes = Base64.decode(keyStr, Base64.DEFAULT);
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+            KeyFactory keyFactory = KeyFactory.getInstance(KeyProperties.KEY_ALGORITHM_EC);
+            return keyFactory.generatePublic(spec);
+        } catch (Exception e) {
+            Log.e(TAG, "Error decoding ECDSA public key", e);
             return null;
         }
     }
@@ -200,6 +250,32 @@ public class SecurityUtil {
             return signature.verify(sigBytes);
         } catch (Exception e) {
             Log.e(TAG, "RSA Verification failed", e);
+            return false;
+        }
+    }
+
+    public static String signDataEcdsa(String data, PrivateKey privateKey) {
+        try {
+            java.security.Signature signature = java.security.Signature.getInstance("SHA256withECDSA");
+            signature.initSign(privateKey);
+            signature.update(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            byte[] sigBytes = signature.sign();
+            return Base64.encodeToString(sigBytes, Base64.DEFAULT);
+        } catch (Exception e) {
+            Log.e(TAG, "ECDSA Signing failed", e);
+            return null;
+        }
+    }
+
+    public static boolean verifySignatureEcdsa(String data, String signatureStr, PublicKey publicKey) {
+        try {
+            java.security.Signature signature = java.security.Signature.getInstance("SHA256withECDSA");
+            signature.initVerify(publicKey);
+            signature.update(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            byte[] sigBytes = Base64.decode(signatureStr, Base64.DEFAULT);
+            return signature.verify(sigBytes);
+        } catch (Exception e) {
+            Log.e(TAG, "ECDSA Verification failed", e);
             return false;
         }
     }
