@@ -237,7 +237,13 @@ public class PacketHandler {
 
     public void sendMessage(Message message) {
         if (db != null && (message.type == Message.Type.TEXT || message.type == Message.Type.SOS)) {
-            db.messageDao().insertMessage(message);
+            executor.execute(() -> {
+                try {
+                    db.messageDao().insertMessage(message);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error saving outgoing message to DB", e);
+                }
+            });
         }
         bufferManager.bufferOutbound(message);
     }

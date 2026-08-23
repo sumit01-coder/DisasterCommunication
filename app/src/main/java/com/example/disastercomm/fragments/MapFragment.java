@@ -248,6 +248,39 @@ public class MapFragment extends Fragment {
         // Setup Layer Switches
         setupLayerSwitches(view);
 
+        // Setup Collapsible UI Elements
+        View layoutUnifiedStatusHeader = view.findViewById(R.id.layoutUnifiedStatusHeader);
+        View layoutUnifiedStatusContent = view.findViewById(R.id.layoutUnifiedStatusContent);
+        android.widget.ImageView ivUnifiedStatusChevron = view.findViewById(R.id.ivUnifiedStatusChevron);
+
+        if (layoutUnifiedStatusHeader != null && layoutUnifiedStatusContent != null && ivUnifiedStatusChevron != null) {
+            layoutUnifiedStatusHeader.setOnClickListener(v -> {
+                if (layoutUnifiedStatusContent.getVisibility() == View.VISIBLE) {
+                    layoutUnifiedStatusContent.setVisibility(View.GONE);
+                    ivUnifiedStatusChevron.setRotation(0);
+                } else {
+                    layoutUnifiedStatusContent.setVisibility(View.VISIBLE);
+                    ivUnifiedStatusChevron.setRotation(180);
+                }
+            });
+        }
+
+        View layoutMapLegendHeader = view.findViewById(R.id.layoutMapLegendHeader);
+        View layoutMapLegendContent = view.findViewById(R.id.layoutMapLegendContent);
+        android.widget.ImageView ivMapLegendChevron = view.findViewById(R.id.ivMapLegendChevron);
+
+        if (layoutMapLegendHeader != null && layoutMapLegendContent != null && ivMapLegendChevron != null) {
+            layoutMapLegendHeader.setOnClickListener(v -> {
+                if (layoutMapLegendContent.getVisibility() == View.VISIBLE) {
+                    layoutMapLegendContent.setVisibility(View.GONE);
+                    ivMapLegendChevron.setRotation(0);
+                } else {
+                    layoutMapLegendContent.setVisibility(View.VISIBLE);
+                    ivMapLegendChevron.setRotation(180);
+                }
+            });
+        }
+
         // Setup SOS Button
         View fabSosMap = view.findViewById(R.id.fabSosMap);
         if (fabSosMap != null) {
@@ -478,8 +511,19 @@ public class MapFragment extends Fragment {
         mapController.setCenter(defaultLocation);
 
         myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(requireContext()), mapView);
-        myLocationOverlay.enableMyLocation();
+        
+        // Handle Location Permissions Gracefully
+        if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            myLocationOverlay.enableMyLocation();
+            myLocationOverlay.enableFollowLocation(); // Ensures the map centers on the user
+            myLocationOverlay.setDrawAccuracyEnabled(true);
+        } else {
+            Toast.makeText(requireContext(), "Location permission missing. Using default map center.", Toast.LENGTH_LONG).show();
+        }
+        
         mapView.getOverlays().add(myLocationOverlay);
+        
+        initializeMockLayers();
 
         boolean isLowPower = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE).getBoolean("low_power_mode", false);
         if (isLowPower) {
@@ -512,6 +556,30 @@ public class MapFragment extends Fragment {
         mapView.getOverlays().add(overlayEvents);
 
         // Ready for real emergency data from the network
+    }
+
+    private void initializeMockLayers() {
+        // Safe Zone (Green Polygon)
+        safeZone = new Polygon(mapView);
+        safeZone.getFillPaint().setColor(android.graphics.Color.argb(50, 0, 255, 0));
+        safeZone.getOutlinePaint().setColor(android.graphics.Color.GREEN);
+        safeZone.getOutlinePaint().setStrokeWidth(2.0f);
+        List<GeoPoint> safePts = new ArrayList<>();
+        safePts.add(new GeoPoint(28.6149, 77.2090));
+        safePts.add(new GeoPoint(28.6159, 77.2100));
+        safePts.add(new GeoPoint(28.6139, 77.2110));
+        safeZone.setPoints(safePts);
+
+        // Danger Zone (Red Polygon)
+        dangerZone = new Polygon(mapView);
+        dangerZone.getFillPaint().setColor(android.graphics.Color.argb(50, 255, 0, 0));
+        dangerZone.getOutlinePaint().setColor(android.graphics.Color.RED);
+        dangerZone.getOutlinePaint().setStrokeWidth(2.0f);
+        List<GeoPoint> dangerPts = new ArrayList<>();
+        dangerPts.add(new GeoPoint(28.6120, 77.2080));
+        dangerPts.add(new GeoPoint(28.6130, 77.2090));
+        dangerPts.add(new GeoPoint(28.6110, 77.2100));
+        dangerZone.setPoints(dangerPts);
     }
 
     private void showHazardDialog(GeoPoint location) {

@@ -136,8 +136,8 @@
             android:layout_gravity="bottom"
             android:background="@color/white"
             android:elevation="16dp"
-            app:itemIconTint="@color/primary"
-            app:itemTextColor="@color/primary"
+            app:itemIconTint="@color/nav_item_color_state"
+            app:itemTextColor="@color/nav_item_color_state"
             app:itemActiveIndicatorStyle="@style/App.BottomNav.ActiveIndicator"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_nav_menu" />

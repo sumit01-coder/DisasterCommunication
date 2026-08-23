@@ -26,8 +26,43 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Header for Collapsing -->
+            <LinearLayout
+                android:id="@+id/layoutUnifiedStatusHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:padding="12dp"
+            android:gravity="center_vertical"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="System Status"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"/>
+            <ImageView
+                android:id="@+id/ivUnifiedStatusChevron"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/arrow_down_float"
+                app:tint="@color/text_secondary"/>
+        </LinearLayout>
+
+        <!-- Collapsible Content -->
+        <LinearLayout
+            android:id="@+id/layoutUnifiedStatusContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:visibility="gone"
             android:gravity="center_vertical">
             
             <!-- Network Status -->
@@ -99,6 +134,7 @@
                     android:textColor="@color/text_secondary"/>
             </LinearLayout>
         </LinearLayout>
+        </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Map Floating Actions (Right Side) -->
@@ -109,7 +145,8 @@
         android:layout_gravity="end|bottom"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="110dp"
-        android:gravity="center_horizontal">
+        android:gravity="center_horizontal"
+        android:elevation="12dp">
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnCenterLocation"
@@ -180,7 +217,43 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Header for Collapsing -->
+            <LinearLayout
+                android:id="@+id/layoutMapLegendHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center_vertical"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Legend"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginEnd="16dp"/>
+            <ImageView
+                android:id="@+id/ivMapLegendChevron"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/arrow_down_float"
+                app:tint="@color/text_secondary"/>
+        </LinearLayout>
+
+        <!-- Collapsible Content -->
+        <LinearLayout
+            android:id="@+id/layoutMapLegendContent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:visibility="gone"
             android:padding="12dp">
 
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp" android:gravity="center_vertical">
@@ -212,6 +285,7 @@
                 <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_hospital_new" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hospital" android:textSize="14sp" android:textColor="@color/text_primary" android:layout_marginStart="12dp"/>
             </LinearLayout>
+        </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
