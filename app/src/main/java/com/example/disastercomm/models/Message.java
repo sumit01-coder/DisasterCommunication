@@ -57,6 +57,9 @@ public class Message {
     public boolean isLiveSharing = false;
     public long sharingUntil = 0; 
 
+    // Sync Fields
+    public boolean isHistorySync = false;
+
     // Security Fields
     public String encryptedAesKey; 
     public String token; 

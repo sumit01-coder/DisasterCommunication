@@ -24,6 +24,12 @@ public class MembersAdapter extends RecyclerView.Adapter<MembersAdapter.MemberVi
         this.members = members;
     }
 
+    public void updateMembers(List<MemberItem> newMembers) {
+        this.members.clear();
+        this.members.addAll(newMembers);
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public MemberViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

@@ -128,7 +128,7 @@ public class PacketHandler {
         rateLimitMap.put(message.senderId, now);
 
         // 2. Anti-Replay (Integrity)
-        if (Math.abs(System.currentTimeMillis() - message.timestamp) > 600000) return;
+        if (!message.isHistorySync && Math.abs(System.currentTimeMillis() - message.timestamp) > 600000) return;
 
         // 2.5 Anti-Spoofing & Web of Trust (Integrity)
         if (message.signature != null && !message.signature.startsWith("SIG_")) {
@@ -137,8 +137,8 @@ public class PacketHandler {
                 String dataToVerify = message.id + message.senderId + message.content + message.nonce;
                 // Try ECDSA verification first (Fast/Battery Efficient)
                 boolean verified = SecurityUtil.verifySignatureEcdsa(dataToVerify, message.signature, senderKey);
-                // Fallback to RSA if ECDSA fails (backward compatibility)
-                if (!verified) {
+                // Fallback to RSA if ECDSA fails AND key is RSA (backward compatibility)
+                if (!verified && senderKey.getAlgorithm().contains("RSA")) {
                     verified = SecurityUtil.verifySignature(dataToVerify, message.signature, senderKey);
                 }
                 
@@ -170,7 +170,8 @@ public class PacketHandler {
         }
 
         // 4. Relay / Store-and-Forward (Availability)
-        if (message.ttl > 0 && (!isForMe || "ALL".equals(message.receiverId))) {
+        // ✅ Do not relay if this is a direct history sync for this device
+        if (message.ttl > 0 && (!isForMe || "ALL".equals(message.receiverId)) && !message.isHistorySync) {
             // Append self to route path
             message.routePath = message.routePath == null ? myId : message.routePath + "," + myId;
             
@@ -198,6 +199,7 @@ public class PacketHandler {
         }
 
         if (delivered.type == Message.Type.LOCATION_UPDATE) updatePeerLocation(delivered);
+        if (delivered.type == Message.Type.SOS) parseLocationFromSOS(delivered);
 
         // Notify UI
         if (messageListener != null) {
@@ -285,10 +287,10 @@ public class PacketHandler {
     }
 
     private void handleKeyExchange(Message msg) {
-        PublicKey pk = SecurityUtil.decodePublicKey(msg.publicKey);
+        PublicKey pk = SecurityUtil.decodeEcdsaPublicKey(msg.publicKey);
         if (pk == null) {
-            // Try decoding as ECDSA
-            pk = SecurityUtil.decodeEcdsaPublicKey(msg.publicKey);
+            // Try decoding as RSA for backwards compatibility
+            pk = SecurityUtil.decodePublicKey(msg.publicKey);
         }
         
         if (pk != null) {
@@ -324,6 +326,24 @@ public class PacketHandler {
                     msg.isLiveSharing, msg.sharingUntil);
             }
         } catch (Exception e) { Log.e(TAG, "Location parse error", e); }
+    }
+
+    private void parseLocationFromSOS(Message msg) {
+        try {
+            String content = msg.content;
+            if (content != null && content.contains("Location:")) {
+                String locPart = content.substring(content.indexOf("Location:") + 9).trim();
+                String[] parts = locPart.split(",");
+                if (parts.length == 2) {
+                    double lat = Double.parseDouble(parts[0].trim());
+                    double lng = Double.parseDouble(parts[1].trim());
+                    com.example.disastercomm.PeerLocationManager.getInstance().updatePeerLocation(
+                        msg.senderId, lat, lng, false, 0);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to parse location from SOS", e);
+        }
     }
 
     // Setters & Lifecycle

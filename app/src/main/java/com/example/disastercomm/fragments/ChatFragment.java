@@ -43,6 +43,7 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
     private View layoutChannelDetail;
     private View cardGlobalBroadcast;
     private android.widget.ImageView btnBackToChannels;
+    private com.example.disastercomm.adapters.MembersAdapter privateChatsAdapter; // ✅ Member adapter for private chats
 
     public void setRecipient(String id, String name) {
         this.recipientId = id;
@@ -58,9 +59,20 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         this.recipientName = member.name;
         android.util.Log.d("ChatFragment", "📝 Recipient set (Rich): " + member.name);
 
-        // Update header immediately if visible
         if (isAdded() && isVisible()) {
             updateChatHeader();
+            
+            // Switch view to chat detail
+            if (layoutChannelList != null && layoutChannelDetail != null) {
+                layoutChannelList.setVisibility(View.GONE);
+                layoutChannelDetail.setVisibility(View.VISIBLE);
+            }
+            
+            if (etMessage != null) {
+                etMessage.setHint("Message " + recipientName + "...");
+            }
+            
+            reloadChatHistory();
         }
     }
 
@@ -98,9 +110,53 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         layoutChannelDetail = view.findViewById(R.id.layoutChannelDetail);
         cardGlobalBroadcast = view.findViewById(R.id.cardGlobalBroadcast);
         btnBackToChannels = view.findViewById(R.id.btnBackToChannels);
+        
+        TextView tvMyChannelsHeader = view.findViewById(R.id.tvMyChannelsHeader);
+        TextView tvDirectMessagesHeader = view.findViewById(R.id.tvDirectMessagesHeader);
+        RecyclerView rvPrivateChats = view.findViewById(R.id.rvPrivateChats);
+        com.google.android.material.tabs.TabLayout tabLayout = view.findViewById(R.id.tabLayout);
+        
+        if (tabLayout != null) {
+            tabLayout.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
+                @Override
+                public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
+                    if (tab.getPosition() == 0) { // Channels
+                        if (tvMyChannelsHeader != null) tvMyChannelsHeader.setVisibility(View.VISIBLE);
+                        if (cardGlobalBroadcast != null) cardGlobalBroadcast.setVisibility(View.VISIBLE);
+                        if (tvDirectMessagesHeader != null) tvDirectMessagesHeader.setVisibility(View.GONE);
+                        if (rvPrivateChats != null) rvPrivateChats.setVisibility(View.GONE);
+                    } else if (tab.getPosition() == 1) { // Groups
+                        if (tvMyChannelsHeader != null) tvMyChannelsHeader.setVisibility(View.GONE);
+                        if (cardGlobalBroadcast != null) cardGlobalBroadcast.setVisibility(View.GONE);
+                        if (tvDirectMessagesHeader != null) tvDirectMessagesHeader.setVisibility(View.GONE);
+                        if (rvPrivateChats != null) rvPrivateChats.setVisibility(View.GONE);
+                    } else if (tab.getPosition() == 2) { // Direct
+                        if (tvMyChannelsHeader != null) tvMyChannelsHeader.setVisibility(View.GONE);
+                        if (cardGlobalBroadcast != null) cardGlobalBroadcast.setVisibility(View.GONE);
+                        if (tvDirectMessagesHeader != null) tvDirectMessagesHeader.setVisibility(View.VISIBLE);
+                        if (rvPrivateChats != null) rvPrivateChats.setVisibility(View.VISIBLE);
+                    }
+                }
+                @Override public void onTabUnselected(com.google.android.material.tabs.TabLayout.Tab tab) {}
+                @Override public void onTabReselected(com.google.android.material.tabs.TabLayout.Tab tab) {}
+            });
+            // Trigger default state
+            tabLayout.selectTab(tabLayout.getTabAt(0));
+        }
+
+        View fabNewChat = view.findViewById(R.id.fabNewChat);
+        if (fabNewChat != null) {
+            fabNewChat.setOnClickListener(v -> {
+                if (tabLayout != null) {
+                    tabLayout.selectTab(tabLayout.getTabAt(2)); // Switch to Direct tab
+                }
+            });
+        }
 
         // UI Toggles
         cardGlobalBroadcast.setOnClickListener(v -> {
+            // Open global broadcast
+            switchToGlobalChat();
             layoutChannelList.setVisibility(View.GONE);
             layoutChannelDetail.setVisibility(View.VISIBLE);
         });
@@ -156,6 +212,40 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         ImageButton btnLocation = view.findViewById(R.id.btnLocation);
         if (btnLocation != null) {
             btnLocation.setOnClickListener(v -> showLocationDurationDialog());
+        }
+
+        // SOS Button click (New)
+        ImageButton btnSos = view.findViewById(R.id.btnSos);
+        if (btnSos != null) {
+            btnSos.setOnClickListener(v -> sendGlobalSos());
+        }
+
+        // Private Chats List (New)
+        if (rvPrivateChats != null) {
+            rvPrivateChats.setLayoutManager(new LinearLayoutManager(requireContext()));
+            
+            // Get connected members list
+            java.util.List<com.example.disastercomm.models.MemberItem> peerList = new java.util.ArrayList<>();
+            if (getActivity() instanceof com.example.disastercomm.MainActivityNew) {
+                peerList.addAll(((com.example.disastercomm.MainActivityNew) getActivity()).getConnectedMembers().values());
+            }
+
+            privateChatsAdapter = new com.example.disastercomm.adapters.MembersAdapter(peerList);
+            privateChatsAdapter.setOnMemberClickListener(member -> {
+                // On Member Click -> Open Private Chat
+                if (getActivity() instanceof com.example.disastercomm.MainActivityNew) {
+                    ((com.example.disastercomm.MainActivityNew) getActivity()).openPrivateChat(member);
+                }
+            });
+            rvPrivateChats.setAdapter(privateChatsAdapter);
+        }
+    }
+
+    public void updatePrivateChatsList() {
+        if (privateChatsAdapter != null && getActivity() instanceof com.example.disastercomm.MainActivityNew) {
+            java.util.List<com.example.disastercomm.models.MemberItem> peerList = new java.util.ArrayList<>();
+            peerList.addAll(((com.example.disastercomm.MainActivityNew) getActivity()).getConnectedMembers().values());
+            privateChatsAdapter.updateMembers(peerList);
         }
     }
 
@@ -230,6 +320,42 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         });
     }
 
+    private void sendGlobalSos() {
+        if (!isAdded()) return;
+
+        if (androidx.core.app.ActivityCompat.checkSelfPermission(requireContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            android.widget.Toast.makeText(requireContext(), "Location permission required for SOS", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        android.widget.Toast.makeText(requireContext(), "🚨 Fetching location for SOS...", android.widget.Toast.LENGTH_SHORT).show();
+
+        com.example.disastercomm.utils.LocationHelper locationHelper = new com.example.disastercomm.utils.LocationHelper(requireContext());
+        locationHelper.getCurrentLocation((lat, lng) -> {
+            if (packetHandler != null) {
+                String content = "🚨 EMERGENCY SOS! Location: " + lat + ", " + lng;
+                Message sosMsg = new Message(
+                        DeviceUtil.getDeviceId(requireContext()),
+                        username,
+                        Message.Type.SOS,
+                        content);
+
+                // CRITICAL: Always broadcast SOS to ALL, ignoring private chat status
+                sosMsg.receiverId = "ALL";
+                sosMsg.priority = 10;
+
+                packetHandler.sendMessage(sosMsg);
+
+                // Show in UI
+                requireActivity().runOnUiThread(() -> {
+                    addMessage(sosMsg);
+                    android.widget.Toast.makeText(requireContext(), "✅ Global SOS Sent!", android.widget.Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
     private void sendMessage() {
         String text = etMessage.getText().toString().trim();
         if (text.isEmpty()) {
@@ -289,9 +415,6 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         }
     }
 
-    /**
-     * ✅ Handle incoming messages (including receipts)
-     */
     public void processReceivedMessage(Message message) {
         if (!isAdded())
             return;
@@ -311,7 +434,30 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
             }
 
             // 2. Handle Normal Messages
-            addMessage(message);
+            boolean isGlobalMsg = "ALL".equals(message.receiverId);
+            boolean isGlobalView = (recipientId == null);
+            
+            boolean isForCurrentRecipient = false;
+            if (!isGlobalMsg && recipientId != null) {
+                isForCurrentRecipient = message.senderId.equals(recipientId) || message.receiverId.equals(recipientId);
+            }
+            
+            if (isGlobalView && isGlobalMsg) {
+                addMessage(message); // Render in Global
+            } else if (!isGlobalView && isForCurrentRecipient) {
+                addMessage(message); // Render in Private Chat
+            } else {
+                // Background message - DO NOT render, but add to cache
+                if (messageCache != null && myId != null) {
+                    if (isGlobalMsg) {
+                        messageCache.addMessage(myId, null, message);
+                    } else {
+                        String otherUserId = message.senderId.equals(myId) ? message.receiverId : message.senderId;
+                        messageCache.addMessage(myId, otherUserId, message);
+                    }
+                }
+                android.util.Log.d("ChatFragment", "Silently cached background message from " + message.senderId);
+            }
         });
     }
 

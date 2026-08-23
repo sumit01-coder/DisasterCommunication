@@ -12,7 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Database(entities = { Message.class, com.example.disastercomm.models.User.class,
-        MessageQueueEntity.class }, version = 6, exportSchema = false)
+        MessageQueueEntity.class }, version = 7, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract MessageDao messageDao();

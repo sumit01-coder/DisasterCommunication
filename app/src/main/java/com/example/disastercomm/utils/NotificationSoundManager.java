@@ -65,6 +65,20 @@ public class NotificationSoundManager {
     }
 
     /**
+     * Stop SOS sound
+     */
+    public void stopSosSound() {
+        try {
+            if (sosPlayer != null && sosPlayer.isPlaying()) {
+                sosPlayer.pause();
+                sosPlayer.seekTo(0);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to stop SOS sound", e);
+        }
+    }
+
+    /**
      * Play siren for Global Govt Alert (forces maximum volume)
      */
     public void playGovtAlert() {

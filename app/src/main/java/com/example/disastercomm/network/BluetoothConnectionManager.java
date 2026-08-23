@@ -288,7 +288,7 @@ public class BluetoothConnectionManager {
                     connected = true;
                     break; // Connection succeeded
                 } catch (IOException e) {
-                    Log.e(TAG, "Connection attempt " + (i + 1) + " failed to " + device.getAddress(), e);
+                    Log.w(TAG, "Connection attempt " + (i + 1) + " failed to " + device.getAddress() + ": " + e.getMessage());
                     if (socket != null) {
                         try {
                             socket.close();

@@ -874,6 +874,26 @@ public class MapFragment extends Fragment {
                 overlay.setLocation(newLocation);
             }
         }
+        
+        // Broadcast my location to the Mesh Network so other devices see me
+        try {
+            if (getActivity() instanceof com.example.disastercomm.MainActivityNew) {
+                com.example.disastercomm.MainActivityNew activity = (com.example.disastercomm.MainActivityNew) getActivity();
+                if (activity.getPacketHandler() != null) {
+                    String locPayload = location.getLatitude() + "," + location.getLongitude();
+                    String deviceId = com.example.disastercomm.utils.DeviceUtil.getDeviceId(requireContext());
+                    android.content.SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+                    String username = prefs.getString("username", "Unknown");
+                    
+                    com.example.disastercomm.models.Message locMsg = new com.example.disastercomm.models.Message(deviceId, username, com.example.disastercomm.models.Message.Type.LOCATION_UPDATE, locPayload);
+                    locMsg.receiverId = "ALL";
+                    activity.getPacketHandler().sendMessage(locMsg);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         mapView.invalidate();
     }
 
@@ -901,14 +921,35 @@ public class MapFragment extends Fragment {
         Map<String, GeoPoint> locations = manager.getPeerLocations();
 
         List<MemberItem> members = new ArrayList<>();
+        Map<String, MemberItem> activityMembers = new HashMap<>();
+        
+        if (getActivity() instanceof com.example.disastercomm.MainActivityNew) {
+            com.example.disastercomm.MainActivityNew activity = (com.example.disastercomm.MainActivityNew) getActivity();
+            activityMembers = activity.getConnectedMembers();
+        }
+
         for (Map.Entry<String, GeoPoint> entry : locations.entrySet()) {
             String peerId = entry.getKey();
-            MemberItem item = new MemberItem(peerId, "Peer " + peerId.substring(0, Math.min(4, peerId.length())));
+            String name = "Peer " + peerId.substring(0, Math.min(4, peerId.length()));
+            if (activityMembers != null && activityMembers.containsKey(peerId)) {
+                name = activityMembers.get(peerId).name;
+            }
+            MemberItem item = new MemberItem(peerId, name);
             item.latitude = entry.getValue().getLatitude();
             item.longitude = entry.getValue().getLongitude();
             item.role = manager.getPeerRole(peerId);
             members.add(item);
         }
+        
+        // Also add any from MainActivityNew that have locations but aren't in PeerLocationManager
+        if (activityMembers != null) {
+            for (MemberItem m : activityMembers.values()) {
+                if (!locations.containsKey(m.id) && m.latitude != 0 && m.longitude != 0) {
+                    members.add(m);
+                }
+            }
+        }
+
         updateMembersOnMap(members);
         updateHazardsOnMap();
         

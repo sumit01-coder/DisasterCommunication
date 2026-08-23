@@ -12,13 +12,17 @@
         android:layout_height="0dp"
         android:visibility="gone"/>
 
-    <!-- Screen 3: Channels List -->
-    <LinearLayout
+    <!-- Screen 3: Channels List Container -->
+    <FrameLayout
         android:id="@+id/layoutChannelList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         android:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
         <!-- Tabs -->
         <com.google.android.material.tabs.TabLayout
@@ -37,6 +41,7 @@
         </com.google.android.material.tabs.TabLayout>
 
         <TextView
+            android:id="@+id/tvMyChannelsHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="My Channels"
@@ -88,22 +93,39 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Floating Action Button for New Chat -->
-        <RelativeLayout
+        <TextView
+            android:id="@+id/tvDirectMessagesHeader"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:layout_alignParentEnd="true"
-                android:layout_margin="24dp"
-                android:src="@android:drawable/ic_input_add"
-                app:backgroundTint="@color/primary"
-                app:tint="@color/white"
-                app:elevation="4dp"/>
-        </RelativeLayout>
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:text="Direct Messages"
+            android:textStyle="bold"
+            android:textColor="@color/text_secondary"
+            android:padding="16dp"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Private Chats RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvPrivateChats"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp"/>
+        </LinearLayout>
+
+        <!-- Floating Action Button overlay for Channels List -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabNewChat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="24dp"
+            android:src="@android:drawable/ic_input_add"
+            app:backgroundTint="@color/primary"
+            app:tint="@color/white"
+            app:elevation="4dp"/>
+    </FrameLayout>
 
     <!-- Screen 4: Channel Detail (Actual Chat Interface) -->
     <LinearLayout
@@ -198,7 +220,8 @@
             android:padding="12dp"
             android:background="@color/surface"
             android:elevation="8dp"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:baselineAligned="false">
 
             <EditText
                 android:id="@+id/etMessage"
@@ -213,6 +236,18 @@
                 android:textSize="15sp"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_tertiary"/>
+
+            <ImageButton
+                android:id="@+id/btnSos"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_hospital_new"
+                android:background="@drawable/circle_background"
+                android:backgroundTint="#FEE2E2"
+                app:tint="@color/error"
+                android:contentDescription="Send Global SOS"
+                android:elevation="2dp"/>
 
             <ImageButton
                 android:id="@+id/btnLocation"

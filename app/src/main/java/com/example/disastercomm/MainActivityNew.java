@@ -55,6 +55,10 @@ public class MainActivityNew extends AppCompatActivity implements
     private ViewPagerAdapter pagerAdapter;
     private MeshNetworkManager meshNetworkManager;
     private PacketHandler packetHandler;
+
+    public PacketHandler getPacketHandler() {
+        return packetHandler;
+    }
     private com.example.disastercomm.network.BluetoothConnectionManager bluetoothConnectionManager;
     private NetworkStateMonitor networkStateMonitor;
     private NotificationSoundManager notificationSoundManager;
@@ -151,6 +155,10 @@ public class MainActivityNew extends AppCompatActivity implements
     private com.example.disastercomm.utils.NotificationHelper notificationHelper;
     private com.example.disastercomm.utils.MessageCounter messageCounter; // ✅ Track unread messages
     private com.example.disastercomm.utils.ConnectivityStatusManager connectivityStatusManager;
+
+    public Map<String, MemberItem> getConnectedMembers() {
+        return connectedMembers;
+    }
 
     private View viewUpdateBadge;
 
@@ -1062,6 +1070,18 @@ public class MainActivityNew extends AppCompatActivity implements
 
             // ✅ Sync broadcast history to new device
             syncBroadcastHistoryToNewDevice(endpointId);
+            
+            // ✅ Share location with the new peer
+            if (locationHelper != null) {
+                locationHelper.getCurrentLocation((lat, lng) -> {
+                    String locPayload = lat + "," + lng;
+                    Message locMsg = new Message(DeviceUtil.getDeviceId(MainActivityNew.this), username, Message.Type.LOCATION_UPDATE, locPayload);
+                    locMsg.receiverId = "ALL";
+                    if (packetHandler != null) {
+                        packetHandler.sendMessage(locMsg);
+                    }
+                });
+            }
         });
     }
 
@@ -1224,7 +1244,16 @@ public class MainActivityNew extends AppCompatActivity implements
                         new AlertDialog.Builder(MainActivityNew.this)
                                 .setTitle("🚨 SOS RECEIVED FROM " + name)
                                 .setMessage(detailedMessage.toString())
-                                .setPositiveButton("OK", null)
+                                .setPositiveButton("Dismiss", (dialog, which) -> {
+                                    if (notificationSoundManager != null) {
+                                        notificationSoundManager.stopSosSound();
+                                    }
+                                })
+                                .setOnDismissListener(dialog -> {
+                                    if (notificationSoundManager != null) {
+                                        notificationSoundManager.stopSosSound();
+                                    }
+                                })
                                 .setIcon(android.R.drawable.ic_dialog_alert)
                                 .show();
                     });
@@ -1380,8 +1409,11 @@ public class MainActivityNew extends AppCompatActivity implements
 
         // ✅ Notify Global Chat
         ChatFragment chatFragment = pagerAdapter.getChatFragment();
-        if (chatFragment != null && chatFragment.getRecipientId() == null) {
-            chatFragment.addSystemMessage("🔵 " + name + " joined via " + type);
+        if (chatFragment != null) {
+            chatFragment.updatePrivateChatsList();
+            if (chatFragment.getRecipientId() == null) {
+                chatFragment.addSystemMessage("🔵 " + name + " joined via " + type);
+            }
         }
 
         // ✅ Notify Private Chat if open
@@ -1404,8 +1436,11 @@ public class MainActivityNew extends AppCompatActivity implements
 
         // ✅ Notify Global Chat
         ChatFragment chatFragment = pagerAdapter.getChatFragment();
-        if (chatFragment != null && chatFragment.getRecipientId() == null) {
-            chatFragment.addSystemMessage("⚫ " + name + " disconnected");
+        if (chatFragment != null) {
+            chatFragment.updatePrivateChatsList();
+            if (chatFragment.getRecipientId() == null) {
+                chatFragment.addSystemMessage("⚫ " + name + " disconnected");
+            }
         }
 
         // ✅ Notify Private Chat if open
@@ -1585,6 +1620,7 @@ public class MainActivityNew extends AppCompatActivity implements
                         syncMsg.content = originalMsg.content;
                         syncMsg.timestamp = originalMsg.timestamp;
                         syncMsg.type = originalMsg.type;
+                        syncMsg.isHistorySync = true; // ✅ Mark as history sync
 
                         // 3. TARGET: Send directly to the NEW device, but keep "ALL" as visible
                         // receiver
