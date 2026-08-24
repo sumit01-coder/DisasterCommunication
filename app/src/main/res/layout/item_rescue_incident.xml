@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
-    app:cardBackgroundColor="#1A2333"
+    app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="14dp"
     app:strokeColor="#FF4444"
     app:strokeWidth="1dp">
@@ -46,9 +46,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="10dp"
+                android:layout_marginStart="12dp"
                 android:text="Medical Emergency"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:textStyle="bold"/>
 
@@ -57,7 +57,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="4 min ago"
-                android:textColor="#88AABB"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp"/>
         </LinearLayout>
 
@@ -73,14 +73,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="User #104"
-                android:textColor="#CCDDEE"
+                android:textColor="@color/text_primary"
                 android:textSize="13sp"/>
             <TextView
                 android:id="@+id/tvPeopleCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="2 people"
-                android:textColor="#88AABB"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:layout_marginEnd="12dp"/>
             <TextView

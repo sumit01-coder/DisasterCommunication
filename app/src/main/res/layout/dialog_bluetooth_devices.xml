@@ -7,8 +7,8 @@
     app:cardCornerRadius="24dp"
     app:cardElevation="24dp"
     app:strokeWidth="1dp"
-    app:strokeColor="#33FFFFFF"
-    app:cardBackgroundColor="#121212">
+    app:strokeColor="@color/divider"
+    app:cardBackgroundColor="@color/surface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -28,10 +28,10 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:text="Bluetooth Devices"
-                android:textSize="22sp"
+                android:text="Nearby Bluetooth Devices"
+                android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"/>
+                android:textColor="@color/text_primary"/>
                 
             <ProgressBar
                 android:layout_width="24dp"
@@ -46,8 +46,8 @@
             android:layout_marginBottom="24dp"
             app:cardCornerRadius="16dp"
             app:strokeWidth="1dp"
-            app:strokeColor="#22FFFFFF"
-            app:cardBackgroundColor="#1E1E2C">
+            app:strokeColor="@color/divider"
+            app:cardBackgroundColor="@color/surface_variant">
             
             <ScrollView
                 android:layout_width="match_parent"
@@ -60,8 +60,10 @@
                     android:id="@+id/tvDeviceList"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="#FFFFFF"
-                    android:textSize="14sp"
+                    android:text="No devices found yet.\nScanning in progress..."
+                    android:textAlignment="center"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="16sp"
                     android:lineSpacingExtra="6dp"/>
             </ScrollView>
         </com.google.android.material.card.MaterialCardView>
@@ -69,9 +71,9 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnClose"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="50dp"
             android:text="Close"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_on_primary"
             android:textStyle="bold"
             app:backgroundTint="#2962FF"
             app:cornerRadius="16dp"/>

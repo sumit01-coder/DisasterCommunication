@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0F1E"
+    android:background="@color/background"
     android:fillViewport="true">
 
     <LinearLayout
@@ -27,7 +27,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Select emergency type. Your GPS, battery and timestamp will be auto-attached."
-            android:textColor="#88AABB"
+            android:textColor="@color/text_secondary"
             android:textSize="13sp"
             android:layout_marginBottom="20dp"/>
 
@@ -53,7 +53,7 @@
                 android:layout_height="80dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
-                app:cardBackgroundColor="#1A2333"
+                app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="12dp"
                 app:strokeColor="#FF4444"
                 app:strokeWidth="1dp"
@@ -67,7 +67,7 @@
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="+" android:textSize="28sp" android:textColor="#FF4444"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Medical" android:textColor="#FFFFFF" android:textSize="13sp"/>
+                        android:text="Medical" android:textColor="@color/text_primary" android:textSize="13sp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -77,7 +77,7 @@
                 android:layout_height="80dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
-                app:cardBackgroundColor="#1A2333"
+                app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="12dp"
                 app:strokeColor="#FF8800"
                 app:strokeWidth="1dp"
@@ -91,7 +91,7 @@
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="&#128293;" android:textSize="28sp"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Fire" android:textColor="#FFFFFF" android:textSize="13sp"/>
+                        android:text="Fire" android:textColor="@color/text_primary" android:textSize="13sp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -109,7 +109,7 @@
                 android:layout_height="80dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
-                app:cardBackgroundColor="#1A2333"
+                app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="12dp"
                 app:strokeColor="#2196F3"
                 app:strokeWidth="1dp"
@@ -123,7 +123,7 @@
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="&#127754;" android:textSize="28sp"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Flood" android:textColor="#FFFFFF" android:textSize="13sp"/>
+                        android:text="Flood" android:textColor="@color/text_primary" android:textSize="13sp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -133,7 +133,7 @@
                 android:layout_height="80dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
-                app:cardBackgroundColor="#1A2333"
+                app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="12dp"
                 app:strokeColor="#FF6600"
                 app:strokeWidth="1dp"
@@ -147,7 +147,7 @@
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="&#127968;" android:textSize="28sp"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Trapped" android:textColor="#FFFFFF" android:textSize="13sp"/>
+                        android:text="Trapped" android:textColor="@color/text_primary" android:textSize="13sp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -165,7 +165,7 @@
                 android:layout_height="80dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
-                app:cardBackgroundColor="#1A2333"
+                app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="12dp"
                 app:strokeColor="#9C27B0"
                 app:strokeWidth="1dp"
@@ -179,7 +179,7 @@
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="&#128100;" android:textSize="28sp"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Missing" android:textColor="#FFFFFF" android:textSize="13sp"/>
+                        android:text="Missing" android:textColor="@color/text_primary" android:textSize="13sp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -189,7 +189,7 @@
                 android:layout_height="80dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
-                app:cardBackgroundColor="#1A2333"
+                app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="12dp"
                 app:strokeColor="#4CAF50"
                 app:strokeWidth="1dp"
@@ -203,7 +203,7 @@
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="&#127834;" android:textSize="28sp"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Food/Water" android:textColor="#FFFFFF" android:textSize="13sp"/>
+                        android:text="Food/Water" android:textColor="@color/text_primary" android:textSize="13sp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -214,7 +214,7 @@
             android:layout_width="match_parent"
             android:layout_height="64dp"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="#1A2333"
+            app:cardBackgroundColor="@color/surface"
             app:cardCornerRadius="12dp"
             app:strokeColor="#607D8B"
             app:strokeWidth="1dp"
@@ -228,7 +228,7 @@
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="&#9888;  " android:textSize="22sp" android:textColor="#607D8B"/>
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Other Emergency" android:textColor="#FFFFFF" android:textSize="14sp"/>
+                    android:text="Other Emergency" android:textColor="@color/text_primary" android:textSize="14sp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -246,7 +246,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="#1A2333"
+            app:cardBackgroundColor="@color/surface"
             app:cardCornerRadius="12dp">
             <LinearLayout
                 android:layout_width="match_parent"
@@ -268,7 +268,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="1"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="26sp"
                     android:textStyle="bold"
                     android:gravity="center"/>
@@ -289,7 +289,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="#1A2333"
+            app:cardBackgroundColor="@color/surface"
             app:cardCornerRadius="12dp"
             app:strokeColor="#FF4444"
             app:strokeWidth="1dp">
@@ -308,7 +308,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Priority Score"
-                        android:textColor="#88AABB"
+                        android:textColor="@color/text_secondary"
                         android:textSize="12sp"/>
                     <TextView
                         android:id="@+id/tvPriorityScore"
@@ -324,7 +324,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="None selected"
-                    android:textColor="#CCDDEE"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

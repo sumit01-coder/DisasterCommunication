@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0F1E"
+    android:background="@color/background"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -32,7 +32,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        app:cardBackgroundColor="#1A2333"
+        app:cardBackgroundColor="@color/surface"
         app:cardCornerRadius="16dp"
         app:strokeColor="#3B82F6"
         app:strokeWidth="1dp">
@@ -72,7 +72,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0 Devices"
-                    android:textColor="#CCDDEE"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold"/>
                 <TextView
@@ -106,7 +106,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        app:cardBackgroundColor="#1A2333"
+        app:cardBackgroundColor="@color/surface"
         app:cardCornerRadius="12dp"
         app:strokeColor="#FF8800"
         app:strokeWidth="1dp">
@@ -128,7 +128,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Calculating..."
-                android:textColor="#CCDDEE"
+                android:textColor="@color/text_primary"
                 android:textSize="13sp"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -138,7 +138,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        app:cardBackgroundColor="#1A2333"
+        app:cardBackgroundColor="@color/surface"
         app:cardCornerRadius="12dp"
         app:strokeColor="#FF4444"
         app:strokeWidth="1dp">
@@ -160,7 +160,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="No dead zones detected"
-                android:textColor="#CCDDEE"
+                android:textColor="@color/text_primary"
                 android:textSize="13sp"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -170,7 +170,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        app:cardBackgroundColor="#1A2333"
+        app:cardBackgroundColor="@color/surface"
         app:cardCornerRadius="12dp"
         app:strokeColor="#9C27B0"
         app:strokeWidth="1dp">
@@ -192,7 +192,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="No recommendations yet"
-                android:textColor="#CCDDEE"
+                android:textColor="@color/text_primary"
                 android:textSize="13sp"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -202,7 +202,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Event Log (Black Box)"
-        android:textColor="#CCDDEE"
+        android:textColor="@color/text_primary"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp"/>

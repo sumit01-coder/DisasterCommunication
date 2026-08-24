@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#121212">
+    android:background="@color/background">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
@@ -34,16 +34,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Security"
-                android:textColor="#00BFA5"
+                android:textColor="@color/primary"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp" app:strokeWidth="1dp" app:strokeColor="#22FFFFFF"
+                app:cardCornerRadius="16dp" app:strokeWidth="1dp" app:strokeColor="@color/divider"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="#1E1E2C"
+                app:cardBackgroundColor="@color/surface"
                 android:layout_marginBottom="24dp">
 
                 <LinearLayout
@@ -64,17 +64,17 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Data &amp; Backup"
-                android:textColor="#00BFA5"
+                android:text="ESP32-S3 Hardware Hub"
+                android:textColor="@color/primary"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp" app:strokeWidth="1dp" app:strokeColor="#22FFFFFF"
+                app:cardCornerRadius="16dp" app:strokeWidth="1dp" app:strokeColor="@color/divider"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="#1E1E2C"
+                app:cardBackgroundColor="@color/surface"
                 android:layout_marginBottom="24dp">
 
                 <LinearLayout
@@ -108,16 +108,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="IoT Hub Configuration (Relief Team)"
-                android:textColor="#00BFA5"
+                android:textColor="@color/primary"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp" app:strokeWidth="1dp" app:strokeColor="#22FFFFFF"
+                app:cardCornerRadius="16dp" app:strokeWidth="1dp" app:strokeColor="@color/divider"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="#1E1E2C"
+                app:cardBackgroundColor="@color/surface"
                 android:layout_marginBottom="24dp">
 
                 <LinearLayout
@@ -200,16 +200,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Software Update"
-                android:textColor="#00BFA5"
+                android:textColor="@color/primary"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp" app:strokeWidth="1dp" app:strokeColor="#22FFFFFF"
+                app:cardCornerRadius="16dp" app:strokeWidth="1dp" app:strokeColor="@color/divider"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="#1E1E2C"
+                app:cardBackgroundColor="@color/surface"
                 android:layout_marginBottom="24dp">
 
                 <LinearLayout
