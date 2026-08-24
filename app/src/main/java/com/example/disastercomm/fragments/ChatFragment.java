@@ -122,7 +122,7 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
                     if (count > 0) rvMessages.smoothScrollToPosition(count - 1);
                 }, 100);
             }
-            return insets;
+            return androidx.core.view.ViewCompat.onApplyWindowInsets(v, insets);
         });
         
         TextView tvMyChannelsHeader = view.findViewById(R.id.tvMyChannelsHeader);

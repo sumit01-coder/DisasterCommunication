@@ -181,7 +181,7 @@ public class MainActivityNew extends AppCompatActivity implements
             if (bottomNav != null) {
                 bottomNav.setVisibility(keyboardVisible ? android.view.View.GONE : android.view.View.VISIBLE);
             }
-            return insets;
+            return androidx.core.view.ViewCompat.onApplyWindowInsets(v, insets);
         });
 
         // ✅ Three-tier username persistence to ensure it NEVER changes:
