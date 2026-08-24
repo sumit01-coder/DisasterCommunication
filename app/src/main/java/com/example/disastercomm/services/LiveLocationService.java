@@ -40,9 +40,9 @@ public class LiveLocationService extends Service {
     private static final String TAG = "LiveLocationService";
     private static final int NOTIFICATION_ID = 1001;
     private static final String CHANNEL_ID = "live_location_channel";
-    // Tuned for Battery Efficiency in Disaster (Adaptive)
-    private static final long LOCATION_UPDATE_INTERVAL = 30000; // 30 seconds
-    private static final long LOCATION_FASTEST_INTERVAL = 15000; // 15 seconds
+    // Tuned for High Accuracy Live Tracking
+    private static final long LOCATION_UPDATE_INTERVAL = 5000; // 5 seconds
+    private static final long LOCATION_FASTEST_INTERVAL = 2000; // 2 seconds
 
     public static final String ACTION_START_SHARING = "com.example.disastercomm.START_SHARING";
     public static final String ACTION_STOP_SHARING = "com.example.disastercomm.STOP_SHARING";
@@ -169,7 +169,6 @@ public class LiveLocationService extends Service {
                 Priority.PRIORITY_HIGH_ACCURACY,
                 LOCATION_UPDATE_INTERVAL)
                 .setMinUpdateIntervalMillis(LOCATION_FASTEST_INTERVAL)
-                .setMinUpdateDistanceMeters(20f) // ✅ Only wake GPS if user moves > 20 meters
                 .build();
 
         locationCallback = new LocationCallback() {
