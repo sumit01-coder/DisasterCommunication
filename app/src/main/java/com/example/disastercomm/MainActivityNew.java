@@ -173,6 +173,17 @@ public class MainActivityNew extends AppCompatActivity implements
         Log.d("DisasterApp", "═══════════════════════════════════════════════════════");
         setContentView(R.layout.activity_main_new);
 
+        // ✅ Auto-hide bottom nav when soft keyboard is visible (so chat input is never covered)
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(
+                findViewById(android.R.id.content), (v, insets) -> {
+            boolean keyboardVisible = insets.isVisible(
+                    androidx.core.view.WindowInsetsCompat.Type.ime());
+            if (bottomNav != null) {
+                bottomNav.setVisibility(keyboardVisible ? android.view.View.GONE : android.view.View.VISIBLE);
+            }
+            return insets;
+        });
+
         // ✅ Three-tier username persistence to ensure it NEVER changes:
         // 1. Saved instance state (activity recreation)
         // 2. SharedPreferences (app restart)
