@@ -63,6 +63,23 @@ public class MainActivity extends AppCompatActivity
     // Set to avoid spamming notifications for the same session
     private final java.util.Set<String> notifiedLiveSharers = new java.util.HashSet<>();
 
+    private final android.content.BroadcastReceiver batteryReceiver = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, android.content.Intent intent) {
+            if (android.content.Intent.ACTION_BATTERY_CHANGED.equals(intent.getAction())) {
+                int level = intent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
+                int scale = intent.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
+                float batteryPct = level * 100 / (float) scale;
+                
+                if (batteryPct <= 15.0f && meshNetworkManager != null) {
+                    Log.w("MainActivity", "🔋 CRITICAL BATTERY: Enabling Extreme Battery Saver Mode.");
+                    meshNetworkManager.setLowPowerMode(true);
+                    Toast.makeText(context, "Battery critical! Entering Mesh Survival Mode.", Toast.LENGTH_LONG).show();
+                }
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -173,6 +190,10 @@ public class MainActivity extends AppCompatActivity
         // Listen for internal map intents to broadcast
         android.content.IntentFilter filter = new android.content.IntentFilter("com.example.disastercomm.SEND_MESH_MESSAGE");
         androidx.core.content.ContextCompat.registerReceiver(this, meshBroadcastReceiver, filter, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
+
+        // Register Battery Monitor for Extreme Survival Mode
+        android.content.IntentFilter batteryFilter = new android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED);
+        registerReceiver(batteryReceiver, batteryFilter);
     } // End of onCreate
 
     private final android.content.BroadcastReceiver meshBroadcastReceiver = new android.content.BroadcastReceiver() {
@@ -749,6 +770,11 @@ public class MainActivity extends AppCompatActivity
         }
         try {
             unregisterReceiver(meshBroadcastReceiver);
+        } catch (IllegalArgumentException e) {
+            // Receiver not registered
+        }
+        try {
+            unregisterReceiver(batteryReceiver);
         } catch (IllegalArgumentException e) {
             // Receiver not registered
         }

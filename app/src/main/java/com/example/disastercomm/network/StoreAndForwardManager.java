@@ -125,6 +125,23 @@ public class StoreAndForwardManager {
                     } catch (Exception e) {
                         Log.e(TAG, "❌ Failed to send message: " + e.getMessage());
                     }
+                } else if (newPeerId != null && queued.hopCount < queued.maxHops) {
+                    // Epidemic Routing: Dump to new peer to act as a Data Mule
+                    try {
+                        String json = new String(queued.payload, StandardCharsets.UTF_8);
+                        Message message = gson.fromJson(json, Message.class);
+                        message.hopCount++; // Increment hop for the mule
+
+                        callback.forwardMessage(message, newPeerId);
+                        // Do NOT mark as delivered so we can give it to other mules later,
+                        // but increment retry count to eventually prevent infinite queuing.
+                        queueDao.incrementRetryCount(queued.messageId);
+                        forwarded++;
+
+                        Log.d(TAG, "🐴 Epidemic Relay: Gave message " + queued.messageId + " to mule " + newPeerId.substring(0, 8));
+                    } catch (Exception e) {
+                        Log.e(TAG, "❌ Failed to send epidemic message: " + e.getMessage());
+                    }
                 }
             }
 

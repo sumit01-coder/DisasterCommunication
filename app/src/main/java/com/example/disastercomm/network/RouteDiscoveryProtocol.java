@@ -93,7 +93,7 @@ public class RouteDiscoveryProtocol {
         rreq.originatorId = myDeviceId;
         rreq.content = destinationId; // Target destination
         rreq.hopCount = 0;
-        rreq.maxHops = 10;
+        rreq.maxHops = 15;
         rreq.routeSequence = requestSequence;
         rreq.routePath = myDeviceId;
         rreq.timestamp = System.currentTimeMillis();

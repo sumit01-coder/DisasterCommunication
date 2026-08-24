@@ -42,7 +42,7 @@
                 android:minHeight="?attr/actionBarSize"
                 android:paddingTop="32dp"
                 android:background="@color/primary"
-                android:elevation="4dp"
+                android:elevation="0dp"
                 app:titleTextAppearance="@style/TextAppearance.AppCompat.Widget.ActionBar.Title"
                 app:titleTextColor="@color/white">
 
@@ -64,25 +64,37 @@
                         android:id="@+id/layoutTitle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
+                        android:orientation="horizontal"
                         android:layout_marginStart="16dp" 
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toStartOf="@+id/guidelineCenter"
-                        android:layout_marginEnd="16dp">
+                        android:gravity="center_vertical">
 
-                        <TextView
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@drawable/ic_shield"
+                            android:layout_marginEnd="12dp"
+                            app:tint="@color/white"/>
+
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="DisasterComm"
-                            android:textColor="@color/white"
-                            android:textSize="20sp"
-                            android:textStyle="bold"
-                            android:includeFontPadding="false"
-                            android:letterSpacing="0.02"
-                            android:ellipsize="end"
-                            android:maxLines="1"/>
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="DisasterCom"
+                                android:textColor="@color/white"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:includeFontPadding="false"
+                                android:letterSpacing="0.02"
+                                android:ellipsize="end"
+                                android:maxLines="1"/>
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -94,6 +106,7 @@
                             android:layout_marginTop="-2dp"
                             android:ellipsize="end"
                             android:maxLines="1"/>
+                        </LinearLayout>
                     </LinearLayout>
 
                     <!-- Update Notification Bell -->

@@ -238,6 +238,13 @@ public class PacketHandler {
     }
 
     public void sendMessage(Message message) {
+        // Adaptive TTL calculation
+        if (meshNetworkManager != null) {
+            int density = meshNetworkManager.getConnectedEndpoints().size();
+            message.maxHops = Message.calculateAdaptiveMaxHops(density);
+            Log.d(TAG, "🌐 Adaptive TTL: Network density=" + density + ", Setting maxHops=" + message.maxHops);
+        }
+
         if (db != null && (message.type == Message.Type.TEXT || message.type == Message.Type.SOS)) {
             executor.execute(() -> {
                 try {

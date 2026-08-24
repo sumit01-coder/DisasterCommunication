@@ -133,12 +133,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     static class SentMessageHolder extends RecyclerView.ViewHolder {
         TextView tvMessage, tvTimestamp;
         android.widget.ImageView ivStatus;
+        View messageBubble;
 
         SentMessageHolder(View itemView) {
             super(itemView);
             tvMessage = itemView.findViewById(R.id.tvMessage);
             tvTimestamp = itemView.findViewById(R.id.tvTimestamp);
             ivStatus = itemView.findViewById(R.id.ivStatus);
+            messageBubble = itemView.findViewById(R.id.cvMessageBubble);
         }
 
         void bind(Message message, SimpleDateFormat timeFormat, OnLocationClickListener locationClickListener) {
@@ -146,13 +148,19 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvTimestamp.setText(timeFormat.format(new Date(message.timestamp)));
 
             // Reset style
-            tvMessage.setTextColor(itemView.getResources().getColor(R.color.text_primary, null));
+            tvMessage.setTextColor(itemView.getResources().getColor(R.color.chat_text_sent, null));
             tvMessage.setTypeface(null, android.graphics.Typeface.NORMAL);
+            if (messageBubble != null) {
+                messageBubble.setBackgroundResource(R.drawable.bg_chat_sent_new);
+            }
 
             // Highlight SOS messages
             if (message.type == Message.Type.SOS) {
-                tvMessage.setTextColor(0xFFFF5722); // Red
+                tvMessage.setTextColor(itemView.getResources().getColor(R.color.sos_bubble_text, null));
                 tvMessage.setTypeface(null, android.graphics.Typeface.BOLD);
+                if (messageBubble != null) {
+                    messageBubble.setBackgroundResource(R.drawable.bg_sos_message);
+                }
 
                 // Allow clicking SOS location messages too
                 if (message.content.contains("Location:")) {
@@ -215,12 +223,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     static class ReceivedMessageHolder extends RecyclerView.ViewHolder {
         TextView tvSenderName, tvMessage, tvTimestamp;
+        View messageBubble;
 
         ReceivedMessageHolder(View itemView) {
             super(itemView);
             tvSenderName = itemView.findViewById(R.id.tvSenderName);
             tvMessage = itemView.findViewById(R.id.tvMessage);
             tvTimestamp = itemView.findViewById(R.id.tvTimestamp);
+            messageBubble = itemView.findViewById(R.id.cvMessageBubble);
         }
 
         void bind(Message message, SimpleDateFormat timeFormat, OnLocationClickListener locationClickListener) {
@@ -238,15 +248,21 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvTimestamp.setText(timeFormat.format(new Date(message.timestamp)));
 
             // Reset style
-            tvMessage.setTextColor(itemView.getResources().getColor(R.color.text_primary, null));
+            tvMessage.setTextColor(itemView.getResources().getColor(R.color.chat_text_received, null));
             tvMessage.setTypeface(null, android.graphics.Typeface.NORMAL);
+            if (messageBubble != null) {
+                messageBubble.setBackgroundResource(R.drawable.bg_chat_received_new);
+            }
 
             // Highlight SOS messages
             if (message.type == Message.Type.SOS) {
-                tvMessage.setTextColor(0xFFFF5722); // Red
+                tvMessage.setTextColor(itemView.getResources().getColor(R.color.sos_bubble_text, null));
                 tvMessage.setTypeface(null, android.graphics.Typeface.BOLD);
+                if (messageBubble != null) {
+                    messageBubble.setBackgroundResource(R.drawable.bg_sos_message);
+                }
                 if (tvSenderName != null) {
-                    tvSenderName.setTextColor(0xFFFF5722);
+                    tvSenderName.setTextColor(itemView.getResources().getColor(R.color.sos_bubble_text, null));
                     tvSenderName.setText("🚨 SOS from " + displayName);
                 }
 

@@ -1,9 +1,9 @@
 <resources>
-    <!-- Brand Colors (Accessible Emergency Theme - Blue & Green) -->
-    <color name="primary">#2563EB</color>           <!-- Messenger Blue -->
-    <color name="primary_variant">#1D4ED8</color>   <!-- Darker Blue -->
-    <color name="secondary">#6366F1</color>         <!-- Indigo -->
-    <color name="secondary_variant">#4F46E5</color> <!-- Darker Indigo -->
+    <!-- Brand Colors (Accessible Emergency Theme - Vibrant Blue) -->
+    <color name="primary">#0047FF</color>           <!-- Vibrant Blue -->
+    <color name="primary_variant">#092FA4</color>   <!-- Dark Blue (for Broadcast Card) -->
+    <color name="secondary">#0047FF</color>         
+    <color name="secondary_variant">#092FA4</color> 
     <color name="accent">#059669</color>            <!-- Online Green -->
 
     <!-- Semantic Colors -->
@@ -13,16 +13,16 @@
     <color name="info">#2563EB</color>
 
     <!-- Backgrounds & Surfaces -->
-    <color name="background">#FFFFFF</color>        <!-- Pure White -->
+    <color name="background">#F8F9FA</color>        <!-- Light Grey Background -->
     <color name="surface">#FFFFFF</color>           <!-- Pure White Cards -->
-    <color name="surface_variant">#F1F5FD</color>   <!-- Muted background -->
+    <color name="surface_variant">#F4F7FF</color>   <!-- Muted background -->
     
     <!-- Material 3 Surface Tints -->
     <color name="surface_tint">#FFFFFF</color>
-    <color name="surface_dim">#E4ECFC</color>       <!-- Border color from design system -->
+    <color name="surface_dim">#EAF0FF</color>       <!-- Border color from design system -->
     <color name="surface_bright">#FFFFFF</color>
     <color name="surface_container">#FFFFFF</color>
-    <color name="surface_container_high">#F1F5FD</color>
+    <color name="surface_container_high">#F4F7FF</color>
 
     <!-- Text -->
     <color name="text_primary">#0F172A</color>
@@ -32,12 +32,15 @@
     <color name="text_disabled">#CBD5E1</color>
 
     <!-- Chat Specific -->
-    <color name="chat_bubble_sent">#2563EB</color>
+    <color name="chat_bubble_sent">#0047FF</color>
     <color name="chat_bubble_received">#FFFFFF</color>
     <color name="chat_text_sent">#FFFFFF</color>
     <color name="chat_text_received">#0F172A</color>
-    <color name="chat_meta_sent">#DBEAFE</color>
+    <color name="chat_meta_sent">#A0C0FF</color>
     <color name="chat_meta_received">#64748B</color>
+
+    <color name="sos_bubble_bg">#FFEEEE</color>
+    <color name="sos_bubble_text">#E53935</color>
 
     <!-- Connectivity Status -->
     <color name="status_connected">#059669</color>

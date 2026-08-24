@@ -136,70 +136,158 @@
         android:visibility="gone"
         android:background="@color/surface">
 
-        <!-- Custom Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:background="@color/primary"
-            android:padding="16dp"
-            android:gravity="center_vertical"
-            android:elevation="4dp">
+            android:paddingBottom="24dp">
             
-            <ImageView
-                android:id="@+id/btnBackToChannels"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@android:drawable/ic_media_previous"
-                app:tint="@color/white"
-                android:clickable="true"
-                android:focusable="true"/>
-                
+            <!-- Toolbar Area with Back Button -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="16dp"
-                android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Global Broadcast" android:textColor="@color/white" android:textStyle="bold" android:textSize="18sp"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="95% Signal Strength" android:textColor="#FEE2E2" android:textSize="12sp"/>
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="16dp"
+                android:gravity="center_vertical">
+                
+                <ImageView
+                    android:id="@+id/btnBackToChannels"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/ic_media_previous"
+                    app:tint="@color/white"
+                    android:clickable="true"
+                    android:focusable="true"/>
             </LinearLayout>
             
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@android:drawable/ic_menu_more"
-                app:tint="@color/white"/>
+            <!-- Global Broadcast Dark Blue Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                app:cardBackgroundColor="@color/primary_variant"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+                    
+                    <!-- Megaphone Icon in White Circle -->
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/circle_background"
+                        android:backgroundTint="@color/white">
+                        <ImageView 
+                            android:layout_width="24dp" 
+                            android:layout_height="24dp" 
+                            android:src="@android:drawable/ic_btn_speak_now" 
+                            app:tint="@color/primary" 
+                            android:layout_gravity="center"/>
+                    </FrameLayout>
+                    
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:orientation="vertical">
+                        <TextView 
+                            android:layout_width="wrap_content" 
+                            android:layout_height="wrap_content" 
+                            android:text="Global Broadcast" 
+                            android:textColor="@color/white" 
+                            android:textStyle="bold" 
+                            android:textSize="18sp"/>
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <TextView 
+                                android:layout_width="wrap_content" 
+                                android:layout_height="wrap_content" 
+                                android:text="95% Signal Strength" 
+                                android:textColor="#DBEAFE" 
+                                android:textSize="13sp"/>
+                            <View 
+                                android:layout_width="16dp" 
+                                android:layout_height="16dp"
+                                android:layout_marginStart="8dp"
+                                android:background="@android:color/transparent"
+                                android:visibility="invisible"/> <!-- Placeholder for signal bars -->
+                        </LinearLayout>
+                    </LinearLayout>
+                    
+                    <!-- Chevron -->
+                    <FrameLayout
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/circle_background"
+                        android:backgroundTint="#20FFFFFF">
+                        <ImageView 
+                            android:layout_width="16dp" 
+                            android:layout_height="16dp" 
+                            android:src="@android:drawable/ic_media_play" 
+                            app:tint="@color/white"
+                            android:layout_gravity="center"/>
+                    </FrameLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- Informational Header Card -->
+        <!-- Informational Header Card (Overlapping) -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/surface_dim"
-            app:cardBackgroundColor="@color/surface_variant">
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="-20dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/white">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp"
+                android:padding="20dp"
                 android:gravity="center">
                 
                 <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
                     android:background="@drawable/circle_background"
-                    android:backgroundTint="#FEE2E2"
-                    android:layout_marginBottom="8dp">
-                    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_wifi" app:tint="@color/primary" android:layout_gravity="center"/>
+                    android:backgroundTint="#F4F7FF"
+                    android:layout_marginBottom="12dp">
+                    <ImageView 
+                        android:layout_width="28dp" 
+                        android:layout_height="28dp" 
+                        android:src="@drawable/ic_wifi" 
+                        app:tint="@color/primary" 
+                        android:layout_gravity="center"/>
                 </FrameLayout>
                 
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Global Broadcast Channel" android:textStyle="bold" android:textColor="@color/text_primary" android:textSize="16sp"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Official channel for important updates\nand emergency information." android:textColor="@color/text_secondary" android:textSize="12sp" android:textAlignment="center" android:layout_marginTop="4dp"/>
+                <TextView 
+                    android:layout_width="wrap_content" 
+                    android:layout_height="wrap_content" 
+                    android:text="Global Broadcast Channel" 
+                    android:textStyle="bold" 
+                    android:textColor="@color/text_primary" 
+                    android:textSize="16sp"/>
+                <TextView 
+                    android:layout_width="wrap_content" 
+                    android:layout_height="wrap_content" 
+                    android:text="Official channel for important updates\nand emergency information." 
+                    android:textColor="@color/text_secondary" 
+                    android:textSize="14sp" 
+                    android:textAlignment="center" 
+                    android:layout_marginTop="8dp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -217,58 +305,86 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="12dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="12dp"
             android:background="@color/surface"
-            android:elevation="8dp"
             android:gravity="center_vertical"
             android:baselineAligned="false">
 
-            <EditText
-                android:id="@+id/etMessage"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="Type a message..."
-                android:background="@drawable/bg_input_field"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
-                android:maxLines="4"
-                android:textSize="15sp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_tertiary"/>
+                android:orientation="horizontal"
+                android:background="@drawable/bg_input_field_new"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="12dp">
+                
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/ic_menu_gallery"
+                    app:tint="@color/text_secondary"/>
+                    
+                <EditText
+                    android:id="@+id/etMessage"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Broadcast to everyone..."
+                    android:background="@null"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="12dp"
+                    android:maxLines="4"
+                    android:textSize="15sp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_tertiary"/>
+                    
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/ic_menu_help"
+                    app:tint="@color/text_secondary"/>
+            </LinearLayout>
 
             <ImageButton
                 android:id="@+id/btnSos"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_marginStart="8dp"
-                android:src="@drawable/ic_hospital_new"
+                android:src="@android:drawable/ic_input_add"
                 android:background="@drawable/circle_background"
-                android:backgroundTint="#FEE2E2"
+                android:backgroundTint="#FEF2F2"
                 app:tint="@color/error"
-                android:contentDescription="Send Global SOS"
-                android:elevation="2dp"/>
+                android:contentDescription="Add Attachment"/>
 
             <ImageButton
                 android:id="@+id/btnLocation"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_marginStart="8dp"
-                android:src="@drawable/ic_gps_accuracy"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_mylocation"
+                android:background="@drawable/circle_background"
+                android:backgroundTint="#F8F9FA"
                 app:tint="@color/text_secondary"
                 android:contentDescription="Share Location"/>
 
             <FrameLayout
                 android:id="@+id/btnSend"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_marginStart="8dp"
                 android:background="@drawable/circle_background"
                 android:backgroundTint="@color/primary"
                 android:clickable="true"
                 android:focusable="true">
-                <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_send" app:tint="@color/white" android:layout_gravity="center" android:layout_marginStart="2dp"/>
+                <ImageView 
+                    android:layout_width="20dp" 
+                    android:layout_height="20dp" 
+                    android:src="@drawable/ic_send" 
+                    app:tint="@color/white" 
+                    android:layout_gravity="center" 
+                    android:layout_marginStart="2dp"/>
             </FrameLayout>
         </LinearLayout>
     </LinearLayout>

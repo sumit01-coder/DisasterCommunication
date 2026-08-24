@@ -38,7 +38,7 @@ public class MessageQueueEntity {
         this.expiryTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000); // 24 hours
         this.retryCount = 0;
         this.hopCount = 0;
-        this.maxHops = 10;
+        this.maxHops = 15;
         this.delivered = false;
         this.forwardingStrategy = "RELAY";
     }

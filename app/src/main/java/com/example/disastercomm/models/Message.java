@@ -68,7 +68,7 @@ public class Message {
 
     // ===== MESH ROUTING FIELDS =====
     public int hopCount = 0; 
-    public int maxHops = 10; 
+    public int maxHops = 15; // Default, can be overridden by Adaptive TTL
     public String routePath = ""; 
     public String nextHop = null; 
     public String originatorId = null; 
@@ -92,7 +92,7 @@ public class Message {
         this.content = content;
         this.timestamp = System.currentTimeMillis();
         this.ttl = 10;
-        this.maxHops = 10;
+        this.maxHops = 15;
         this.hopCount = 0;
         this.routePath = senderId;
         this.status = Status.SENDING;
@@ -114,6 +114,15 @@ public class Message {
         receipt.receiptFor = messageId;
         receipt.ttl = 5;
         return receipt;
+    }
+
+    /**
+     * Adaptive TTL: Calculate maxHops based on network density.
+     * Sparse network = higher hops to reach distant islands.
+     * Dense network = lower hops to prevent broadcast storms.
+     */
+    public static int calculateAdaptiveMaxHops(int connectedPeersCount) {
+        return connectedPeersCount < 3 ? 25 : 15;
     }
 
     public static class MessageTypeConverter {
