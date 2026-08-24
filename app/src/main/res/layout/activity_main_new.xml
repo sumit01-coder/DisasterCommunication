@@ -12,18 +12,21 @@
         android:layout_height="match_parent"
         android:background="@color/background_light">
 
-        <!-- Docked Bottom Navigation -->
+        <!-- Docked Bottom Navigation (Floating) -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:background="@color/white"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_bottom_nav_floating"
             android:elevation="16dp"
+            app:itemBackground="@drawable/nav_item_underline"
             app:itemIconTint="@color/nav_item_color_state"
             app:itemTextColor="@color/nav_item_color_state"
-            app:itemActiveIndicatorStyle="@style/App.BottomNav.ActiveIndicator"
-            app:labelVisibilityMode="selected"
+            app:itemActiveIndicatorStyle="@null"
+            app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_nav_menu" />
 
         <!-- Main content area -->

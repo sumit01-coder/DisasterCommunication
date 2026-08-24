@@ -915,9 +915,6 @@ public class MainActivityNew extends AppCompatActivity implements
             } else if (itemId == R.id.nav_network) {
                 viewPager.setCurrentItem(4, true);
                 return true;
-            } else if (itemId == R.id.nav_rescue) {
-                viewPager.setCurrentItem(5, true);
-                return true;
             }
             return false;
         });
@@ -932,7 +929,6 @@ public class MainActivityNew extends AppCompatActivity implements
                     case 2: bottomNav.setSelectedItemId(R.id.nav_members); break;
                     case 3: bottomNav.setSelectedItemId(R.id.nav_sos); break;
                     case 4: bottomNav.setSelectedItemId(R.id.nav_network); break;
-                    case 5: bottomNav.setSelectedItemId(R.id.nav_rescue); break;
                 }
             }
         });

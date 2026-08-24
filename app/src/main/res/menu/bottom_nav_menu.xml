@@ -7,21 +7,17 @@
     <item
         android:id="@+id/nav_chat"
         android:icon="@drawable/ic_chat"
-        android:title="Chat"/>
+        android:title="Messages"/>
     <item
         android:id="@+id/nav_members"
         android:icon="@drawable/ic_members"
-        android:title="Members"/>
+        android:title="Team"/>
     <item
         android:id="@+id/nav_sos"
-        android:icon="@drawable/ic_sos"
-        android:title="SOS"/>
+        android:icon="@drawable/ic_shield"
+        android:title="Safety"/>
     <item
         android:id="@+id/nav_network"
-        android:icon="@drawable/ic_nearby"
-        android:title="Network"/>
-    <item
-        android:id="@+id/nav_rescue"
-        android:icon="@drawable/ic_role_rescue"
-        android:title="Rescue"/>
+        android:icon="@drawable/ic_menu"
+        android:title="More"/>
 </menu>
