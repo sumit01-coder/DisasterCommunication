@@ -860,13 +860,18 @@ public class MainActivityNew extends AppCompatActivity implements
             Log.d("DisasterApp", "📑 Creating ViewPagerAdapter");
             pagerAdapter = new ViewPagerAdapter(this, packetHandler, username);
             viewPager.setAdapter(pagerAdapter);
-            viewPager.setOffscreenPageLimit(3);
+            viewPager.setOffscreenPageLimit(5);
             Log.d("DisasterApp", "✅ ViewPager setup complete");
 
             // Store fragment references for data passing
             sosFragment = pagerAdapter.getSOSFragment();
             networkDashboardFragment = pagerAdapter.getNetworkDashboardFragment();
             rescueDashboardFragment = pagerAdapter.getRescueDashboardFragment();
+
+            // Restore MembersFragment scan callback
+            if (pagerAdapter.getMembersFragment() != null) {
+                pagerAdapter.getMembersFragment().setConnectionListener(() -> triggerManualDeviceScan());
+            }
         }
     }
 
@@ -886,14 +891,17 @@ public class MainActivityNew extends AppCompatActivity implements
             } else if (itemId == R.id.nav_chat) {
                 viewPager.setCurrentItem(1, true);
                 return true;
-            } else if (itemId == R.id.nav_sos) {
+            } else if (itemId == R.id.nav_members) {
                 viewPager.setCurrentItem(2, true);
                 return true;
-            } else if (itemId == R.id.nav_network) {
+            } else if (itemId == R.id.nav_sos) {
                 viewPager.setCurrentItem(3, true);
                 return true;
-            } else if (itemId == R.id.nav_rescue) {
+            } else if (itemId == R.id.nav_network) {
                 viewPager.setCurrentItem(4, true);
+                return true;
+            } else if (itemId == R.id.nav_rescue) {
+                viewPager.setCurrentItem(5, true);
                 return true;
             }
             return false;
@@ -906,9 +914,10 @@ public class MainActivityNew extends AppCompatActivity implements
                 switch (position) {
                     case 0: bottomNav.setSelectedItemId(R.id.nav_map); break;
                     case 1: bottomNav.setSelectedItemId(R.id.nav_chat); break;
-                    case 2: bottomNav.setSelectedItemId(R.id.nav_sos); break;
-                    case 3: bottomNav.setSelectedItemId(R.id.nav_network); break;
-                    case 4: bottomNav.setSelectedItemId(R.id.nav_rescue); break;
+                    case 2: bottomNav.setSelectedItemId(R.id.nav_members); break;
+                    case 3: bottomNav.setSelectedItemId(R.id.nav_sos); break;
+                    case 4: bottomNav.setSelectedItemId(R.id.nav_network); break;
+                    case 5: bottomNav.setSelectedItemId(R.id.nav_rescue); break;
                 }
             }
         });
