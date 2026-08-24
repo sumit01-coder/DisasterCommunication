@@ -18,6 +18,10 @@ import com.example.disastercomm.intelligence.NetworkEventBlackBox;
 import com.example.disastercomm.network.MeshRoutingTable;
 import com.example.disastercomm.network.NetworkHealthMonitor;
 
+import android.content.Context;
+import android.net.wifi.WifiManager;
+import android.net.wifi.WifiInfo;
+
 import java.util.List;
 import java.util.Map;
 
@@ -84,7 +88,24 @@ public class NetworkDashboardFragment extends Fragment {
             tvDeviceCount.setText(stats.neighborCount + " Devices");
             tvRouteCount.setText(stats.routeCount + " Routes");
             tvRelayCount.setText(stats.relayCount + " Relays");
-            tvHardwareNodes.setText(stats.hardwareNodeCount + " Hardware Hubs");
+            
+            int hwCount = stats.hardwareNodeCount;
+            try {
+                WifiManager wifiManager = (WifiManager) requireContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                if (wifiManager != null) {
+                    WifiInfo info = wifiManager.getConnectionInfo();
+                    if (info != null && info.getSSID() != null) {
+                        String ssid = info.getSSID().toUpperCase().replace("\"", "");
+                        if (ssid.contains("ESP32") || ssid.contains("XIAO") || ssid.contains("LORA") || ssid.contains("HELTEC") || ssid.contains("LILYGO")) {
+                            hwCount += 1; // Increment for the Wi-Fi Router Hub
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore permissions/wifi errors on older devices
+            }
+            
+            tvHardwareNodes.setText(hwCount + " Hardware Hubs");
 
             // Critical nodes
             List<String> critical = CriticalNodeDetector.detectCriticalNodes(routingTable.getNeighbors(), routingTable.getRoutes());

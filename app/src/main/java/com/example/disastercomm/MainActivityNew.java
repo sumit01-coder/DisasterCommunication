@@ -682,47 +682,76 @@ public class MainActivityNew extends AppCompatActivity implements
     private void showNetworkStatusDialog() {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_network_status, null);
         TextView tvAvailableNetworks = dialogView.findViewById(R.id.tvAvailableNetworks);
-        TextView tvInternetStatus = dialogView.findViewById(R.id.tvInternetStatus);
-        View viewInternetStatus = dialogView.findViewById(R.id.viewInternetStatus);
+        TextView tvInternetStatus = dialogView.findViewById(R.id.tvInternetConnection);
+        com.google.android.material.card.MaterialCardView viewInternetStatus = dialogView.findViewById(R.id.statusIndicator);
 
         // Update network info
         String networks = "Wi-Fi Direct: Active\nBluetooth: Active";
         if (networkStateMonitor != null && networkStateMonitor.hasAnyConnectivity()) {
             networks += "\nInternet: Available";
         }
+        
+        // Check for ESP32 connection
+        boolean isHardwareHubConnected = false;
+        try {
+            android.net.wifi.WifiManager wifiManager = (android.net.wifi.WifiManager) getApplicationContext().getSystemService(android.content.Context.WIFI_SERVICE);
+            if (wifiManager != null && wifiManager.isWifiEnabled()) {
+                android.net.wifi.WifiInfo info = wifiManager.getConnectionInfo();
+                if (info != null && info.getNetworkId() != -1 && info.getSSID() != null) {
+                    String ssid = info.getSSID().toUpperCase().replace("\"", "");
+                    if (ssid.contains("ESP32") || ssid.contains("XIAO") || ssid.contains("LORA") || ssid.contains("HELTEC") || ssid.contains("LILYGO")) {
+                        isHardwareHubConnected = true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        networks += "\nHardware Hub (ESP32): " + (isHardwareHubConnected ? "Connected" : "Not Found");
+        
         tvAvailableNetworks.setText(networks);
 
         boolean hasInternet = networkStateMonitor != null && networkStateMonitor.isConnectedToInternet();
         tvInternetStatus.setText(hasInternet ? "Connected" : "Not Available");
-        viewInternetStatus.setBackgroundTintList(android.content.res.ColorStateList
-                .valueOf(getResources().getColor(hasInternet ? R.color.connected_green : R.color.signal_weak, null)));
+        tvInternetStatus.setTextColor(android.graphics.Color.parseColor(hasInternet ? "#00BFA5" : "#FF1744"));
+        viewInternetStatus.setCardBackgroundColor(android.graphics.Color.parseColor(hasInternet ? "#00BFA5" : "#FF1744"));
 
-        new AlertDialog.Builder(this).setView(dialogView).setPositiveButton("Close", null).show();
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+                
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+        dialogView.findViewById(R.id.btnClose).setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 
     private void showBluetoothDevicesDialog() {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_bluetooth_devices, null);
-        TextView tvEmpty = dialogView.findViewById(R.id.tvEmptyBluetooth);
+        TextView tvDeviceList = dialogView.findViewById(R.id.tvDeviceList);
 
-        if (bluetoothDeviceMap.isEmpty()) {
-            tvEmpty.setVisibility(View.VISIBLE);
-        } else {
-            tvEmpty.setVisibility(View.GONE);
-            // TODO: Show device list
-        }
-
-        String message = "Discovered Bluetooth Devices:\n\n";
+        String message = "";
         if (bluetoothDeviceMap.isEmpty()) {
             message += "No devices found.\n";
             message += "\nMake sure Bluetooth is enabled and nearby devices are discoverable.";
         } else {
             for (Map.Entry<String, String> entry : bluetoothDeviceMap.entrySet()) {
-                message += "📲 " + entry.getValue() + "\n";
+                message += "• " + entry.getValue() + "\n";
                 message += "   Address: " + entry.getKey() + "\n\n";
             }
         }
+        tvDeviceList.setText(message);
 
-        new AlertDialog.Builder(this).setView(dialogView).setMessage(message).setPositiveButton("Close", null).show();
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+                
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+        dialogView.findViewById(R.id.btnClose).setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 
     private void showNearbyDevicesDialog() {
@@ -799,19 +828,26 @@ public class MainActivityNew extends AppCompatActivity implements
             message.append("Last updated: ").append(getCurrentTime());
         }
 
-        // Create dialog with refresh button
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("📍 Nearby Devices");
-        builder.setMessage(message.toString());
-        builder.setPositiveButton("Close", null);
-        builder.setNeutralButton("🔄 Refresh", (dialog, which) -> {
-            // Trigger manual scan
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_nearby_devices, null);
+        TextView tvDeviceList = dialogView.findViewById(R.id.tvDeviceList);
+        tvDeviceList.setText(message.toString());
+
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+                
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+        
+        dialogView.findViewById(R.id.btnClose).setOnClickListener(v -> dialog.dismiss());
+        dialogView.findViewById(R.id.btnRefresh).setOnClickListener(v -> {
             triggerManualDeviceScan();
-            // Show dialog again after short delay
+            dialog.dismiss();
             new android.os.Handler().postDelayed(this::showNearbyDevicesDialog, 1000);
         });
 
-        builder.show();
+        dialog.show();
     }
 
     /**
@@ -842,44 +878,15 @@ public class MainActivityNew extends AppCompatActivity implements
     }
 
     private void showAboutDialog() {
-        String version = "Unknown";
-        try {
-            version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
+        android.view.View view = getLayoutInflater().inflate(R.layout.dialog_about, null);
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(view)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
-
-        String aboutText = "DisasterComm v" + version + "\n" + "Emergency Network\n\n"
-                + "A mesh networking app for disaster scenarios.\n\n" + "Features:\n" + "• Wi-Fi Direct Mesh\n"
-                + "• Bluetooth Connectivity\n" + "• Emergency SOS\n" + "• Real-time Messaging\n"
-                + "• Location Sharing\n\n";
-
-        // Create dialog with mutable message
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("ℹ️ About DisasterComm")
-                .setMessage(aboutText + "Latest Version: Checking...")
-                .setPositiveButton("Close", null)
-                .show();
-
-        String finalVersion = version;
-        // Fetch latest version
-        new com.example.disastercomm.utils.UpdateManager(this)
-                .fetchLatestVersion(new com.example.disastercomm.utils.UpdateManager.VersionCallback() {
-                    @Override
-                    public void onVersionFetched(String latestVersion, boolean isNewer) {
-                        if (dialog.isShowing()) {
-                            String status = isNewer ? " (Update Available!)" : " (Up to date)";
-                            dialog.setMessage(aboutText + "Latest Version: " + latestVersion + status);
-                        }
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        if (dialog.isShowing()) {
-                            dialog.setMessage(aboutText + "Latest Version: Unknown (Offline)");
-                        }
-                    }
-                });
+        view.findViewById(R.id.btnClose).setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 
     private void setupViewPagerAdapter() {
