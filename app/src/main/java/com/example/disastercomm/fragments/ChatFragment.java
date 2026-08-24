@@ -110,6 +110,20 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         layoutChannelDetail = view.findViewById(R.id.layoutChannelDetail);
         cardGlobalBroadcast = view.findViewById(R.id.cardGlobalBroadcast);
         btnBackToChannels = view.findViewById(R.id.btnBackToChannels);
+
+        // Auto-scroll to last message when keyboard opens
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
+            boolean keyboardVisible = insets.isVisible(
+                    androidx.core.view.WindowInsetsCompat.Type.ime());
+            if (keyboardVisible && rvMessages != null) {
+                rvMessages.postDelayed(() -> {
+                    int count = rvMessages.getAdapter() != null
+                            ? rvMessages.getAdapter().getItemCount() : 0;
+                    if (count > 0) rvMessages.smoothScrollToPosition(count - 1);
+                }, 100);
+            }
+            return insets;
+        });
         
         TextView tvMyChannelsHeader = view.findViewById(R.id.tvMyChannelsHeader);
         TextView tvDirectMessagesHeader = view.findViewById(R.id.tvDirectMessagesHeader);
