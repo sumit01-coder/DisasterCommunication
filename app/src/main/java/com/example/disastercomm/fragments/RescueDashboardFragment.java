@@ -124,6 +124,13 @@ public class RescueDashboardFragment extends Fragment {
             });
 
             h.btnAcceptMission.setText(nextActionLabel(status));
+            
+            h.btnTrackLocation.setOnClickListener(v -> {
+                if (h.itemView.getContext() instanceof com.example.disastercomm.MainActivityNew) {
+                    ((com.example.disastercomm.MainActivityNew) h.itemView.getContext())
+                            .openMapAndTrackUser(msg.senderId, msg.latitude + ", " + msg.longitude);
+                }
+            });
         }
 
         private int statusColor(MissionStatus s) {
@@ -163,6 +170,7 @@ public class RescueDashboardFragment extends Fragment {
             TextView tvPriorityBadge, tvCategory, tvTimeAgo, tvSenderName,
                      tvPeopleCount, tvBatteryLevel, tvStatus;
             android.widget.Button btnAcceptMission;
+            android.widget.ImageButton btnTrackLocation;
 
             VH(@NonNull View v) {
                 super(v);
@@ -174,6 +182,7 @@ public class RescueDashboardFragment extends Fragment {
                 tvBatteryLevel = v.findViewById(R.id.tvBatteryLevel);
                 tvStatus = v.findViewById(R.id.tvStatus);
                 btnAcceptMission = v.findViewById(R.id.btnAcceptMission);
+                btnTrackLocation = v.findViewById(R.id.btnTrackLocation);
             }
         }
     }

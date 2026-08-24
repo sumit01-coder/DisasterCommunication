@@ -109,6 +109,17 @@
                 android:textSize="13sp"
                 android:textStyle="bold"/>
 
+            <!-- Track Location Button -->
+            <ImageButton
+                android:id="@+id/btnTrackLocation"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_map"
+                android:contentDescription="Track Location"
+                app:tint="#4CAF50"/>
+
             <Button
                 android:id="@+id/btnAcceptMission"
                 android:layout_width="wrap_content"

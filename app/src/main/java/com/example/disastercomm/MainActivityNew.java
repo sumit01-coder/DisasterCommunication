@@ -477,6 +477,16 @@ public class MainActivityNew extends AppCompatActivity implements
             tvUserInitial.setText(username.substring(0, 1).toUpperCase());
         }
 
+        // Rescue Dashboard RBAC
+        String userRole = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+        if (!"Rescue Team".equals(userRole)) {
+            android.view.Menu navMenu = navigationView.getMenu();
+            android.view.MenuItem rescueItem = navMenu.findItem(R.id.nav_rescue_dashboard);
+            if (rescueItem != null) {
+                rescueItem.setVisible(false);
+            }
+        }
+
         // Navigation menu clicks
         navigationView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -1827,7 +1837,9 @@ public class MainActivityNew extends AppCompatActivity implements
         
         com.example.disastercomm.utils.LocationHelper locationHelper = new com.example.disastercomm.utils.LocationHelper(this);
         locationHelper.getCurrentLocation((lat, lng) -> {
-            // Append location to the SOS message content
+            // Append location to the SOS message content and set explicit coordinates
+            sos.latitude = lat;
+            sos.longitude = lng;
             sos.content = sos.content + " | Location: " + lat + ", " + lng;
             
             if (packetHandler != null) {
