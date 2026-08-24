@@ -512,6 +512,17 @@ public class MapFragment extends Fragment {
 
         myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(requireContext()), mapView);
         
+        // Use custom marker for better visibility on light theme
+        android.graphics.drawable.Drawable drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_current_location);
+        if (drawable != null) {
+            android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), android.graphics.Bitmap.Config.ARGB_8888);
+            android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+            drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+            drawable.draw(canvas);
+            myLocationOverlay.setPersonIcon(bitmap);
+            myLocationOverlay.setDirectionArrow(bitmap, bitmap);
+        }
+        
         // Handle Location Permissions Gracefully
         if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
             myLocationOverlay.enableMyLocation();
