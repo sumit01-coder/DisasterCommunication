@@ -8,6 +8,11 @@
             android:id="@+id/nav_network_status"
             android:icon="@drawable/ic_nearby"
             android:title="Network Status"/>
+            
+        <item
+            android:id="@+id/nav_rescue_dashboard"
+            android:icon="@drawable/ic_shield"
+            android:title="Rescue Dashboard"/>
         
         <item
             android:id="@+id/nav_bluetooth_devices"

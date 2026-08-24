@@ -457,7 +457,17 @@ public class MainActivityNew extends AppCompatActivity implements
         TextView tvUserInitial = headerView.findViewById(R.id.tvUserInitial);
         TextView tvDeviceId = headerView.findViewById(R.id.tvDeviceId);
         tvUserName.setText(username);
-        tvDeviceId.setText("Device ID: " + DeviceUtil.getDeviceId(this).substring(0, 8));
+        
+        String manufacturer = android.os.Build.MANUFACTURER;
+        String model = android.os.Build.MODEL;
+        String deviceName = model;
+        if (manufacturer != null && !model.toLowerCase().startsWith(manufacturer.toLowerCase())) {
+            // Capitalize manufacturer name
+            manufacturer = manufacturer.substring(0, 1).toUpperCase() + manufacturer.substring(1);
+            deviceName = manufacturer + " " + model;
+        }
+        
+        tvDeviceId.setText(deviceName + " • ID: " + DeviceUtil.getDeviceId(this).substring(0, 8));
 
         // Set avatar initial
         if (tvUserInitial != null && username != null && !username.isEmpty()) {
@@ -475,6 +485,8 @@ public class MainActivityNew extends AppCompatActivity implements
             new android.os.Handler().postDelayed(() -> {
                 if (itemId == R.id.nav_network_status) {
                     showNetworkStatusDialog();
+                } else if (itemId == R.id.nav_rescue_dashboard) {
+                    viewPager.setCurrentItem(5, false); // Index 5 is Rescue Dashboard
                 } else if (itemId == R.id.nav_bluetooth_devices) {
                     showBluetoothDevicesDialog();
                 } else if (itemId == R.id.nav_nearby_devices) {

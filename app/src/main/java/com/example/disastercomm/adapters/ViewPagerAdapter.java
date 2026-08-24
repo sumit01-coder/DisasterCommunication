@@ -53,13 +53,14 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
             case 2: return membersFragment;
             case 3: return sosFragment;
             case 4: return networkDashboardFragment;
+            case 5: return rescueDashboardFragment;
             default: return mapFragment;
         }
     }
 
     @Override
     public int getItemCount() {
-        return 5;
+        return 6;
     }
 
     // ── Getters (used by MainActivityNew) ──────────────────────────────────────
