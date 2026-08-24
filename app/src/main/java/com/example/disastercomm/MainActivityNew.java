@@ -470,7 +470,8 @@ public class MainActivityNew extends AppCompatActivity implements
             deviceName = manufacturer + " " + model;
         }
         
-        tvDeviceId.setText(deviceName + " • ID: " + DeviceUtil.getDeviceId(this).substring(0, 8));
+        String deviceId = DeviceUtil.getDeviceId(this);
+        tvDeviceId.setText(deviceName + " • ID: " + deviceId.substring(0, Math.min(8, deviceId.length())));
 
         // Set avatar initial
         if (tvUserInitial != null && username != null && !username.isEmpty()) {
@@ -1381,7 +1382,7 @@ public class MainActivityNew extends AppCompatActivity implements
                             // Show notification since message isn't displayed
                             if (notificationHelper != null && isPrivateForMe) {
                                 String senderName = message.senderName != null ? message.senderName
-                                        : message.senderId.substring(0, 8);
+                                        : message.senderId.substring(0, Math.min(8, message.senderId.length()));
                                 notificationHelper.showMessageNotification(senderName, message.content,
                                         message.senderId);
                             }

@@ -111,7 +111,7 @@ public class MeshRoutingTable {
         if (neighbor == null) {
             neighbor = new NeighborInfo(deviceId, deviceName);
             neighbors.put(deviceId, neighbor);
-            Log.d(TAG, "✅ New neighbor added: " + deviceName + " (" + deviceId.substring(0, 8) + ")");
+            Log.d(TAG, "🔗 New neighbor added: " + deviceName + " (" + shortId(deviceId) + ")");
         } else {
             neighbor.lastSeen = System.currentTimeMillis();
         }
@@ -153,7 +153,7 @@ public class MeshRoutingTable {
 
         // Filter out low-battery devices acting as relays
         if (!com.example.disastercomm.intelligence.BatteryAwareRelaySelector.isRouteAllowed(destinationId, nextHop, neighbors)) {
-            Log.d(TAG, "🔋 Route rejected: " + nextHop.substring(0, 8) + " has low battery (<15%)");
+            Log.d(TAG, "🚫 Route rejected: " + shortId(nextHop) + " has low battery (<15%)");
             return;
         }
 
@@ -176,8 +176,8 @@ public class MeshRoutingTable {
             proposedRoute.sequenceNumber = sequenceNumber++;
             routeTable.put(destinationId, proposedRoute);
 
-            Log.d(TAG, String.format("🐜 Swarm Route updated: %s → %s (Pheromone: %.2f)",
-                    destinationId.substring(0, 8), nextHop.substring(0, 8), proposedRoute.pheromoneLevel));
+            Log.d(TAG, String.format("🗺️ Swarm Route updated: %s ➡️ %s (Pheromone: %.2f)",
+                    shortId(destinationId), shortId(nextHop), proposedRoute.pheromoneLevel));
         }
     }
 
@@ -247,7 +247,7 @@ public class MeshRoutingTable {
         }
 
         if (removed > 0) {
-            Log.d(TAG, "♻️ Invalidated " + removed + " routes through " + nextHopId.substring(0, 8));
+            Log.d(TAG, "🗑️ Invalidated " + removed + " routes through " + shortId(nextHopId));
         }
     }
 
@@ -268,7 +268,7 @@ public class MeshRoutingTable {
         // Remove expired routes
         routeTable.entrySet().removeIf(entry -> {
             if (entry.getValue().isExpired()) {
-                Log.d(TAG, "⏰ Expired route removed: " + entry.getKey().substring(0, 8));
+                Log.d(TAG, "⏳ Expired route removed: " + shortId(entry.getKey()));
                 return true;
             }
             return false;
@@ -364,7 +364,7 @@ public class MeshRoutingTable {
         routeTable.clear();
         neighbors.clear();
         sequenceNumber = 0;
-        Log.d(TAG, "🔄 Routing table cleared");
+        Log.d(TAG, "🧹 Routing table cleared");
     }
 
     /**
@@ -375,19 +375,24 @@ public class MeshRoutingTable {
         sb.append("=== MESH ROUTING TABLE ===\n");
         sb.append("Neighbors (").append(neighbors.size()).append("):\n");
         for (NeighborInfo n : neighbors.values()) {
-            sb.append(String.format("  • %s - Battery: %d%%, RSSI: %d%s\n",
+            sb.append(String.format("  📱 %s - Battery: %d%%, RSSI: %d%s\n",
                     n.deviceName, n.batteryLevel, n.signalStrength,
                     n.isRelay ? " [RELAY]" : ""));
         }
 
         sb.append("\nRoutes (").append(routeTable.size()).append("):\n");
         for (RouteInfo r : routeTable.values()) {
-            sb.append(String.format("  • %s via %s (%d hops)\n",
-                    r.destinationId.substring(0, 8),
-                    r.nextHop.substring(0, 8),
+            sb.append(String.format("  ➡️ %s via %s (%d hops)\n",
+                    shortId(r.destinationId),
+                    shortId(r.nextHop),
                     r.hopCount));
         }
 
         return sb.toString();
+    }
+
+    private String shortId(String id) {
+        if (id == null) return "null";
+        return id.length() > 8 ? id.substring(0, 8) : id;
     }
 }
