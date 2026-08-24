@@ -542,7 +542,7 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
                 java.util.Collections.sort(history, (m1, m2) -> Long.compare(m1.timestamp, m2.timestamp));
             }
 
-            if (history != null && !history.isEmpty()) {
+            if (history != null) {
                 // ✅ CRASH PREVENTION: Check if fragment still attached
                 if (getActivity() == null || !isAdded())
                     return;
@@ -552,35 +552,37 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
                     if (!isAdded() || chatAdapter == null)
                         return;
 
-                    // Clear adapter before adding (cache already displayed)
+                    // ALWAYS clear adapter before adding to avoid old messages bleeding into empty chats
                     chatAdapter.clearMessages();
 
-                    for (Message m : history) {
-                        chatAdapter.addMessage(m);
-                        // ✅ Populate cache for next time
-                        if (messageCache != null && myId != null) {
-                            messageCache.addMessage(myId, recipientId, m);
-                        }
-                    }
-                    if (chatAdapter.getItemCount() > 0 && rvMessages != null) {
-                        rvMessages.scrollToPosition(chatAdapter.getItemCount() - 1);
-                    }
-
-                    // ✅ MARK READ: Send Read Receipt for unread messages from this recipient
-                    if (recipientId != null && packetHandler != null) {
-                        com.example.disastercomm.data.AppDatabase.databaseWriteExecutor.execute(() -> {
-                            for (Message m : history) {
-                                if (!m.isRead && m.senderId.equals(recipientId) && m.status != Message.Status.READ) {
-                                    Message readReceipt = Message.createReadReceipt(m.id, myId, username);
-                                    readReceipt.receiverId = recipientId;
-                                    packetHandler.sendMessage(readReceipt);
-
-                                    // Update local DB
-                                    m.isRead = true;
-                                    db.messageDao().updateMessage(m);
-                                }
+                    if (!history.isEmpty()) {
+                        for (Message m : history) {
+                            chatAdapter.addMessage(m);
+                            // ✅ Populate cache for next time
+                            if (messageCache != null && myId != null) {
+                                messageCache.addMessage(myId, recipientId, m);
                             }
-                        });
+                        }
+                        if (chatAdapter.getItemCount() > 0 && rvMessages != null) {
+                            rvMessages.scrollToPosition(chatAdapter.getItemCount() - 1);
+                        }
+
+                        // ✅ MARK READ: Send Read Receipt for unread messages from this recipient
+                        if (recipientId != null && packetHandler != null) {
+                            com.example.disastercomm.data.AppDatabase.databaseWriteExecutor.execute(() -> {
+                                for (Message m : history) {
+                                    if (!m.isRead && m.senderId.equals(recipientId) && m.status != Message.Status.READ) {
+                                        Message readReceipt = Message.createReadReceipt(m.id, myId, username);
+                                        readReceipt.receiverId = recipientId;
+                                        packetHandler.sendMessage(readReceipt);
+
+                                        // Update local DB
+                                        m.isRead = true;
+                                        db.messageDao().updateMessage(m);
+                                    }
+                                }
+                            });
+                        }
                     }
                 });
             }
