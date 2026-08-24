@@ -23,7 +23,7 @@
             app:itemIconTint="@color/nav_item_color_state"
             app:itemTextColor="@color/nav_item_color_state"
             app:itemActiveIndicatorStyle="@style/App.BottomNav.ActiveIndicator"
-            app:labelVisibilityMode="labeled"
+            app:labelVisibilityMode="selected"
             app:menu="@menu/bottom_nav_menu" />
 
         <!-- Main content area -->
