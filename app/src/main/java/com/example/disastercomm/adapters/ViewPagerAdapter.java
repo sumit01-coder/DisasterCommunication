@@ -45,17 +45,18 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
         android.util.Log.d("ViewPagerAdapter", "📱 createFragment called for position: " + position);
         switch (position) {
-            case 0: return chatFragment;
-            case 1: return sosFragment;
-            case 2: return networkDashboardFragment;
-            case 3: return rescueDashboardFragment;
-            default: return chatFragment;
+            case 0: return mapFragment;
+            case 1: return chatFragment;
+            case 2: return sosFragment;
+            case 3: return networkDashboardFragment;
+            case 4: return rescueDashboardFragment;
+            default: return mapFragment;
         }
     }
 
     @Override
     public int getItemCount() {
-        return 4; // Chat, SOS, Network, Rescue
+        return 5; // Map, Chat, SOS, Network, Rescue
     }
 
     // ── Getters (used by MainActivityNew) ──────────────────────────────────────

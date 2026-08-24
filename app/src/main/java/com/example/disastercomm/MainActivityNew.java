@@ -880,36 +880,35 @@ public class MainActivityNew extends AppCompatActivity implements
         Log.d("DisasterApp", "🔽 setupBottomNavigation() - Setting up bottom nav");
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            Log.d("DisasterApp", "📍 Bottom nav item selected: " + item.getTitle());
-
-            if (itemId == R.id.nav_chat) {
+            if (itemId == R.id.nav_map) {
                 viewPager.setCurrentItem(0, true);
                 return true;
-            } else if (itemId == R.id.nav_sos) {
+            } else if (itemId == R.id.nav_chat) {
                 viewPager.setCurrentItem(1, true);
                 return true;
-            } else if (itemId == R.id.nav_network) {
+            } else if (itemId == R.id.nav_sos) {
                 viewPager.setCurrentItem(2, true);
                 return true;
-            } else if (itemId == R.id.nav_rescue) {
+            } else if (itemId == R.id.nav_network) {
                 viewPager.setCurrentItem(3, true);
                 return true;
-            } else if (itemId == R.id.nav_settings) {
-                startActivity(new android.content.Intent(this, SettingsActivity.class));
+            } else if (itemId == R.id.nav_rescue) {
+                viewPager.setCurrentItem(4, true);
                 return true;
             }
             return false;
         });
 
-        // Sync ViewPager with bottom nav
+        // Sync ViewPager page swipes → bottom nav highlight
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
                 switch (position) {
-                    case 0: bottomNav.setSelectedItemId(R.id.nav_chat); break;
-                    case 1: bottomNav.setSelectedItemId(R.id.nav_sos); break;
-                    case 2: bottomNav.setSelectedItemId(R.id.nav_network); break;
-                    case 3: bottomNav.setSelectedItemId(R.id.nav_rescue); break;
+                    case 0: bottomNav.setSelectedItemId(R.id.nav_map); break;
+                    case 1: bottomNav.setSelectedItemId(R.id.nav_chat); break;
+                    case 2: bottomNav.setSelectedItemId(R.id.nav_sos); break;
+                    case 3: bottomNav.setSelectedItemId(R.id.nav_network); break;
+                    case 4: bottomNav.setSelectedItemId(R.id.nav_rescue); break;
                 }
             }
         });

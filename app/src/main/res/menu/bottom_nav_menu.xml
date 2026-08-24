@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/nav_map"
+        android:icon="@drawable/ic_map"
+        android:title="Map"/>
+    <item
         android:id="@+id/nav_chat"
         android:icon="@drawable/ic_chat"
         android:title="Chat"/>
@@ -16,8 +20,4 @@
         android:id="@+id/nav_rescue"
         android:icon="@drawable/ic_role_rescue"
         android:title="Rescue"/>
-    <item
-        android:id="@+id/nav_settings"
-        android:icon="@drawable/ic_settings"
-        android:title="Settings"/>
 </menu>
