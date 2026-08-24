@@ -173,15 +173,21 @@ public class MainActivityNew extends AppCompatActivity implements
         Log.d("DisasterApp", "═══════════════════════════════════════════════════════");
         setContentView(R.layout.activity_main_new);
 
-        // ✅ Auto-hide bottom nav when soft keyboard is visible (so chat input is never covered)
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(
-                findViewById(android.R.id.content), (v, insets) -> {
-            boolean keyboardVisible = insets.isVisible(
-                    androidx.core.view.WindowInsetsCompat.Type.ime());
+        // ✅ Auto-hide bottom nav when soft keyboard is visible (using ViewTreeObserver to not break adjustResize)
+        final View rootView = findViewById(android.R.id.content);
+        rootView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            android.graphics.Rect r = new android.graphics.Rect();
+            rootView.getWindowVisibleDisplayFrame(r);
+            int screenHeight = rootView.getRootView().getHeight();
+            int keypadHeight = screenHeight - r.bottom;
+
             if (bottomNav != null) {
-                bottomNav.setVisibility(keyboardVisible ? android.view.View.GONE : android.view.View.VISIBLE);
+                if (keypadHeight > screenHeight * 0.15) { // Keyboard is opened
+                    bottomNav.setVisibility(View.GONE);
+                } else { // Keyboard is closed
+                    bottomNav.setVisibility(View.VISIBLE);
+                }
             }
-            return androidx.core.view.ViewCompat.onApplyWindowInsets(v, insets);
         });
 
         // ✅ Three-tier username persistence to ensure it NEVER changes:
