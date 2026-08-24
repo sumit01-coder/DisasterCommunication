@@ -38,7 +38,18 @@
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="@color/white"
-        android:layout_marginBottom="4dp"/>
+        android:layout_marginBottom="2dp"/>
+
+    <!-- User Role -->
+    <TextView
+        android:id="@+id/tvUserRole"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Civilian"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#E0E0E0"
+        android:layout_marginBottom="8dp"/>
 
     <!-- Device ID -->
     <TextView

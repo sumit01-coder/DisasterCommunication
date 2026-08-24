@@ -459,7 +459,13 @@ public class MainActivityNew extends AppCompatActivity implements
         TextView tvUserName = headerView.findViewById(R.id.tvUserName);
         TextView tvUserInitial = headerView.findViewById(R.id.tvUserInitial);
         TextView tvDeviceId = headerView.findViewById(R.id.tvDeviceId);
+        TextView tvUserRole = headerView.findViewById(R.id.tvUserRole);
+        
         tvUserName.setText(username);
+        if (tvUserRole != null) {
+            String role = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+            tvUserRole.setText(role);
+        }
         
         String manufacturer = android.os.Build.MANUFACTURER;
         String model = android.os.Build.MODEL;
@@ -1657,10 +1663,17 @@ public class MainActivityNew extends AppCompatActivity implements
                 if (headerView != null) {
                     TextView tvUserName = headerView.findViewById(R.id.tvUserName);
                     TextView tvUserInitial = headerView.findViewById(R.id.tvUserInitial);
+                    TextView tvUserRole = headerView.findViewById(R.id.tvUserRole);
+                    
                     if (tvUserName != null)
                         tvUserName.setText(username);
                     if (tvUserInitial != null && username != null && !username.isEmpty())
                         tvUserInitial.setText(username.substring(0, 1).toUpperCase());
+                        
+                    if (tvUserRole != null) {
+                        String role = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+                        tvUserRole.setText(role);
+                    }
                 }
             }
         }
