@@ -375,6 +375,12 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
                     addMessage(sosMsg);
                     android.widget.Toast.makeText(requireContext(), "✅ Global SOS Sent!", android.widget.Toast.LENGTH_LONG).show();
                 });
+
+                // ALSO start continuous live location sharing for SOS
+                com.example.disastercomm.services.LiveLocationService.startSharing(
+                        requireContext(), 
+                        com.example.disastercomm.utils.LiveLocationSharingManager.DURATION_CONTINUOUS
+                );
             }
         });
     }

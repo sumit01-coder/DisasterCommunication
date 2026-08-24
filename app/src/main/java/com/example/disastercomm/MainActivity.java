@@ -812,7 +812,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onLocationClick(String userId) {
+    public void onLocationClick(String userId, String locationContent) {
         android.content.Intent intent = new android.content.Intent(this, MapActivity.class);
         intent.putExtra("TARGET_USER_ID", userId);
         startActivity(intent);

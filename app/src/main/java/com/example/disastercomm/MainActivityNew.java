@@ -1022,6 +1022,12 @@ public class MainActivityNew extends AppCompatActivity implements
             Message sosMessage = new Message(DeviceUtil.getDeviceId(this), username, Message.Type.SOS, content);
             packetHandler.sendMessage(sosMessage);
 
+            // ALSO start continuous live location sharing for SOS
+            com.example.disastercomm.services.LiveLocationService.startSharing(
+                    this, 
+                    com.example.disastercomm.utils.LiveLocationSharingManager.DURATION_CONTINUOUS
+            );
+
             // Success feedback
             runOnUiThread(() -> {
                 Toast.makeText(this, "✅ SOS Sent to " + connectedMembers.size() + " devices!", Toast.LENGTH_LONG)
