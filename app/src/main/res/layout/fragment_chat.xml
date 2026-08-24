@@ -154,12 +154,15 @@
                 
                 <ImageView
                     android:id="@+id/btnBackToChannels"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_media_previous"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_arrow_back"
                     app:tint="@color/white"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
-                    android:focusable="true"/>
+                    android:focusable="true"
+                    android:contentDescription="Go back"/>
             </LinearLayout>
             
             <!-- Global Broadcast Dark Blue Card -->
