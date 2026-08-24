@@ -89,6 +89,14 @@
                     android:text="0 Relays"
                     android:textColor="#88AABB"
                     android:textSize="12sp"/>
+                <TextView
+                    android:id="@+id/tvHardwareNodes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0 Hardware Hubs"
+                    android:textColor="#00E5FF"
+                    android:textStyle="bold"
+                    android:textSize="12sp"/>
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

@@ -272,6 +272,13 @@ public class NetworkHealthMonitor {
         // Penalize if there are no relays to extend the network
         if (stats.relayCount == 0 && stats.routeCount > 5) score -= 10;
         
-        return Math.max(0, score);
+        // Boost score significantly if ESP32-S3 Hardware Nodes are present
+        // Hardware nodes have much higher reliability, range, and battery than phones.
+        if (stats.hardwareNodeCount > 0) {
+            int hardwareBoost = Math.min(20, stats.hardwareNodeCount * 10);
+            score += hardwareBoost;
+        }
+        
+        return Math.min(100, Math.max(0, score));
     }
 }

@@ -23,7 +23,7 @@ import java.util.Map;
 
 public class NetworkDashboardFragment extends Fragment {
 
-    private TextView tvHealthScore, tvDeviceCount, tvRouteCount, tvRelayCount;
+    private TextView tvHealthScore, tvDeviceCount, tvRouteCount, tvRelayCount, tvHardwareNodes;
     private TextView tvCriticalNodes, tvDeadZones, tvLoraRec, tvBlackBoxLog;
 
     private final Handler refreshHandler = new Handler(Looper.getMainLooper());
@@ -47,6 +47,7 @@ public class NetworkDashboardFragment extends Fragment {
         tvDeviceCount = root.findViewById(R.id.tvDeviceCount);
         tvRouteCount = root.findViewById(R.id.tvRouteCount);
         tvRelayCount = root.findViewById(R.id.tvRelayCount);
+        tvHardwareNodes = root.findViewById(R.id.tvHardwareNodes);
         tvCriticalNodes = root.findViewById(R.id.tvCriticalNodes);
         tvDeadZones = root.findViewById(R.id.tvDeadZones);
         tvLoraRec = root.findViewById(R.id.tvLoraRec);
@@ -83,6 +84,7 @@ public class NetworkDashboardFragment extends Fragment {
             tvDeviceCount.setText(stats.neighborCount + " Devices");
             tvRouteCount.setText(stats.routeCount + " Routes");
             tvRelayCount.setText(stats.relayCount + " Relays");
+            tvHardwareNodes.setText(stats.hardwareNodeCount + " Hardware Hubs");
 
             // Critical nodes
             List<String> critical = CriticalNodeDetector.detectCriticalNodes(routingTable.getNeighbors(), routingTable.getRoutes());
@@ -93,6 +95,7 @@ public class NetworkDashboardFragment extends Fragment {
             tvDeviceCount.setText("0 Devices");
             tvRouteCount.setText("0 Routes");
             tvRelayCount.setText("0 Relays");
+            tvHardwareNodes.setText("0 Hardware Hubs");
         }
 
         // Dead zones

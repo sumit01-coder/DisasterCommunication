@@ -76,10 +76,23 @@ public class MeshRoutingTable {
         public int signalStrength; // RSSI
         public long lastSeen; // Timestamp of last heartbeat
         public boolean isRelay; // Is this device in relay mode?
+        public boolean isHardwareNode; // Is this an ESP32-S3 / LoRa hub?
 
         public NeighborInfo(String deviceId, String deviceName) {
             this.deviceId = deviceId;
             this.deviceName = deviceName;
+            
+            // Detect ESP32-S3 and other hardware nodes automatically
+            if (deviceName != null) {
+                String upperName = deviceName.toUpperCase();
+                this.isHardwareNode = upperName.contains("ESP32") || 
+                                      upperName.contains("ESP32S3") || 
+                                      upperName.contains("LORA") || 
+                                      upperName.contains("HELTEC") || 
+                                      upperName.contains("LILYGO");
+            } else {
+                this.isHardwareNode = false;
+            }
             this.lastSeen = System.currentTimeMillis();
             this.batteryLevel = 100;
             this.signalStrength = -50;
@@ -311,11 +324,13 @@ public class MeshRoutingTable {
      * Get network statistics
      */
     public NetworkStats getStats() {
+        cleanup(); // Ensure accurate counts
+
         NetworkStats stats = new NetworkStats();
         stats.neighborCount = neighbors.size();
         stats.routeCount = routeTable.size();
 
-        int totalHops = 0;
+        double totalHops = 0;
         int maxHops = 0;
         for (RouteInfo route : routeTable.values()) {
             totalHops += route.hopCount;
@@ -324,9 +339,11 @@ public class MeshRoutingTable {
             }
         }
 
-        stats.averageHops = routeTable.isEmpty() ? 0 : (float) totalHops / routeTable.size();
+        stats.averageHops = stats.routeCount > 0 ? (float) (totalHops / stats.routeCount) : 0;
         stats.networkDiameter = maxHops;
+
         stats.relayCount = (int) neighbors.values().stream().filter(n -> n.isRelay).count();
+        stats.hardwareNodeCount = (int) neighbors.values().stream().filter(n -> n.isHardwareNode).count();
 
         return stats;
     }
@@ -337,6 +354,7 @@ public class MeshRoutingTable {
         public float averageHops; // Average path length
         public int networkDiameter; // Max hops (network size)
         public int relayCount; // Active relays
+        public int hardwareNodeCount; // Active ESP32-S3 / hardware nodes
     }
 
     /**
