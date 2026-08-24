@@ -1789,13 +1789,25 @@ public class MainActivityNew extends AppCompatActivity implements
      * Called by SOSFragment to broadcast a pre-built smart SOS message via the mesh.
      */
     public void broadcastSOSMessage(Message sos) {
-        if (packetHandler != null) {
-            packetHandler.sendMessage(sos);
-        }
-        // Also push to own rescue dashboard
-        if (rescueDashboardFragment != null) {
-            rescueDashboardFragment.addOrUpdateIncident(sos);
-        }
+        // Automatically start continuous live location tracking for SOS
+        com.example.disastercomm.services.LiveLocationService.startSharing(
+                this, 
+                com.example.disastercomm.utils.LiveLocationSharingManager.DURATION_CONTINUOUS
+        );
+        
+        com.example.disastercomm.utils.LocationHelper locationHelper = new com.example.disastercomm.utils.LocationHelper(this);
+        locationHelper.getCurrentLocation((lat, lng) -> {
+            // Append location to the SOS message content
+            sos.content = sos.content + " | Location: " + lat + ", " + lng;
+            
+            if (packetHandler != null) {
+                packetHandler.sendMessage(sos);
+            }
+            // Also push to own rescue dashboard
+            if (rescueDashboardFragment != null) {
+                rescueDashboardFragment.addOrUpdateIncident(sos);
+            }
+        });
     }
 
     /**
