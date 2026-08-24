@@ -306,4 +306,12 @@ public class RouteDiscoveryProtocol {
     public int getPendingRequestCount() {
         return pendingRequests.size();
     }
+
+    /**
+     * Returns the routing table for external inspection (e.g., Network Dashboard).
+     */
+    public MeshRoutingTable getRoutingTable() {
+        return routingTable;
+    }
 }
+

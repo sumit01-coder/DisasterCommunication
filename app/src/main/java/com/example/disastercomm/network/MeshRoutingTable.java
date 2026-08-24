@@ -138,6 +138,12 @@ public class MeshRoutingTable {
         }
         proposedRoute.calculatePheromone();
 
+        // Filter out low-battery devices acting as relays
+        if (!com.example.disastercomm.intelligence.BatteryAwareRelaySelector.isRouteAllowed(destinationId, nextHop, neighbors)) {
+            Log.d(TAG, "🔋 Route rejected: " + nextHop.substring(0, 8) + " has low battery (<15%)");
+            return;
+        }
+
         // Only update if:
         // 1. No existing route, OR
         // 2. Existing route has expired, OR

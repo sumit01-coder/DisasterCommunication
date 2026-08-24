@@ -254,4 +254,24 @@ public class NetworkHealthMonitor {
 
         Log.d(TAG, "♻️ Statistics reset");
     }
+
+    /**
+     * Calculates an overall health percentage of the mesh network (0-100%).
+     */
+    public static int calculateHealthScore(MeshRoutingTable.NetworkStats stats) {
+        if (stats.neighborCount == 0 && stats.routeCount == 0) return 0;
+        
+        int score = 100;
+        
+        // Penalize for having very few connections (fragmentation risk)
+        if (stats.neighborCount < 2) score -= 20;
+        
+        // Penalize for extremely long average paths (high latency / drop risk)
+        if (stats.averageHops > 4.0) score -= 15;
+        
+        // Penalize if there are no relays to extend the network
+        if (stats.relayCount == 0 && stats.routeCount > 5) score -= 10;
+        
+        return Math.max(0, score);
+    }
 }

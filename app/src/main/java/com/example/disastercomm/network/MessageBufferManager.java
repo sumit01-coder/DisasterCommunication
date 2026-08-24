@@ -20,10 +20,8 @@ public class MessageBufferManager {
     private final PriorityBlockingQueue<Message> outboundBuffer;
 
     public MessageBufferManager() {
-        Comparator<Message> priorityComparator = (m1, m2) -> Integer.compare(m2.priority, m1.priority);
-        
-        this.inboundBuffer = new PriorityBlockingQueue<>(100, priorityComparator);
-        this.outboundBuffer = new PriorityBlockingQueue<>(100, priorityComparator);
+        this.inboundBuffer = new PriorityBlockingQueue<>(100, com.example.disastercomm.intelligence.PriorityRouter.PRIORITY_COMPARATOR);
+        this.outboundBuffer = new PriorityBlockingQueue<>(100, com.example.disastercomm.intelligence.PriorityRouter.PRIORITY_COMPARATOR);
     }
 
     /**
@@ -32,7 +30,7 @@ public class MessageBufferManager {
     public void bufferInbound(Message message) {
         if (inboundBuffer.size() >= MAX_BUFFER_SIZE) {
             // If full, remove lowest priority message to make room
-            if (message.priority > 1) {
+            if (message.priorityScore > 10) {
                 Log.w(TAG, "Inbound Buffer Full. Dropping low priority messages.");
                 dropLowPriority(inboundBuffer);
             } else {
@@ -47,7 +45,7 @@ public class MessageBufferManager {
      */
     public void bufferOutbound(Message message) {
         if (outboundBuffer.size() >= MAX_BUFFER_SIZE) {
-            if (message.priority > 1) {
+            if (message.priorityScore > 10) {
                 dropLowPriority(outboundBuffer);
             } else {
                 return;
@@ -60,11 +58,11 @@ public class MessageBufferManager {
         // Find the lowest priority message and remove it
         Message lowest = null;
         for (Message m : queue) {
-            if (lowest == null || m.priority < lowest.priority) {
+            if (lowest == null || m.priorityScore < lowest.priorityScore) {
                 lowest = m;
             }
         }
-        if (lowest != null && lowest.priority < 10) { // Never drop SOS
+        if (lowest != null && lowest.priorityScore < 90) { // Never drop high priority SOS
             queue.remove(lowest);
         }
     }

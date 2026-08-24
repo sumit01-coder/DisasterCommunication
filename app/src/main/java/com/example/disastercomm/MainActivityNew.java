@@ -149,9 +149,10 @@ public class MainActivityNew extends AppCompatActivity implements
     private String username;
     private final Map<String, String> bluetoothDeviceMap = new HashMap<>();
     private final Map<String, MemberItem> connectedMembers = new HashMap<>();
-    private ChatFragment privateChatFragment; // For
-                                              // direct
-                                              // messages
+    private ChatFragment privateChatFragment; // For direct messages
+    private com.example.disastercomm.fragments.SOSFragment sosFragment;
+    private com.example.disastercomm.fragments.NetworkDashboardFragment networkDashboardFragment;
+    private com.example.disastercomm.fragments.RescueDashboardFragment rescueDashboardFragment;
     private com.example.disastercomm.utils.NotificationHelper notificationHelper;
     private com.example.disastercomm.utils.MessageCounter messageCounter; // ✅ Track unread messages
     private com.example.disastercomm.utils.ConnectivityStatusManager connectivityStatusManager;
@@ -859,13 +860,13 @@ public class MainActivityNew extends AppCompatActivity implements
             Log.d("DisasterApp", "📑 Creating ViewPagerAdapter");
             pagerAdapter = new ViewPagerAdapter(this, packetHandler, username);
             viewPager.setAdapter(pagerAdapter);
-            viewPager.setOffscreenPageLimit(2);
+            viewPager.setOffscreenPageLimit(3);
             Log.d("DisasterApp", "✅ ViewPager setup complete");
 
-            // Setup MembersFragment manual scan callback
-            if (pagerAdapter.getMembersFragment() != null) {
-                pagerAdapter.getMembersFragment().setConnectionListener(() -> triggerManualDeviceScan());
-            }
+            // Store fragment references for data passing
+            sosFragment = pagerAdapter.getSOSFragment();
+            networkDashboardFragment = pagerAdapter.getNetworkDashboardFragment();
+            rescueDashboardFragment = pagerAdapter.getRescueDashboardFragment();
         }
     }
 
@@ -879,19 +880,22 @@ public class MainActivityNew extends AppCompatActivity implements
         Log.d("DisasterApp", "🔽 setupBottomNavigation() - Setting up bottom nav");
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            Log.d("DisasterApp", "📍 Bottom nav item selected: " + item.getTitle() + " (ID: " + itemId + ")");
+            Log.d("DisasterApp", "📍 Bottom nav item selected: " + item.getTitle());
 
-            if (itemId == R.id.nav_map) {
-                Log.d("DisasterApp", "   → Switching to MAP (position 0)");
+            if (itemId == R.id.nav_chat) {
                 viewPager.setCurrentItem(0, true);
                 return true;
-            } else if (itemId == R.id.nav_chat) {
-                Log.d("DisasterApp", "   → Switching to CHAT (position 1)");
+            } else if (itemId == R.id.nav_sos) {
                 viewPager.setCurrentItem(1, true);
                 return true;
-            } else if (itemId == R.id.nav_members) {
-                Log.d("DisasterApp", "   → Switching to MEMBERS (position 2)");
+            } else if (itemId == R.id.nav_network) {
                 viewPager.setCurrentItem(2, true);
+                return true;
+            } else if (itemId == R.id.nav_rescue) {
+                viewPager.setCurrentItem(3, true);
+                return true;
+            } else if (itemId == R.id.nav_settings) {
+                startActivity(new android.content.Intent(this, SettingsActivity.class));
                 return true;
             }
             return false;
@@ -902,15 +906,10 @@ public class MainActivityNew extends AppCompatActivity implements
             @Override
             public void onPageSelected(int position) {
                 switch (position) {
-                    case 0:
-                        bottomNav.setSelectedItemId(R.id.nav_map);
-                        break;
-                    case 1:
-                        bottomNav.setSelectedItemId(R.id.nav_chat);
-                        break;
-                    case 2:
-                        bottomNav.setSelectedItemId(R.id.nav_members);
-                        break;
+                    case 0: bottomNav.setSelectedItemId(R.id.nav_chat); break;
+                    case 1: bottomNav.setSelectedItemId(R.id.nav_sos); break;
+                    case 2: bottomNav.setSelectedItemId(R.id.nav_network); break;
+                    case 3: bottomNav.setSelectedItemId(R.id.nav_rescue); break;
                 }
             }
         });
@@ -1182,6 +1181,12 @@ public class MainActivityNew extends AppCompatActivity implements
             if (message.type == Message.Type.SOS) {
                 Log.d("DisasterApp", "SOS Received from: " + message.senderId);
                 notificationSoundManager.playSosSound();
+                // Feed SOS to Rescue Dashboard
+                com.example.disastercomm.intelligence.NetworkEventBlackBox.logSOSCreated(
+                    message.senderName, message.emergencyCategory, message.priorityScore);
+                if (rescueDashboardFragment != null) {
+                    rescueDashboardFragment.addOrUpdateIncident(message);
+                }
                 String name = (message.senderName != null && !message.senderName.isEmpty()) ? message.senderName
                         : message.senderId.substring(0, Math.min(8, message.senderId.length()));
                 
@@ -1750,4 +1755,31 @@ public class MainActivityNew extends AppCompatActivity implements
         if (networkStateMonitor != null)
             networkStateMonitor.stopMonitoring();
     }
+
+    // ──────────────────────────────────────────────────────────────────────────────
+    // Hackathon Blueprint: Public APIs for Fragments
+    // ──────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Called by SOSFragment to broadcast a pre-built smart SOS message via the mesh.
+     */
+    public void broadcastSOSMessage(Message sos) {
+        if (packetHandler != null) {
+            packetHandler.sendMessage(sos);
+        }
+        // Also push to own rescue dashboard
+        if (rescueDashboardFragment != null) {
+            rescueDashboardFragment.addOrUpdateIncident(sos);
+        }
+    }
+
+    /**
+     * Returns the MeshRoutingTable for the NetworkDashboardFragment.
+     */
+    public com.example.disastercomm.network.MeshRoutingTable getRoutingTable() {
+        // MeshNetworkManager does not yet expose routing table directly.
+        // NetworkDashboardFragment will handle null gracefully.
+        return null;
+    }
 }
+

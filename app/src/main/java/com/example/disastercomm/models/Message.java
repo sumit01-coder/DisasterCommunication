@@ -76,7 +76,13 @@ public class Message {
 
     // CIA Security & Availability Fields
     public String signature; // Integrity: Digital Signature
-    public int priority = 1; // Availability: 1-10 (SOS=10)
+    public int priority = 1; // Availability: 1-10 (Legacy)
+    public int priorityScore = 0; // 1-100 (Smart SOS)
+    public String emergencyCategory = ""; // Medical, Fire, Flood, etc.
+    public int peopleCount = 1;
+    public int batteryLevel = -1;
+    public double latitude = 0.0;
+    public double longitude = 0.0;
     public String nonce; // Integrity: Anti-Replay
     public boolean isEncrypted = false; // Confidentiality indicator
 
@@ -99,6 +105,7 @@ public class Message {
         this.nonce = UUID.randomUUID().toString();
         if (type == Type.SOS) {
             this.priority = 10;
+            this.priorityScore = 50; // Default base score
         }
     }
 

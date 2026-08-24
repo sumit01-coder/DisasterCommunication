@@ -6,24 +6,38 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import com.example.disastercomm.fragments.ChatFragment;
-import com.example.disastercomm.fragments.MapFragment;
-import com.example.disastercomm.fragments.MembersFragment;
+import com.example.disastercomm.fragments.NetworkDashboardFragment;
+import com.example.disastercomm.fragments.RescueDashboardFragment;
+import com.example.disastercomm.fragments.SOSFragment;
 import com.example.disastercomm.network.PacketHandler;
 
+/**
+ * ViewPager2 adapter providing 4 pages:
+ *  0 – Chat
+ *  1 – SOS (Smart SOS Builder)
+ *  2 – Network Intelligence Dashboard
+ *  3 – Rescue Dashboard
+ */
 public class ViewPagerAdapter extends FragmentStateAdapter {
 
-    private final MapFragment mapFragment;
     private final ChatFragment chatFragment;
-    private final MembersFragment membersFragment;
+    private final SOSFragment sosFragment;
+    private final NetworkDashboardFragment networkDashboardFragment;
+    private final RescueDashboardFragment rescueDashboardFragment;
+
+    // Keep old MapFragment ref for backwards compat (openMapAndTrackUser)
+    private final com.example.disastercomm.fragments.MapFragment mapFragment;
 
     public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity,
             PacketHandler packetHandler,
             String username) {
         super(fragmentActivity);
 
-        this.mapFragment = new MapFragment();
+        this.mapFragment = new com.example.disastercomm.fragments.MapFragment();
         this.chatFragment = ChatFragment.newInstance(packetHandler, username);
-        this.membersFragment = new MembersFragment();
+        this.sosFragment = SOSFragment.newInstance();
+        this.networkDashboardFragment = NetworkDashboardFragment.newInstance();
+        this.rescueDashboardFragment = RescueDashboardFragment.newInstance();
     }
 
     @NonNull
@@ -31,35 +45,28 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
         android.util.Log.d("ViewPagerAdapter", "📱 createFragment called for position: " + position);
         switch (position) {
-            case 0:
-                android.util.Log.d("ViewPagerAdapter", "   → Returning MapFragment");
-                return mapFragment;
-            case 1:
-                android.util.Log.d("ViewPagerAdapter", "   → Returning ChatFragment");
-                return chatFragment;
-            case 2:
-                android.util.Log.d("ViewPagerAdapter", "   → Returning MembersFragment");
-                return membersFragment;
-            default:
-                android.util.Log.d("ViewPagerAdapter", "   → Default: Returning MapFragment");
-                return mapFragment;
+            case 0: return chatFragment;
+            case 1: return sosFragment;
+            case 2: return networkDashboardFragment;
+            case 3: return rescueDashboardFragment;
+            default: return chatFragment;
         }
     }
 
     @Override
     public int getItemCount() {
-        return 3; // Map, Chat, Members
+        return 4; // Chat, SOS, Network, Rescue
     }
 
-    public MapFragment getMapFragment() {
-        return mapFragment;
-    }
+    // ── Getters (used by MainActivityNew) ──────────────────────────────────────
 
-    public ChatFragment getChatFragment() {
-        return chatFragment;
-    }
+    public ChatFragment getChatFragment() { return chatFragment; }
+    public SOSFragment getSOSFragment() { return sosFragment; }
+    public NetworkDashboardFragment getNetworkDashboardFragment() { return networkDashboardFragment; }
+    public RescueDashboardFragment getRescueDashboardFragment() { return rescueDashboardFragment; }
 
-    public MembersFragment getMembersFragment() {
-        return membersFragment;
-    }
+    /** Kept for backwards-compat with openMapAndTrackUser() */
+    public com.example.disastercomm.fragments.MapFragment getMapFragment() { return mapFragment; }
+    /** Kept for backwards-compat with updateMembersFragment() */
+    public com.example.disastercomm.fragments.MembersFragment getMembersFragment() { return null; }
 }
