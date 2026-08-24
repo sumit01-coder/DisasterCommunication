@@ -722,9 +722,9 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
     }
 
     @Override
-    public void onLocationClick(String userId) {
+    public void onLocationClick(String userId, String locationContent) {
         if (getActivity() instanceof com.example.disastercomm.MainActivityNew) {
-            ((com.example.disastercomm.MainActivityNew) getActivity()).openMapAndTrackUser(userId);
+            ((com.example.disastercomm.MainActivityNew) getActivity()).openMapAndTrackUser(userId, locationContent);
         } else {
             android.widget.Toast.makeText(getContext(), "Debugging: Location clicked for user " + userId,
                     android.widget.Toast.LENGTH_SHORT).show();

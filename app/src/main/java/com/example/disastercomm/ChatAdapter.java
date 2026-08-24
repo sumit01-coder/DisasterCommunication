@@ -30,7 +30,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private OnLocationClickListener locationClickListener;
 
     public interface OnLocationClickListener {
-        void onLocationClick(String userId);
+        void onLocationClick(String userId, String locationContent);
     }
 
     public ChatAdapter(String myDeviceId, OnLocationClickListener locationClickListener) {
@@ -166,7 +166,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (message.content.contains("Location:")) {
                     tvMessage.setOnClickListener(v -> {
                         if (locationClickListener != null) {
-                            locationClickListener.onLocationClick(message.senderId);
+                            locationClickListener.onLocationClick(message.senderId, message.content);
                         }
                     });
                 }
@@ -185,7 +185,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvMessage.setOnClickListener(v -> {
                 if (locationClickListener != null) {
                     String userId = message.senderId;
-                    locationClickListener.onLocationClick(userId);
+                    locationClickListener.onLocationClick(userId, message.content);
                 }
             });
             updateStatus(message);
@@ -269,7 +269,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (message.content.contains("Location:")) {
                     tvMessage.setOnClickListener(v -> {
                         if (locationClickListener != null) {
-                            locationClickListener.onLocationClick(message.senderId);
+                            locationClickListener.onLocationClick(message.senderId, message.content);
                         }
                     });
                 }
@@ -296,7 +296,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvMessage.setOnClickListener(v -> {
                 if (locationClickListener != null) {
                     String userId = message.senderId;
-                    locationClickListener.onLocationClick(userId);
+                    locationClickListener.onLocationClick(userId, message.content);
                 }
             });
         }

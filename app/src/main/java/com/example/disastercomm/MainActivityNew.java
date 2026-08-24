@@ -612,7 +612,7 @@ public class MainActivityNew extends AppCompatActivity implements
         }
     }
 
-    public void openMapAndTrackUser(String userId) {
+    public void openMapAndTrackUser(String userId, String locationContent) {
         Log.d("DisasterApp", "📍 Switching to Map to track user: " + userId);
 
         // 1. Switch to Map Tab
@@ -625,7 +625,7 @@ public class MainActivityNew extends AppCompatActivity implements
             final com.example.disastercomm.fragments.MapFragment mapFragment = pagerAdapter.getMapFragment();
             if (mapFragment != null) {
                 // Delay slightly to allow ViewPager to settle if needed, or just call directly
-                new android.os.Handler().postDelayed(() -> mapFragment.focusOnUser(userId), 500);
+                new android.os.Handler().postDelayed(() -> mapFragment.focusOnUser(userId, locationContent), 500);
             }
         }
     }

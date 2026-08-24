@@ -960,10 +960,39 @@ public class MapFragment extends Fragment {
         }
     }
 
-    public void focusOnUser(String userId) {
+    public void focusOnUser(String userId, String locationContent) {
         if (!isAdded() || mapController == null) return;
-        PeerLocationManager manager = PeerLocationManager.getInstance();
-        GeoPoint location = manager.getPeerLocation(userId);
+        
+        GeoPoint location = null;
+        
+        // 1. Try to parse from the passed content (e.g. from chat message "lat,lng" or SOS "Location: lat,lng")
+        if (locationContent != null && !locationContent.isEmpty()) {
+            try {
+                String locPart = locationContent;
+                if (locPart.contains("Location:")) {
+                    locPart = locPart.substring(locPart.indexOf("Location:") + 9).trim();
+                }
+                String[] parts = locPart.split(",");
+                if (parts.length >= 2) {
+                    double lat = Double.parseDouble(parts[0].trim());
+                    double lng = Double.parseDouble(parts[1].trim());
+                    location = new GeoPoint(lat, lng);
+                    
+                    // Since we have their location, let's also update the PeerLocationManager so they appear on the map!
+                    PeerLocationManager.getInstance().updatePeerLocation(userId, lat, lng, false, 0);
+                    refreshMapMarkers(); // Refresh markers so this user shows up!
+                }
+            } catch (Exception e) {
+                android.util.Log.e("MapFragment", "Failed to parse location content: " + locationContent, e);
+            }
+        }
+        
+        // 2. Fallback to PeerLocationManager cache
+        if (location == null) {
+            PeerLocationManager manager = PeerLocationManager.getInstance();
+            location = manager.getPeerLocation(userId);
+        }
+        
         if (location != null) {
             mapController.animateTo(location, 18.0, 1000L);
             Toast.makeText(getContext(), "Tracking " + userId, Toast.LENGTH_SHORT).show();
