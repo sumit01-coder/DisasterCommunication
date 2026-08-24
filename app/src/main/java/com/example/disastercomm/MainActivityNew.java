@@ -173,22 +173,32 @@ public class MainActivityNew extends AppCompatActivity implements
         Log.d("DisasterApp", "═══════════════════════════════════════════════════════");
         setContentView(R.layout.activity_main_new);
 
-        // ✅ Auto-hide bottom nav when soft keyboard is visible (using ViewTreeObserver to not break adjustResize)
-        final View rootView = findViewById(android.R.id.content);
-        rootView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-            android.graphics.Rect r = new android.graphics.Rect();
-            rootView.getWindowVisibleDisplayFrame(r);
-            int screenHeight = rootView.getRootView().getHeight();
-            int keypadHeight = screenHeight - r.bottom;
+        // ✅ Auto-hide bottom nav AND manually push layout up for keyboard (DrawerLayout bug fix)
+        View drawerLayout = findViewById(R.id.drawerLayout);
+        if (drawerLayout != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(drawerLayout, (v, insets) -> {
+                // Get keyboard height (IME) and system bar heights (status bar, nav bar)
+                androidx.core.graphics.Insets imeInsets = insets.getInsets(
+                        androidx.core.view.WindowInsetsCompat.Type.ime());
+                androidx.core.graphics.Insets systemBarsInsets = insets.getInsets(
+                        androidx.core.view.WindowInsetsCompat.Type.systemBars());
 
-            if (bottomNav != null) {
-                if (keypadHeight > screenHeight * 0.15) { // Keyboard is opened
-                    bottomNav.setVisibility(View.GONE);
-                } else { // Keyboard is closed
-                    bottomNav.setVisibility(View.VISIBLE);
+                boolean keyboardVisible = insets.isVisible(
+                        androidx.core.view.WindowInsetsCompat.Type.ime());
+
+                // Hide bottom nav when keyboard is open
+                if (bottomNav != null) {
+                    bottomNav.setVisibility(keyboardVisible ? View.GONE : View.VISIBLE);
                 }
-            }
-        });
+
+                // Explicitly apply padding to the drawer layout so it shrinks!
+                // We use the MAX of the system bottom bar or the keyboard, so it's always correct.
+                int bottomInset = Math.max(imeInsets.bottom, systemBarsInsets.bottom);
+                v.setPadding(0, systemBarsInsets.top, 0, bottomInset);
+
+                return androidx.core.view.WindowInsetsCompat.CONSUMED;
+            });
+        }
 
         // ✅ Three-tier username persistence to ensure it NEVER changes:
         // 1. Saved instance state (activity recreation)
