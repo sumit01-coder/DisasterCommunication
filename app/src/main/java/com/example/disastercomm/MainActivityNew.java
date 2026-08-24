@@ -55,6 +55,9 @@ public class MainActivityNew extends AppCompatActivity implements
     private ViewPagerAdapter pagerAdapter;
     private MeshNetworkManager meshNetworkManager;
     private PacketHandler packetHandler;
+    
+    // MeshRoutingTable instance to populate Dashboard Network Intelligence
+    private com.example.disastercomm.network.MeshRoutingTable routingTable = new com.example.disastercomm.network.MeshRoutingTable();
 
     public PacketHandler getPacketHandler() {
         return packetHandler;
@@ -1413,6 +1416,10 @@ public class MainActivityNew extends AppCompatActivity implements
     }
 
     private void addMember(String id, String name, String type) {
+        if (routingTable != null) {
+            routingTable.addNeighbor(id, name);
+        }
+        
         MemberItem member = new MemberItem(id, name);
         member.connectionSource = type; // ✅ Set connection source
 
@@ -1475,6 +1482,10 @@ public class MainActivityNew extends AppCompatActivity implements
     }
 
     private void removeMember(String id) {
+        if (routingTable != null) {
+            routingTable.removeNeighbor(id);
+        }
+        
         MemberItem member = connectedMembers.get(id);
         String name = (member != null) ? member.name : "Unknown Device";
 
@@ -1833,9 +1844,7 @@ public class MainActivityNew extends AppCompatActivity implements
      * Returns the MeshRoutingTable for the NetworkDashboardFragment.
      */
     public com.example.disastercomm.network.MeshRoutingTable getRoutingTable() {
-        // MeshNetworkManager does not yet expose routing table directly.
-        // NetworkDashboardFragment will handle null gracefully.
-        return null;
+        return routingTable;
     }
 }
 
