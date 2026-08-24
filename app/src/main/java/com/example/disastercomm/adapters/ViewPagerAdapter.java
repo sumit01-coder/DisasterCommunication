@@ -29,11 +29,14 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
 
     // Keep old MapFragment ref for backwards compat (openMapAndTrackUser)
     private final com.example.disastercomm.fragments.MapFragment mapFragment;
+    private final String userRole;
 
     public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity,
             PacketHandler packetHandler,
-            String username) {
+            String username,
+            String userRole) {
         super(fragmentActivity);
+        this.userRole = userRole;
 
         this.mapFragment = new com.example.disastercomm.fragments.MapFragment();
         this.chatFragment = ChatFragment.newInstance(packetHandler, username);
@@ -60,7 +63,7 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
 
     @Override
     public int getItemCount() {
-        return 6;
+        return "Rescue Team".equals(userRole) ? 6 : 5;
     }
 
     // ── Getters (used by MainActivityNew) ──────────────────────────────────────

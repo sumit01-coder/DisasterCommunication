@@ -36,7 +36,24 @@ public class RescueDashboardFragment extends Fragment {
         rvIncidents.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new IncidentAdapter(incidents);
         rvIncidents.setAdapter(adapter);
+        
+        loadIncidentsFromDB();
+        
         return root;
+    }
+
+    private void loadIncidentsFromDB() {
+        if (getContext() == null) return;
+        com.example.disastercomm.data.AppDatabase.databaseWriteExecutor.execute(() -> {
+            List<Message> sosMessages = com.example.disastercomm.data.AppDatabase.getDatabase(getContext()).messageDao().getSosMessages();
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    incidents.clear();
+                    incidents.addAll(sosMessages);
+                    sortIncidents();
+                });
+            }
+        });
     }
 
     /**

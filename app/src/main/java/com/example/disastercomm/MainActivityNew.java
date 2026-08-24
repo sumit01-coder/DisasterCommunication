@@ -912,7 +912,8 @@ public class MainActivityNew extends AppCompatActivity implements
     private void setupViewPagerAdapter() {
         if (pagerAdapter == null && packetHandler != null) {
             Log.d("DisasterApp", "📑 Creating ViewPagerAdapter");
-            pagerAdapter = new ViewPagerAdapter(this, packetHandler, username);
+            String userRole = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+            pagerAdapter = new ViewPagerAdapter(this, packetHandler, username, userRole);
             viewPager.setAdapter(pagerAdapter);
             viewPager.setOffscreenPageLimit(5);
             Log.d("DisasterApp", "✅ ViewPager setup complete");
@@ -1873,4 +1874,5 @@ public class MainActivityNew extends AppCompatActivity implements
         return routingTable;
     }
 }
+
 
