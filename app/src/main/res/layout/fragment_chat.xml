@@ -323,12 +323,6 @@
                 android:gravity="center_vertical"
                 android:paddingHorizontal="12dp">
                 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_menu_gallery"
-                    app:tint="@color/text_secondary"/>
-                    
                 <EditText
                     android:id="@+id/etMessage"
                     android:layout_width="0dp"
@@ -342,12 +336,6 @@
                     android:textSize="15sp"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_tertiary"/>
-                    
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_menu_help"
-                    app:tint="@color/text_secondary"/>
             </LinearLayout>
 
             <ImageButton
