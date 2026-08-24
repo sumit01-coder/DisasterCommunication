@@ -111,19 +111,26 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         cardGlobalBroadcast = view.findViewById(R.id.cardGlobalBroadcast);
         btnBackToChannels = view.findViewById(R.id.btnBackToChannels);
 
-        // Auto-scroll to last message when keyboard opens (using ViewTreeObserver)
+        // Auto-scroll to last message and add padding when keyboard opens (using ViewTreeObserver)
         view.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             android.graphics.Rect r = new android.graphics.Rect();
             view.getWindowVisibleDisplayFrame(r);
             int screenHeight = view.getRootView().getHeight();
             int keypadHeight = screenHeight - r.bottom;
 
-            if (keypadHeight > screenHeight * 0.15 && rvMessages != null) {
-                rvMessages.postDelayed(() -> {
-                    int count = rvMessages.getAdapter() != null
-                            ? rvMessages.getAdapter().getItemCount() : 0;
-                    if (count > 0) rvMessages.smoothScrollToPosition(count - 1);
-                }, 100);
+            if (keypadHeight > screenHeight * 0.15) {
+                // Keyboard opened - explicitly shrink the chat layout!
+                view.setPadding(0, 0, 0, keypadHeight);
+                if (rvMessages != null) {
+                    rvMessages.postDelayed(() -> {
+                        int count = rvMessages.getAdapter() != null
+                                ? rvMessages.getAdapter().getItemCount() : 0;
+                        if (count > 0) rvMessages.smoothScrollToPosition(count - 1);
+                    }, 100);
+                }
+            } else {
+                // Keyboard closed
+                view.setPadding(0, 0, 0, 0);
             }
         });
         
