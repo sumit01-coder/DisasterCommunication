@@ -271,30 +271,38 @@
             android:gravity="center_vertical"
             android:baselineAligned="false">
 
+            <!-- Text Input with Blue Border and Smile Icon -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="horizontal"
-                android:background="@drawable/bg_input_field_new"
+                android:background="@drawable/bg_input_field_blue_border"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="12dp">
+                android:paddingHorizontal="16dp">
                 
                 <EditText
                     android:id="@+id/etMessage"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="Broadcast to everyone..."
+                    android:hint="Need help in my area|"
                     android:background="@null"
-                    android:paddingHorizontal="8dp"
                     android:paddingVertical="12dp"
                     android:maxLines="4"
                     android:textSize="15sp"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_tertiary"/>
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_smile"
+                    app:tint="@color/primary"
+                    android:layout_marginStart="8dp"/>
             </LinearLayout>
 
+            <!-- Red Add Button -->
             <ImageButton
                 android:id="@+id/btnSos"
                 android:layout_width="44dp"
@@ -302,21 +310,23 @@
                 android:layout_marginStart="8dp"
                 android:src="@android:drawable/ic_input_add"
                 android:background="@drawable/circle_background"
-                android:backgroundTint="#FEF2F2"
-                app:tint="@color/error"
+                android:backgroundTint="@color/error"
+                app:tint="@color/white"
                 android:contentDescription="Add Attachment"/>
 
+            <!-- Gray Location Button -->
             <ImageButton
                 android:id="@+id/btnLocation"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:layout_marginStart="8dp"
-                android:src="@android:drawable/ic_menu_mylocation"
+                android:src="@drawable/ic_pin"
                 android:background="@drawable/circle_background"
-                android:backgroundTint="#F8F9FA"
-                app:tint="@color/text_secondary"
+                android:backgroundTint="#F0F0F0"
+                app:tint="#4A4A4A"
                 android:contentDescription="Share Location"/>
 
+            <!-- Blue Send Button -->
             <FrameLayout
                 android:id="@+id/btnSend"
                 android:layout_width="44dp"
