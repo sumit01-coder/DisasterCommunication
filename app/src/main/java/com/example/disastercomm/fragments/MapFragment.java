@@ -61,6 +61,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class MapFragment extends Fragment {
+    private boolean isNetworkAvailable() {
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) requireContext().getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            android.net.NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
+            return capabilities != null && (capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR));
+        }
+        return false;
+    }
 
     private MapView mapView;
     private IMapController mapController;
@@ -485,8 +493,8 @@ public class MapFragment extends Fragment {
         dialog.show();
     }
 
-    private void setupMap() {
-        // Use CartoDB Positron (Light) map tiles. It is much more reliable, looks cleaner and doesn't block heavily like OSM.
+        private void setupMap() {
+        // Use CartoDB Positron (Light) map tiles.
         org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase cartoDbPositron = new org.osmdroid.tileprovider.tilesource.XYTileSource("CartoDBPositron",
                 0, 20, 256, ".png", new String[]{
                 "https://a.basemaps.cartocdn.com/light_all/",
@@ -494,6 +502,15 @@ public class MapFragment extends Fragment {
                 "https://c.basemaps.cartocdn.com/light_all/"
         });
         mapView.setTileSource(cartoDbPositron);
+        
+        // Handle Offline Maps
+        boolean isOffline = !isNetworkAvailable();
+        mapView.setUseDataConnection(!isOffline);
+        
+        if (isOffline) {
+            Toast.makeText(requireContext(), "Map is running in offline mode. Showing cached tiles.", Toast.LENGTH_SHORT).show();
+        }
+
         mapView.setMultiTouchControls(true);
         mapView.setBuiltInZoomControls(false);
         mapView.setTilesScaledToDpi(true);
@@ -1134,3 +1151,4 @@ public class MapFragment extends Fragment {
         if (mapView != null) mapView.onDetach();
     }
 }
+

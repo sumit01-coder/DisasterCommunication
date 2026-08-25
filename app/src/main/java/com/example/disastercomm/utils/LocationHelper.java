@@ -29,8 +29,16 @@ public class LocationHelper {
 
     @SuppressLint("MissingPermission") // Permissions are checked in MainActivity before calling
     public void getCurrentLocation(LocationListener listener) {
-        // Always request fresh location for highest accuracy instead of using stale last known location
-        requestNewLocationData(listener);
+        // First try to get the last known location quickly
+        fusedLocationClient.getLastLocation().addOnSuccessListener(loc -> {
+            if (loc != null) {
+                listener.onLocationReceived(loc.getLatitude(), loc.getLongitude());
+            }
+            // Always request fresh location for highest accuracy in the background
+            requestNewLocationData(listener);
+        }).addOnFailureListener(e -> {
+            requestNewLocationData(listener);
+        });
     }
 
     @SuppressLint("MissingPermission")
