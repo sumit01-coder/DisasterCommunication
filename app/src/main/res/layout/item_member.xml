@@ -103,6 +103,32 @@
             app:layout_constraintBottom_toBottomOf="@id/ivSignalStrength"
             app:layout_constraintStart_toEndOf="@id/ivSignalStrength"/>
 
+        <!-- Battery Info -->
+        <ImageView
+            android:id="@+id/ivBattery"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_battery"
+            app:tint="@color/text_tertiary"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="@id/ivSignalStrength"
+            app:layout_constraintBottom_toBottomOf="@id/ivSignalStrength"
+            app:layout_constraintStart_toEndOf="@id/tvLastActive"/>
+
+        <TextView
+            android:id="@+id/tvBattery"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
+            android:text="100%"
+            android:textSize="11sp"
+            android:textColor="@color/text_tertiary"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="@id/ivSignalStrength"
+            app:layout_constraintBottom_toBottomOf="@id/ivSignalStrength"
+            app:layout_constraintStart_toEndOf="@id/ivBattery"/>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>

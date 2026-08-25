@@ -1597,7 +1597,18 @@ public class MainActivityNew extends AppCompatActivity implements
         MembersFragment membersFragment = pagerAdapter.getMembersFragment();
         if (membersFragment != null) {
             List<MemberItem> memberList = new ArrayList<>(connectedMembers.values());
-            Log.d("DisasterApp", "🔄 UPDATING MEMBERS FRAGMENT with " + memberList.size() + " members");
+            
+            // Sync battery levels from RoutingTable
+            for (MemberItem m : memberList) {
+                if (routingTable != null) {
+                    com.example.disastercomm.network.MeshRoutingTable.NeighborInfo node = routingTable.getNeighbors().get(m.id);
+                    if (node != null) {
+                        m.batteryLevel = node.batteryLevel;
+                    }
+                }
+            }
+
+            Log.d("DisasterApp", "📡 UPDATING MEMBERS FRAGMENT with " + memberList.size() + " members");
             for (MemberItem m : memberList) {
                 Log.d("DisasterApp", "   - " + m.name + " (" + m.connectionSource + ", " +
                         (m.isOnline ? "Online" : "Offline") + ")");
@@ -1873,6 +1884,22 @@ public class MainActivityNew extends AppCompatActivity implements
     public com.example.disastercomm.network.MeshRoutingTable getRoutingTable() {
         return routingTable;
     }
-}
 
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
+        if (ev.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+            android.view.View v = getCurrentFocus();
+            if (v instanceof android.widget.EditText) {
+                android.graphics.Rect outRect = new android.graphics.Rect();
+                v.getGlobalVisibleRect(outRect);
+                if (!outRect.contains((int) ev.getRawX(), (int) ev.getRawY())) {
+                    v.clearFocus();
+                    android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev);
+    }
+}
 

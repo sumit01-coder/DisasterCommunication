@@ -73,6 +73,8 @@ public class MembersAdapter extends RecyclerView.Adapter<MembersAdapter.MemberVi
         TextView tvConnectionInfo;
         TextView tvLastActive;
         android.widget.ImageView ivSignalStrength;
+        android.widget.ImageView ivBattery;
+        TextView tvBattery;
 
         MemberViewHolder(View itemView) {
             super(itemView);
@@ -82,6 +84,8 @@ public class MembersAdapter extends RecyclerView.Adapter<MembersAdapter.MemberVi
             tvConnectionInfo = itemView.findViewById(R.id.tvConnectionInfo);
             tvLastActive = itemView.findViewById(R.id.tvLastActive);
             ivSignalStrength = itemView.findViewById(R.id.ivSignalStrength);
+            ivBattery = itemView.findViewById(R.id.ivBattery);
+            tvBattery = itemView.findViewById(R.id.tvBattery);
         }
 
         void bind(MemberItem member) {
@@ -113,6 +117,25 @@ public class MembersAdapter extends RecyclerView.Adapter<MembersAdapter.MemberVi
                 viewOnlineStatus.setVisibility(member.isOnline ? View.VISIBLE : View.GONE);
             }
 
+            // Battery Info
+            if (member.batteryLevel >= 0) {
+                ivBattery.setVisibility(View.VISIBLE);
+                tvBattery.setVisibility(View.VISIBLE);
+                tvBattery.setText(member.batteryLevel + "%");
+                
+                int batteryColor = android.graphics.Color.parseColor("#10B981"); // Green
+                if (member.batteryLevel <= 15) {
+                    batteryColor = android.graphics.Color.parseColor("#EF4444"); // Red
+                } else if (member.batteryLevel <= 30) {
+                    batteryColor = android.graphics.Color.parseColor("#F59E0B"); // Orange
+                }
+                ivBattery.setColorFilter(batteryColor);
+                tvBattery.setTextColor(batteryColor);
+            } else {
+                ivBattery.setVisibility(View.GONE);
+                tvBattery.setVisibility(View.GONE);
+            }
+
             // Signal strength
             if (ivSignalStrength != null) {
                 ivSignalStrength.setColorFilter(Color.parseColor(member.getSignalBadgeColor()));
@@ -124,3 +147,4 @@ public class MembersAdapter extends RecyclerView.Adapter<MembersAdapter.MemberVi
         }
     }
 }
+

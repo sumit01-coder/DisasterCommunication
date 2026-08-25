@@ -18,7 +18,8 @@ public class MemberItem {
     public int connectionQuality; // Connection quality percentage (0-100)
     public int hopCount; // Number of hops in mesh network
     public long lastSeenTimestamp; // Timestamp when last seen online
-    public boolean isTyping; // Whether user is currently typing
+    public boolean isTyping = false;
+    public int batteryLevel = -1; // -1 means unknown // Whether user is currently typing
     public int coverageRange; // Max range in meters for this node's connection type
     public String role; // "CIVILIAN", "RESCUE", "MEDICAL", "VOLUNTEER"
 
@@ -141,3 +142,4 @@ public class MemberItem {
         return lastMessagePreview;
     }
 }
+
