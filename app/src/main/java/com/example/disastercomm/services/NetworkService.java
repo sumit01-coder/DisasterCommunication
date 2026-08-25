@@ -102,8 +102,15 @@ public class NetworkService extends Service {
         // Database
         AppDatabase db = AppDatabase.getDatabase(this);
 
+        // Get user role and map it
+        String userRole = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+        String mappedRole = "CIVILIAN";
+        if ("Rescue Team".equals(userRole)) mappedRole = "RESCUE";
+        else if ("Medic".equals(userRole)) mappedRole = "MEDICAL";
+        else if ("Official".equals(userRole)) mappedRole = "VOLUNTEER";
+
         // 1. Mesh Network
-        meshNetworkManager = new MeshNetworkManager(this, username, new MeshNetworkManager.MeshCallback() {
+        meshNetworkManager = new MeshNetworkManager(this, username, mappedRole, new MeshNetworkManager.MeshCallback() {
             @Override
             public void onDeviceConnected(String endpointId, String deviceName) {
                 // Forward to Activity via Broadcast or Callback

@@ -37,6 +37,7 @@ public class MeshNetworkManager {
     private final ConnectionsClient connectionsClient;
     private final String deviceId;
     private String username;
+    private String userRole;
     private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
     private static final long DISCOVERY_RESTART_DELAY = 1000; // OPTIMIZED: Reduced from 2000ms
     private static final long CONNECTION_RETRY_DELAY = 1000; // OPTIMIZED: Reduced from 3000ms
@@ -71,9 +72,10 @@ public class MeshNetworkManager {
 
     private MeshCallback callback;
 
-    public MeshNetworkManager(Context context, String username, MeshCallback callback) {
+    public MeshNetworkManager(Context context, String username, String userRole, MeshCallback callback) {
         this.context = context;
         this.username = username;
+        this.userRole = userRole;
         this.callback = callback;
         this.connectionsClient = Nearby.getConnectionsClient(context);
         this.deviceId = DeviceUtil.getDeviceId(context);
@@ -146,7 +148,7 @@ public class MeshNetworkManager {
 
         connectionsClient
                 .startAdvertising(
-                        username + "__" + deviceId, // Name + UUID for unique identity
+                        username + "__" + deviceId + "__" + userRole, // Name + UUID + Role for unique identity
                         SERVICE_ID,
                         connectionLifecycleCallback,
                         advertisingOptions)

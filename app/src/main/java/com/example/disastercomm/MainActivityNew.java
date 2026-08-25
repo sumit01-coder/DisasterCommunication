@@ -1099,15 +1099,21 @@ public class MainActivityNew extends AppCompatActivity implements
         runOnUiThread(() -> {
             String displayName = deviceName;
             String peerId = endpointId; // Default fallback
+            String role = "CIVILIAN";
 
             // Parse "Name__UUID" format
             if (deviceName.contains("__")) {
                 String[] parts = deviceName.split("__");
-                if (parts.length == 2) {
+                if (parts.length >= 2) {
                     displayName = parts[0];
                     peerId = parts[1]; // Real UUID for private chat
                 }
+                if (parts.length >= 3) {
+                    role = parts[2];
+                }
             }
+            
+            com.example.disastercomm.PeerLocationManager.getInstance().updatePeerRole(peerId, role);
 
             // ✅ DEBUG: Log mesh connection
             MessageDebugHelper.logConnection(peerId, displayName, "Mesh", true);
@@ -1440,6 +1446,7 @@ public class MainActivityNew extends AppCompatActivity implements
         
         MemberItem member = new MemberItem(id, name);
         member.connectionSource = type; // ✅ Set connection source
+        member.role = com.example.disastercomm.PeerLocationManager.getInstance().getPeerRole(id);
 
         // Initialize coverage range and default signal
         if ("Bluetooth".equalsIgnoreCase(type)) {
@@ -1902,4 +1909,5 @@ public class MainActivityNew extends AppCompatActivity implements
         return super.dispatchTouchEvent(ev);
     }
 }
+
 
