@@ -23,7 +23,8 @@ public class Message {
         ROUTE_REQUEST, 
         ROUTE_REPLY, 
         ROUTE_ERROR,
-        MAP_MARKER
+        MAP_MARKER,
+        NETWORK_STATE_REQUEST
     }
 
     public enum Status {

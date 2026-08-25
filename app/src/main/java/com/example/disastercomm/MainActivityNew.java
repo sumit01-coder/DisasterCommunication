@@ -1150,6 +1150,16 @@ public class MainActivityNew extends AppCompatActivity implements
                     if (packetHandler != null) {
                         packetHandler.sendMessage(locMsg);
                     }
+                    
+                    // Rescue Node Hub Mode: Ask all nodes to report their state
+                    String myRole = getSharedPreferences("UserPrefs", MODE_PRIVATE).getString("role", "Civilian");
+                    if ("Rescue Team".equals(myRole)) {
+                        Message stateRequestMsg = new Message(DeviceUtil.getDeviceId(MainActivityNew.this), username, Message.Type.NETWORK_STATE_REQUEST, "STATUS_REQUEST");
+                        stateRequestMsg.receiverId = "ALL";
+                        if (packetHandler != null) {
+                            packetHandler.sendMessage(stateRequestMsg);
+                        }
+                    }
                 });
             }
         });
@@ -1217,6 +1227,21 @@ public class MainActivityNew extends AppCompatActivity implements
                     if (message.type == Message.Type.DELIVERY_RECEIPT) {
                         notificationSoundManager.playDeliverySound();
                     }
+                }
+                return;
+            }
+
+            // Handle network state request (from Rescue Hubs)
+            if (message.type == Message.Type.NETWORK_STATE_REQUEST) {
+                if (locationHelper != null) {
+                    locationHelper.getCurrentLocation((lat, lng) -> {
+                        String locPayload = lat + "," + lng;
+                        Message locMsg = new Message(DeviceUtil.getDeviceId(MainActivityNew.this), username, Message.Type.LOCATION_UPDATE, locPayload);
+                        locMsg.receiverId = "ALL";
+                        if (packetHandler != null) {
+                            packetHandler.sendMessage(locMsg);
+                        }
+                    });
                 }
                 return;
             }

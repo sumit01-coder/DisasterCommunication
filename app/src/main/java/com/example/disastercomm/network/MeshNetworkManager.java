@@ -113,6 +113,10 @@ public class MeshNetworkManager {
     }
     
     public void setLowPowerMode(boolean lowPower) {
+        if ("RESCUE".equals(this.userRole)) {
+            Log.d(TAG, "Rescue Hub Mode active. Ignoring low power request to maintain network.");
+            return;
+        }
         this.isLowPowerMode = lowPower;
         if (lowPower) {
             stopDiscovery(); // Stop actively scanning to save battery
