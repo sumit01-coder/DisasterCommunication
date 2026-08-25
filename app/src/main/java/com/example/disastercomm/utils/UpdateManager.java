@@ -109,12 +109,13 @@ public class UpdateManager {
                 String body = release.optString("body", "No release notes.");
                 String currentVersion = getAppVersion();
 
-                if (!tagName.equalsIgnoreCase(currentVersion) && !tagName.equals("v" + currentVersion)) {
+                if (isVersionNewer(tagName, currentVersion)) {
                     String lastDismissedVersion = getLastDismissedVersion();
-                    if (lastDismissedVersion != null &&
+                    // Only ignore dismissed versions if this is a SILENT background check.
+                    // If the user manually clicked "Check for Updates", show it even if previously dismissed!
+                    if (isSilentCheck && lastDismissedVersion != null &&
                             (tagName.equalsIgnoreCase(lastDismissedVersion) || tagName.equals("v" + lastDismissedVersion))) {
-                        Log.d(TAG, "Update " + tagName + " was already dismissed by user");
-                        if (!isSilentCheck) Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "Update " + tagName + " was already dismissed by user (silent check aborted)");
                         return;
                     }
                     saveLastNotifiedVersion(tagName);
@@ -288,10 +289,9 @@ public class UpdateManager {
                     String currentVersion = getAppVersion();
 
                     // Logic to check if newer
-                    boolean isNewer = !tagName.equalsIgnoreCase(currentVersion)
-                            && !tagName.equals("v" + currentVersion);
+                    boolean isNewer = isVersionNewer(tagName, currentVersion);
 
-                    // ✅ Check if this version was already dismissed
+                    // o. Check if this version was already dismissed
                     if (isNewer) {
                         String lastDismissedVersion = getLastDismissedVersion();
                         if (lastDismissedVersion != null &&
@@ -353,6 +353,28 @@ public class UpdateManager {
     // ============================================================
     // SharedPreferences Helper Methods for Version Tracking
     // ============================================================
+
+    private boolean isVersionNewer(String latestTag, String currentVersion) {
+        try {
+            String latest = latestTag.replace("v", "").replace("V", "");
+            String current = currentVersion.replace("v", "").replace("V", "");
+            
+            String[] latestParts = latest.split("\\.");
+            String[] currentParts = current.split("\\.");
+            
+            int length = Math.max(latestParts.length, currentParts.length);
+            for (int i = 0; i < length; i++) {
+                int latestPart = i < latestParts.length ? Integer.parseInt(latestParts[i]) : 0;
+                int currentPart = i < currentParts.length ? Integer.parseInt(currentParts[i]) : 0;
+                if (latestPart < currentPart) return false;
+                if (latestPart > currentPart) return true;
+            }
+        } catch (Exception e) {
+            // Fallback for non-standard version names
+            return !latestTag.equalsIgnoreCase(currentVersion) && !latestTag.equals("v" + currentVersion);
+        }
+        return false;
+    }
 
     /**
      * Get the last version that was dismissed by the user
