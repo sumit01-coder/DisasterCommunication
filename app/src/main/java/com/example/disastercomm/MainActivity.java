@@ -332,7 +332,14 @@ public class MainActivity extends AppCompatActivity
         // Initialize Connection Pool Manager first
         connectionPoolManager = new com.example.disastercomm.network.ConnectionPoolManager();
 
-        meshNetworkManager = new MeshNetworkManager(this, username, this);
+        // Get user role and map it
+        String userRole = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+        String mappedRole = "CIVILIAN";
+        if ("Rescue Team".equals(userRole)) mappedRole = "RESCUE";
+        else if ("Medic".equals(userRole)) mappedRole = "MEDICAL";
+        else if ("Official".equals(userRole)) mappedRole = "VOLUNTEER";
+
+        meshNetworkManager = new MeshNetworkManager(this, username, mappedRole, this);
         meshNetworkManager.setConnectionPoolManager(connectionPoolManager);
 
         packetHandler = new PacketHandler(this, meshNetworkManager, AppDatabase.getDatabase(this));
