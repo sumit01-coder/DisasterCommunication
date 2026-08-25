@@ -103,7 +103,7 @@ public class NetworkService extends Service {
         AppDatabase db = AppDatabase.getDatabase(this);
 
         // Get user role and map it
-        String userRole = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+        String userRole = getSharedPreferences("UserPrefs", MODE_PRIVATE).getString("role", "Civilian");
         String mappedRole = "CIVILIAN";
         if ("Rescue Team".equals(userRole)) mappedRole = "RESCUE";
         else if ("Medic".equals(userRole)) mappedRole = "MEDICAL";
@@ -399,3 +399,4 @@ public class NetworkService extends Service {
         return sb.toString();
     }
 }
+

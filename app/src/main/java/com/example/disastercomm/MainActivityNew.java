@@ -463,7 +463,7 @@ public class MainActivityNew extends AppCompatActivity implements
         
         tvUserName.setText(username);
         if (tvUserRole != null) {
-            String role = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+            String role = getSharedPreferences("UserPrefs", MODE_PRIVATE).getString("role", "Civilian");
             tvUserRole.setText(role);
         }
         
@@ -485,7 +485,7 @@ public class MainActivityNew extends AppCompatActivity implements
         }
 
         // Rescue Dashboard RBAC
-        String userRole = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+        String userRole = getSharedPreferences("UserPrefs", MODE_PRIVATE).getString("role", "Civilian");
         if (!"Rescue Team".equals(userRole)) {
             android.view.Menu navMenu = navigationView.getMenu();
             android.view.MenuItem rescueItem = navMenu.findItem(R.id.nav_rescue_dashboard);
@@ -912,7 +912,7 @@ public class MainActivityNew extends AppCompatActivity implements
     private void setupViewPagerAdapter() {
         if (pagerAdapter == null && packetHandler != null) {
             Log.d("DisasterApp", "📑 Creating ViewPagerAdapter");
-            String userRole = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+            String userRole = getSharedPreferences("UserPrefs", MODE_PRIVATE).getString("role", "Civilian");
             pagerAdapter = new ViewPagerAdapter(this, packetHandler, username, userRole);
             viewPager.setAdapter(pagerAdapter);
             viewPager.setOffscreenPageLimit(5);
@@ -1690,7 +1690,7 @@ public class MainActivityNew extends AppCompatActivity implements
                         tvUserInitial.setText(username.substring(0, 1).toUpperCase());
                         
                     if (tvUserRole != null) {
-                        String role = getSharedPreferences("UserProfile", MODE_PRIVATE).getString("role", "Civilian");
+                        String role = getSharedPreferences("UserPrefs", MODE_PRIVATE).getString("role", "Civilian");
                         tvUserRole.setText(role);
                     }
                 }
@@ -1909,5 +1909,6 @@ public class MainActivityNew extends AppCompatActivity implements
         return super.dispatchTouchEvent(ev);
     }
 }
+
 
 
