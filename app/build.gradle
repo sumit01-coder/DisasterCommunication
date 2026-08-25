@@ -10,8 +10,8 @@ android {
         applicationId "com.example.disastercomm"
         minSdk 26 // Increased from 24 to support WifiAwareNetworkManager natively
         targetSdk 35
-        versionCode 38
-        versionName "5.14.0"
+        versionCode 39
+        versionName "5.14.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
