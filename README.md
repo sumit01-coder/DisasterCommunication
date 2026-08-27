@@ -49,9 +49,11 @@
 
 ---
 
-## ✨ Key Features (Updated in v5.15.0)
+## 🔑 Key Features (Updated in v5.15.0)
 
 - **Rescue Node Hub Topology:** Devices configured as "Rescue Team" automatically act as central always-on hubs, forcing auto-discovery of all nearby nodes without entering low-power states.
+- **Offline Photo Sharing:** Capture and transmit highly-compressed thumbnail images over the decentralized mesh network without exceeding strict 32KB payload limits.
+- **Open-Source Map Tiles:** Full integration with free, non-watermarked OpenStreetMap (Mapnik) tiles for API key-free offline tracking.
 - **App-less Emergency Captive Portals:** Users without the app can connect to open emergency WiFi networks to receive SMS-style emergency alerts and an offline APK download link via a captive portal.
 - **Role-Based Access Control (RBAC):** Users choose between "Civilian" and "Rescue Team" during login. Rescue Teams get exclusive access to the specialized Rescue Dashboard.
 - **Rescue Dashboard:** A dedicated command-center view for First Responders that loads historical and active SOS requests from local Room database storage.
@@ -109,6 +111,7 @@ Placed on trees or rooftops and powered by small 5V solar panels and 18650 batte
 #### Message Types
 
 - `TEXT`: Regular chat message
+- `IMAGE`: Highly-compressed Base64 thumbnail images
 - `SOS`: Emergency distress signal (Ranked by Priority Score)
 - `LOCATION_UPDATE`: Live GPS coordinates broadcast
 - `NETWORK_STATE_REQUEST`: Discovery ping for Hubs
