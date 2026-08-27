@@ -1,4 +1,4 @@
-# Disaster Communication System v5.15.0
+# Disaster Communication System v5.16.0
 
 <p align="center">
   <img src="app/src/main/res/drawable/ic_app_logo.png" alt="DisasterComm Logo" width="120"/>
@@ -49,7 +49,7 @@
 
 ---
 
-## 🔑 Key Features (Updated in v5.15.0)
+## 🔑 Key Features (Updated in v5.16.0)
 
 - **Rescue Node Hub Topology:** Devices configured as "Rescue Team" automatically act as central always-on hubs, forcing auto-discovery of all nearby nodes without entering low-power states.
 - **Offline Photo Sharing:** Capture and transmit highly-compressed thumbnail images over the decentralized mesh network without exceeding strict 32KB payload limits.
@@ -68,7 +68,7 @@
 
 ## 🚁 Rescue Node Hub Mode
 
-In v5.15.0, Rescue Team devices function as autonomous network backbones:
+In v5.16.0, Rescue Team devices function as autonomous network backbones:
 1. **Always-On:** Rescue nodes completely ignore battery-saving protocols.
 2. **Network State Pings:** When a rescue node connects, it sends a `NETWORK_STATE_REQUEST` ping to all available devices across the mesh.
 3. **Instant Visibility:** Any device (Civilian or Medic) receiving this ping instantly replies with GPS coordinates, role, and battery status, populating the Rescue Map with every connected node simultaneously.
