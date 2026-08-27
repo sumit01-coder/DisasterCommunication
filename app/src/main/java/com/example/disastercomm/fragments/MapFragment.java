@@ -131,8 +131,8 @@ public class MapFragment extends Fragment {
         // Initialize OSM configuration BEFORE inflating layout to prevent blocked tiles
         Context ctx = requireContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
-        // Use a highly specific User-Agent to comply with OSM policies
-        Configuration.getInstance().setUserAgentValue(ctx.getPackageName() + "/1.0 (disastercomm@example.com)");
+        // Use a highly specific User-Agent to comply with OSM policies. Do not use com.example.*
+        Configuration.getInstance().setUserAgentValue("DisasterCommApp/5.15.0 (contact@disastercomm.org)");
 
         File cacheDir = new File(ctx.getCacheDir(), "osm_v3");
         if (!cacheDir.exists()) cacheDir.mkdirs();
