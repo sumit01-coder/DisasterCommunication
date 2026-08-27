@@ -40,6 +40,17 @@
                 android:layout_marginBottom="4dp"
                 android:visibility="gone"/>
 
+            <!-- Image Attachment -->
+            <ImageView
+                android:id="@+id/ivImage"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:layout_marginBottom="4dp"
+                android:adjustViewBounds="true"
+                android:background="#DDDDDD" />
+
             <!-- Message Text -->
             <TextView
                 android:id="@+id/tvMessage"

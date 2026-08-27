@@ -326,6 +326,18 @@
                 app:tint="#4A4A4A"
                 android:contentDescription="Share Location"/>
 
+            <!-- Camera Button -->
+            <ImageButton
+                android:id="@+id/btnCamera"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="8dp"
+                android:src="@android:drawable/ic_menu_camera"
+                android:background="@drawable/circle_background"
+                android:backgroundTint="#F0F0F0"
+                app:tint="#4A4A4A"
+                android:contentDescription="Capture Photo"/>
+
             <!-- Blue Send Button -->
             <FrameLayout
                 android:id="@+id/btnSend"

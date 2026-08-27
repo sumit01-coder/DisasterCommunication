@@ -44,6 +44,8 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
     private View cardGlobalBroadcast;
     private android.widget.ImageView btnBackToChannels;
     private com.example.disastercomm.adapters.MembersAdapter privateChatsAdapter; // ✅ Member adapter for private chats
+    
+    private androidx.activity.result.ActivityResultLauncher<Void> takePictureLauncher;
 
     public void setRecipient(String id, String name) {
         this.recipientId = id;
@@ -93,6 +95,16 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         fragment.packetHandler = packetHandler;
         fragment.username = username;
         return fragment;
+    }
+
+    @Override
+    public void onCreate(@androidx.annotation.Nullable android.os.Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        takePictureLauncher = registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.TakePicturePreview(), bitmap -> {
+            if (bitmap != null) {
+                sendImageMessage(bitmap);
+            }
+        });
     }
 
     @Nullable
@@ -238,9 +250,15 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         }
 
         // SOS Button click (New)
-        ImageButton btnSos = view.findViewById(R.id.btnSos);
+        android.widget.ImageButton btnSos = view.findViewById(R.id.btnSos);
         if (btnSos != null) {
             btnSos.setOnClickListener(v -> sendGlobalSos());
+        }
+
+        // Camera Button click (New)
+        android.widget.ImageButton btnCamera = view.findViewById(R.id.btnCamera);
+        if (btnCamera != null) {
+            btnCamera.setOnClickListener(v -> takePhoto());
         }
 
         // Private Chats List (New)
@@ -736,6 +754,49 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnLocationClic
         } else {
             android.widget.Toast.makeText(getContext(), "Debugging: Location clicked for user " + userId,
                     android.widget.Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void takePhoto() {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{android.Manifest.permission.CAMERA}, 100);
+        } else {
+            takePictureLauncher.launch(null);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @androidx.annotation.NonNull String[] permissions, @androidx.annotation.NonNull int[] grantResults) {
+        if (requestCode == 100 && grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            takePictureLauncher.launch(null);
+        }
+    }
+
+    private void sendImageMessage(android.graphics.Bitmap bitmap) {
+        try {
+            // Compress image to fit within Network payload constraints
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            // Using 30% quality for extreme compression for the mesh network
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 30, baos);
+            byte[] imageBytes = baos.toByteArray();
+            String encodedImage = android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT);
+
+            Message message = new Message(myId, username, Message.Type.IMAGE, encodedImage);
+            message.receiverId = recipientId == null ? "ALL" : recipientId;
+
+            if (packetHandler != null) {
+                packetHandler.sendMessage(message);
+                if (recipientId != null) {
+                    messageCache.addMessage(myId, recipientId, message);
+                } else {
+                    messageCache.addMessage(myId, "ALL", message);
+                }
+                chatAdapter.addMessage(message);
+                rvMessages.scrollToPosition(chatAdapter.getItemCount() - 1);
+            }
+        } catch (Exception e) {
+            android.util.Log.e("ChatFragment", "Failed to send image", e);
+            android.widget.Toast.makeText(getContext(), "Failed to compress/send image", android.widget.Toast.LENGTH_SHORT).show();
         }
     }
 }

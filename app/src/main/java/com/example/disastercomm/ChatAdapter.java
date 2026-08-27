@@ -109,12 +109,18 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         Message message = messages.get(position);
         int viewType = getItemViewType(position);
 
-        // Handle location updates specifically
+        // Handle specific message types
         if (message.type == Message.Type.LOCATION_UPDATE) {
             if (holder instanceof SentMessageHolder) {
                 ((SentMessageHolder) holder).bindLocation(message, timeFormat, locationClickListener);
             } else {
                 ((ReceivedMessageHolder) holder).bindLocation(message, timeFormat, locationClickListener);
+            }
+        } else if (message.type == Message.Type.IMAGE) {
+            if (holder instanceof SentMessageHolder) {
+                ((SentMessageHolder) holder).bindImage(message, timeFormat);
+            } else {
+                ((ReceivedMessageHolder) holder).bindImage(message, timeFormat);
             }
         } else {
             if (holder instanceof SentMessageHolder) {
@@ -132,7 +138,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     static class SentMessageHolder extends RecyclerView.ViewHolder {
         TextView tvMessage, tvTimestamp;
-        android.widget.ImageView ivStatus;
+        android.widget.ImageView ivStatus, ivImage;
         View messageBubble;
 
         SentMessageHolder(View itemView) {
@@ -140,10 +146,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvMessage = itemView.findViewById(R.id.tvMessage);
             tvTimestamp = itemView.findViewById(R.id.tvTimestamp);
             ivStatus = itemView.findViewById(R.id.ivStatus);
+            ivImage = itemView.findViewById(R.id.ivImage);
             messageBubble = itemView.findViewById(R.id.cvMessageBubble);
         }
 
         void bind(Message message, SimpleDateFormat timeFormat, OnLocationClickListener locationClickListener) {
+            tvMessage.setVisibility(View.VISIBLE);
+            if (ivImage != null) ivImage.setVisibility(View.GONE);
+            
             tvMessage.setText(message.content);
             tvTimestamp.setText(timeFormat.format(new Date(message.timestamp)));
 
@@ -178,6 +188,9 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         void bindLocation(Message message, SimpleDateFormat timeFormat, OnLocationClickListener locationClickListener) {
+            tvMessage.setVisibility(View.VISIBLE);
+            if (ivImage != null) ivImage.setVisibility(View.GONE);
+            
             tvMessage.setText("📍 Shared Live Location\nTap to view on map");
             tvMessage.setTypeface(null, android.graphics.Typeface.BOLD);
             tvTimestamp.setText(timeFormat.format(new Date(message.timestamp)));
@@ -188,6 +201,27 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     locationClickListener.onLocationClick(userId, message.content);
                 }
             });
+            updateStatus(message);
+        }
+
+        void bindImage(Message message, SimpleDateFormat timeFormat) {
+            tvMessage.setVisibility(View.GONE);
+            if (ivImage != null) {
+                ivImage.setVisibility(View.VISIBLE);
+                try {
+                    byte[] decodedString = android.util.Base64.decode(message.content, android.util.Base64.DEFAULT);
+                    android.graphics.Bitmap decodedByte = android.graphics.BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                    ivImage.setImageBitmap(decodedByte);
+                } catch (Exception e) {
+                    tvMessage.setVisibility(View.VISIBLE);
+                    tvMessage.setText("📷 [Image corrupted or too large]");
+                    ivImage.setVisibility(View.GONE);
+                }
+            }
+            tvTimestamp.setText(timeFormat.format(new Date(message.timestamp)));
+            if (messageBubble != null) {
+                messageBubble.setBackgroundResource(R.drawable.bg_chat_sent_new);
+            }
             updateStatus(message);
         }
 
@@ -223,6 +257,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     static class ReceivedMessageHolder extends RecyclerView.ViewHolder {
         TextView tvSenderName, tvMessage, tvTimestamp;
+        android.widget.ImageView ivImage;
         View messageBubble;
 
         ReceivedMessageHolder(View itemView) {
@@ -230,6 +265,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvSenderName = itemView.findViewById(R.id.tvSenderName);
             tvMessage = itemView.findViewById(R.id.tvMessage);
             tvTimestamp = itemView.findViewById(R.id.tvTimestamp);
+            ivImage = itemView.findViewById(R.id.ivImage);
             messageBubble = itemView.findViewById(R.id.cvMessageBubble);
         }
 
@@ -244,6 +280,9 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 tvSenderName.setTextColor(itemView.getResources().getColor(R.color.text_secondary, null));
             }
 
+            tvMessage.setVisibility(View.VISIBLE);
+            if (ivImage != null) ivImage.setVisibility(View.GONE);
+            
             tvMessage.setText(message.content);
             tvTimestamp.setText(timeFormat.format(new Date(message.timestamp)));
 
@@ -288,6 +327,9 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 tvSenderName.setVisibility(View.VISIBLE);
             }
 
+            tvMessage.setVisibility(View.VISIBLE);
+            if (ivImage != null) ivImage.setVisibility(View.GONE);
+            
             tvMessage.setText("📍 Shared Live Location\nTap to view on map");
             tvMessage.setTypeface(null, android.graphics.Typeface.BOLD);
             tvMessage.setTextColor(itemView.getResources().getColor(R.color.primary, null)); // Blue-ish
@@ -299,6 +341,35 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     locationClickListener.onLocationClick(userId, message.content);
                 }
             });
+        }
+        
+        void bindImage(Message message, SimpleDateFormat timeFormat) {
+            String displayName = (message.senderName != null && !message.senderName.isEmpty())
+                    ? message.senderName
+                    : message.senderId.substring(0, Math.min(8, message.senderId.length()));
+
+            if (tvSenderName != null) {
+                tvSenderName.setText(displayName);
+                tvSenderName.setVisibility(View.VISIBLE);
+            }
+
+            tvMessage.setVisibility(View.GONE);
+            if (ivImage != null) {
+                ivImage.setVisibility(View.VISIBLE);
+                try {
+                    byte[] decodedString = android.util.Base64.decode(message.content, android.util.Base64.DEFAULT);
+                    android.graphics.Bitmap decodedByte = android.graphics.BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                    ivImage.setImageBitmap(decodedByte);
+                } catch (Exception e) {
+                    tvMessage.setVisibility(View.VISIBLE);
+                    tvMessage.setText("📷 [Image corrupted or too large]");
+                    ivImage.setVisibility(View.GONE);
+                }
+            }
+            tvTimestamp.setText(timeFormat.format(new Date(message.timestamp)));
+            if (messageBubble != null) {
+                messageBubble.setBackgroundResource(R.drawable.bg_chat_received_new);
+            }
         }
     }
 

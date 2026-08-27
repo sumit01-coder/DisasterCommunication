@@ -24,7 +24,8 @@ public class Message {
         ROUTE_REPLY, 
         ROUTE_ERROR,
         MAP_MARKER,
-        NETWORK_STATE_REQUEST
+        NETWORK_STATE_REQUEST,
+        IMAGE
     }
 
     public enum Status {
