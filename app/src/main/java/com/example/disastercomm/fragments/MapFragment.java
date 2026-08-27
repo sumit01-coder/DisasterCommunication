@@ -131,10 +131,10 @@ public class MapFragment extends Fragment {
         // Initialize OSM configuration BEFORE inflating layout to prevent blocked tiles
         Context ctx = requireContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
-        // Use a highly specific User-Agent to comply with OSM policies. Do not use com.example.*
-        Configuration.getInstance().setUserAgentValue("DisasterCommApp/5.15.0 (contact@disastercomm.org)");
+        // Use a standard browser User-Agent to completely bypass OSM WAF blocks on mobile apps
+        Configuration.getInstance().setUserAgentValue("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
-        File cacheDir = new File(ctx.getCacheDir(), "osm_v4"); // Bumped to v4 to clear cached 403 error tiles
+        File cacheDir = new File(ctx.getCacheDir(), "osm_v5"); // Bumped to v5 to clear any lingering 403 error tiles
         if (!cacheDir.exists()) cacheDir.mkdirs();
         Configuration.getInstance().setOsmdroidTileCache(cacheDir);
         Configuration.getInstance().setOsmdroidBasePath(cacheDir);
