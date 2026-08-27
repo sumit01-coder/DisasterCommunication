@@ -134,7 +134,7 @@ public class MapFragment extends Fragment {
         // Use a highly specific User-Agent to comply with OSM policies. Do not use com.example.*
         Configuration.getInstance().setUserAgentValue("DisasterCommApp/5.15.0 (contact@disastercomm.org)");
 
-        File cacheDir = new File(ctx.getCacheDir(), "osm_v3");
+        File cacheDir = new File(ctx.getCacheDir(), "osm_v4"); // Bumped to v4 to clear cached 403 error tiles
         if (!cacheDir.exists()) cacheDir.mkdirs();
         Configuration.getInstance().setOsmdroidTileCache(cacheDir);
         Configuration.getInstance().setOsmdroidBasePath(cacheDir);
