@@ -134,7 +134,7 @@ public class MapFragment extends Fragment {
         // Use a standard browser User-Agent to completely bypass OSM WAF blocks on mobile apps
         Configuration.getInstance().setUserAgentValue("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
-        File cacheDir = new File(ctx.getCacheDir(), "osm_v5"); // Bumped to v5 to clear any lingering 403 error tiles
+        File cacheDir = new File(ctx.getCacheDir(), "osm_v6"); // Bumped to v6 for OpenTopo
         if (!cacheDir.exists()) cacheDir.mkdirs();
         Configuration.getInstance().setOsmdroidTileCache(cacheDir);
         Configuration.getInstance().setOsmdroidBasePath(cacheDir);
@@ -494,8 +494,8 @@ public class MapFragment extends Fragment {
     }
 
         private void setupMap() {
-        // Use default OpenStreetMap tiles (free, no API key required)
-        mapView.setTileSource(org.osmdroid.tileprovider.tilesource.TileSourceFactory.MAPNIK);
+        // Use OpenTopo tiles which are free, highly reliable, and great for disaster scenarios (terrain/elevation)
+        mapView.setTileSource(org.osmdroid.tileprovider.tilesource.TileSourceFactory.OpenTopo);
         
         // Handle Offline Maps
         boolean isOffline = !isNetworkAvailable();
