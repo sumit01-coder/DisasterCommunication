@@ -494,14 +494,8 @@ public class MapFragment extends Fragment {
     }
 
         private void setupMap() {
-        // Use CartoDB Positron (Light) map tiles.
-        org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase cartoDbPositron = new org.osmdroid.tileprovider.tilesource.XYTileSource("CartoDBPositron",
-                0, 20, 256, ".png", new String[]{
-                "https://a.basemaps.cartocdn.com/light_all/",
-                "https://b.basemaps.cartocdn.com/light_all/",
-                "https://c.basemaps.cartocdn.com/light_all/"
-        });
-        mapView.setTileSource(cartoDbPositron);
+        // Use default OpenStreetMap tiles (free, no API key required)
+        mapView.setTileSource(org.osmdroid.tileprovider.tilesource.TileSourceFactory.MAPNIK);
         
         // Handle Offline Maps
         boolean isOffline = !isNetworkAvailable();
